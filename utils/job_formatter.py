@@ -4,15 +4,16 @@ import logging
 import os
 from dataclasses import dataclass
 from subprocess import run
-from typing import Union, Any
+from typing import Union, Any, List
 
+from patterns.observer import Observable, Observer
 from utils.defaults import MAX_RUNTIME, NUM_CORES, RAM_PER_CORE
 
 Runtime = collections.namedtuple('Runtime', ['days', 'hours', 'minutes'])
 logger = logging.getLogger('root')
 
 
-class Job:
+class Job(Observable):
     """
     === Description ===
     A simple job that stores its execution information.
@@ -23,7 +24,8 @@ class Job:
     """
     _cmd: str
 
-    def __init__(self, cmd: str) -> None:
+    def __init__(self, cmd: str, observers: List[Observer] = None) -> None:
+        super().__init__(observers)
         self._cmd = cmd
         self.complete = False
 
@@ -34,6 +36,7 @@ class Job:
         logger.info('Executing ' + self._cmd)
         os.system(self._cmd)
         self.complete = True
+        self.notify_observers()
 
 
 class JobBuilder:
@@ -67,7 +70,7 @@ class ExecParams:
                  num_cores: int = NUM_CORES,
                  ram_per_core: int = RAM_PER_CORE,
                  builder: Union[JobBuilder, None] = None) -> None:
-        self.max_runtime = max_runtime
+        self.max_runtime = Runtime(*max_runtime)
         self.num_cores = num_cores
         self.ram_per_core = ram_per_core
         self.builder = builder

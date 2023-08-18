@@ -1,4 +1,5 @@
 import os
+import shutil
 from datetime import datetime
 from pathlib import Path
 import logging
@@ -16,13 +17,6 @@ def quotes(s: Union[str, Path]) -> str:
 
     return f'"{s}"'
 
-
-def config_root_logger(logging_dir: Path) -> None:
-    """Configures a simple logger."""
-    filename = datetime.now().strftime("%m/%d/%Y_%I:%M:%S_%p.log")
-    logging.basicConfig(format='%(asctime)s - %(levelname)s: %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p',
-                        filename=logging_dir / filename, level=0)
-    logging.root.handlers[0].setLevel(0)
 
 
 def sizeof_fmt(num: float) -> str:
@@ -50,7 +44,7 @@ def get_all_outside_dir(directory: Path, files: List[Path]) -> List[Path]:
     """
     not_in = []
     for file in files:
-        if file not in directory:
+        if directory not in file.parents:
             not_in.append(file)
     return not_in
 
@@ -72,6 +66,7 @@ class PathManager:
 
     === Description ===
     Class responsible for the creation and management of paths within the project directory.
+    Also, currently handles logging.
 
     === Public Attributes ===
 
@@ -81,8 +76,11 @@ class PathManager:
     project_dir: Path
     cache_filepath: Path
     logging_directory: Path
+    info_archive: Path
+    debug_archive: Path
+    general_archive: Path
 
-    def __int__(self, working_dir: Path, ) -> None:
+    def __init__(self, working_dir: Path) -> None:
         self.project_dir = working_dir
         self.configure_required_dirs()
 
@@ -109,4 +107,61 @@ class PathManager:
 
         self.logging_directory = self.project_dir / 'logs'
         self.safe_make(self.logging_directory)
-        config_root_logger(self.logging_directory)
+
+        self.info_archive = self.logging_directory / '.info_archive'
+        self.safe_make(self.info_archive)
+
+        self.debug_archive = self.logging_directory / '.debug_archive'
+        self.safe_make(self.debug_archive)
+
+        self.general_archive = self.logging_directory / '.general_archive'
+        self.safe_make(self.general_archive)
+
+        self.move_logs_to_archive()
+        self.configure_logging()
+
+    def move_logs_to_archive(self) -> None:
+        """
+        Move any logfiles in logging directory to archive.
+        """
+        existing_logfiles = []
+        for filepath in os.listdir(self.logging_directory):
+            if '.log' in str(filepath):
+                existing_logfiles.append(filepath)
+
+        def targeted_archive(identifier: str, archive_file: Path):
+            to_rem = []
+            for i, logfile in enumerate(existing_logfiles):
+                if identifier in str(logfile):
+                    shutil.move(self.logging_directory / logfile, archive_file / os.path.basename(logfile))
+                    to_rem.append(i)
+
+            for i in sorted(to_rem, reverse=True):
+                existing_logfiles.pop(i)
+
+        targeted_archive('DEBUG', self.debug_archive)
+        targeted_archive('INFO', self.info_archive)
+        targeted_archive('', self.general_archive)
+
+    def configure_logging(self) -> None:
+        """Configures a simple logger."""
+        format = '%(asctime)s - %(levelname)s: %(message)s'
+        datefmt = '%m/%d/%Y %I:%M:%S %p'
+
+        formatter = logging.Formatter(fmt=format, datefmt=datefmt)
+
+        info_file = self.logging_directory / datetime.now().strftime("INFO-%m-%d-%Y_%I:%M:%S_%p.log")
+        debug_file = self.logging_directory / datetime.now().strftime("DEBUG-%m-%d-%Y_%I:%M:%S_%p.log")
+
+        logging.root.handlers = []
+
+        info_handler = logging.FileHandler(info_file)
+        debug_handler = logging.FileHandler(debug_file)
+        info_handler.setLevel(logging.INFO)
+        debug_handler.setLevel(logging.DEBUG)
+        info_handler.setFormatter(formatter)
+        debug_handler.setFormatter(formatter)
+
+        logging.root.addHandler(info_handler)
+        logging.root.addHandler(debug_handler)
+        logging.root.setLevel(0)

@@ -39,7 +39,8 @@ class CacheManager:
     _name: str
     _path_manager: PathManager
 
-    _cur_cmds: List[str]
+    _cur_exec_cmds: List[str]
+    _cur_skipped_cmds: List[str]
     _past_cmds: List[str]
 
     _cache_path: Path
@@ -55,18 +56,22 @@ class CacheManager:
         self._strict = strict
         self._pipline_integrity_maintained = True
 
-        self._cache_path = path_manager.cache_filepath / (name + 'str')
+        self._cache_path = path_manager.cache_filepath / name
+        self._cache_path.touch()
         self._read_cache()
+        self._cur_exec_cmds = []
+        self._cur_skipped_cmds = []
+        self._purgeable_data = []
+        self._name = name
 
     def _read_cache(self) -> None:
         """Read previously executed commands from the cache."""
-        cache_filepath = self._path_manager.cache_filepath
-        with open(cache_filepath, 'r') as file:
+        with open(self._cache_path, 'r') as file:
             lines = file.readlines()
             cmds = [line.strip() for line in lines]
             self._past_cmds = cmds
 
-        logger.info('\n\t\t'.join(['Previously logged commands:'] + self._past_cmds))
+        logger.debug('Previously logged commands:\n\t\t' + '\n\t\t'.join(self._past_cmds))
 
     def do_execution(self, job: Job) -> bool:
         """
@@ -76,13 +81,21 @@ class CacheManager:
         """
         return job.get_cmd() not in self._past_cmds
 
+    def cache_skipped(self, job: Job) -> None:
+        """
+        Store the fact that a job was skipped.
+        :param job:
+        :return:
+        """
+        self._cur_skipped_cmds.append(job.get_cmd())
+
     def cache_execution(self, job: Job) -> None:
         """
         Updates cache with job information if necessary.
 
         :param job: The job that executed the command to be stored.
         """
-        self._cur_cmds.append(job.get_cmd())
+        self._cur_exec_cmds.append(job.get_cmd())
 
         if job.get_cmd() not in self._past_cmds:
             logger.info(f'Detected new step in cached pipeline: {self._name}\n\t\t New step: {job.get_cmd()}.')
@@ -91,14 +104,14 @@ class CacheManager:
             # Pipeline modification detected!
             if self._strict and self._pipline_integrity_maintained:
                 self._pipline_integrity_maintained = False
-                commands_to_be_repeated = list(set(self._past_cmds) - set(self._cur_cmds))
+                commands_to_be_repeated = list(set(self._past_cmds) - set(self._cur_exec_cmds))
 
                 logger.info(f"{self._name} is configured to be strict. As such, the following steps will be repeated"
                             f" if they are still in the pipeline:\n\t\t" + '\n\t\t'.join(commands_to_be_repeated))
-                self._past_cmds = self._cur_cmds
+                self._past_cmds = self._cur_skipped_cmds[:] + self._cur_exec_cmds[:]
 
-            with open(self._path_manager.cache_filepath, 'w') as f:
-                f.writelines(self._past_cmds)
+            with open(self._cache_path, 'w') as f:
+                f.writelines([cmd + '\n' for cmd in self._past_cmds] + ['\n'])
 
     def add_purgeable_data(self, purgeable: Union[List[Path], Path]) -> None:
         """
@@ -109,8 +122,12 @@ class CacheManager:
         """
         if isinstance(purgeable, list):
             self._purgeable_data.extend(purgeable)
+            logger.debug(
+                'Adding the following files to be purged.\n\t\t' + '\n\t\t'.join([str(path) for path in purgeable]))
         else:
             self._purgeable_data.append(purgeable)
+            logger.debug(
+                'Adding the following file to be purged.\n\t\t' + str(purgeable))
 
     def purge_data(self, req_user_input: bool = True, size_limit: int = 20) -> None:
         """
@@ -119,6 +136,11 @@ class CacheManager:
         :param req_user_input: Whether to prompt the user before deleting the given files.
         :param size_limit: The absolute size limit of all files to be deleted, in GiB.
         """
+        if not self._purgeable_data:
+            print('No data to purge.')
+            logger.info('No data to purge.')
+            return
+
         to_be_deleted_str = '\n\t\t'.join([str(p) for p in self._purgeable_data])
 
         logger.info('=== Begging File Purge Process ===')
@@ -136,7 +158,7 @@ class CacheManager:
             return
 
         agg_size = get_total_size(self._purgeable_data)
-        max_size = size_limit * 1024 ** 2
+        max_size = size_limit * 1024 ** 3
         if agg_size <= max_size:
             logger.info(f'File size found to be within purge thresholds: '
                         f'{sizeof_fmt(agg_size)} <= {sizeof_fmt(max_size)}')
@@ -156,7 +178,7 @@ class CacheManager:
 
             prompt = 'Approve? (Y/n)'
             usr_in = input(prompt).strip()
-            while usr_in != 'Y' or usr_in != 'n':
+            while usr_in != 'Y' and usr_in != 'n':
                 print("Invalid input. Try again...")
                 usr_in = input(prompt).strip()
 
