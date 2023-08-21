@@ -57,7 +57,7 @@ class ExecParams:
 
     num_cores: The number of cores to use for the job.
     max_runtime: The maximum runtime of the job.
-    ram_per_core: The memory to reserve per CPU, in MB.
+    ram_per_core: The memory to reserve per CPU, in MiB.
     builder: builder class required to format the job for execution on the machine.
     """
 

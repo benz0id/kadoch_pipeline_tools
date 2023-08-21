@@ -18,6 +18,7 @@ jobs = utils.job_manager.JobManager(cm, pm)
 # Job Configurations
 generic_job = ExecParams(max_runtime=(0, 0, 10), num_cores=1, ram_per_core=128, builder=JobBuilder())
 generic_o2 = ExecParams(max_runtime=(0, 1, 0), num_cores=1, ram_per_core=128, builder=sl)
+heavy_o2 = ExecParams(max_runtime=(0, 1, 0), num_cores=30, ram_per_core=8192, builder=sl)
 
 # Useful paths.
 pd = pm.project_dir
@@ -42,9 +43,7 @@ jobs.execute_purgeable('touch ' + str(testfile), testfile, generic_job, lazy=Fal
 # We're doing slurm jobs now. Since my mac doesn't have slurm, let's disable their execution.
 
 jobs.execute('echo schlurmski', generic_o2)
-
-
-
+jobs.execute('echo schlurmski', heavy_o2)
 
 
 sl.stop_readers()

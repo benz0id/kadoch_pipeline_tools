@@ -34,7 +34,7 @@ def get_O2_cost(params: ExecParams) -> float:
     """
     hours = params.max_runtime.days * 24 + params.max_runtime.hours + params.max_runtime.minutes // 60
     cpu_cost = hours * params.num_cores * CORE_CHARGE_RATE
-    ram_cost = hours * RAM_CHARGE_RATE / 1024
+    ram_cost = hours * params.ram_per_core * params.num_cores * RAM_CHARGE_RATE / 1024
     return cpu_cost + ram_cost
 
 
@@ -282,16 +282,17 @@ class Slurmifier(JobBuilder, Observer):
         :param exec_params: Parameters for the runtime environment of the command.
         :return: An executable job.
         """
-        self.do_expenditure_check(exec_params)
+        self.do_expenditure_check(cmd, exec_params)
 
         job = self.slurmify(cmd, exec_params)
         logger.info('Slurm job successfully created.')
         return job
 
-    def do_expenditure_check(self, params: ExecParams) -> None:
+    def do_expenditure_check(self, cmd: str, params: ExecParams) -> None:
         """
         Checks that executing a job with <params> would not push this slurmifier beyond it's cost parameters.
         If so, stop the program.
+        :param cmd: The command to be executed.
         :param params: The job parameters to be checked.
         """
         est_max_cost = get_O2_cost(params)
@@ -300,8 +301,15 @@ class Slurmifier(JobBuilder, Observer):
                     f"\t\tRemaining after Completion: {self._max_cost - self._max_current_expenditure - est_max_cost:6.2f}")
 
         if self._max_current_expenditure + est_max_cost > self._max_cost:
+            overage = -1 * self._max_cost - self._max_current_expenditure - est_max_cost
             logger.error("Executing job would exceed allocated spending amount for this scheduler.")
-            print('Quitting due to imposed cost restraints.', file=sys.stderr)
+            print('Received request for job that would exceed allocated O2 spending.' +
+                  f"\n\n\t Command: {cmd}\n\n"
+                  f"\t\t                Max Cost of Job: {est_max_cost:6.2f}\n"
+                  f"\t\t                 Allotted Funds: {self._max_cost:6.2f}\n"
+                  f"\t\t            Current Expenditure: {self._max_current_expenditure:6.2f}\n"
+                  f"\t\t Overage that Would be Incurred: {overage:6.2f}"
+                  , file=sys.stderr)
             exit(1)
 
     def stop_readers(self) -> None:
