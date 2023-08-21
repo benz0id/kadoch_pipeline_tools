@@ -1,4 +1,6 @@
 from pathlib import Path
+
+from utils.file_transfer import SSHFileTransferManager
 from utils.job_formatter import ExecParams, JobBuilder
 
 import utils.cache_manager
@@ -27,6 +29,28 @@ pd = pm.project_dir
 # jobs.execute('ls', generic_job)
 
 # jobs.execute('ls -a', generic_job)
+
+# === Testing Data Transfer ===
+
+remote_files = SSHFileTransferManager(pd / 'test.json')
+ck_dir = Path('/labs/cklab')
+basic_fromrd3 = remote_files.get_files_ignore_existing_job([ck_dir / 'transfer_to_o2.sh',
+                                        ck_dir / 'peaks.list.txt'],
+                                       pd / 'storage')
+
+dir_to_r3 = remote_files.put_files_ignore_existing_job(pd / 'storage' / 'test_dir',
+                                       ck_dir / 'ben')
+
+r3_to_loc_dir = remote_files.get_files_ignore_existing_job(ck_dir / 'ben' / 'test_dir',
+                                       pd / 'storage2')
+
+jobs.execute_lazy(basic_fromrd3, generic_job)
+jobs.execute_lazy(dir_to_r3, generic_job)
+jobs.execute_lazy(r3_to_loc_dir, generic_job)
+
+remote_files.close()
+
+# === Testing Job Caching ===
 
 jobs.execute_lazy('echo a', generic_job)
 jobs.execute_lazy('echo b', generic_job)

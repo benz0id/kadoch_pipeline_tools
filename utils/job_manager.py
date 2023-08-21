@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import List, Union
 from utils.cache_manager import CacheManager
 from utils.path_manager import PathManager
-from utils.job_formatter import ExecParams
+from utils.job_formatter import ExecParams, Job
 
 logger = logging.getLogger(__name__)
 class JobManager:
@@ -34,18 +34,21 @@ class JobManager:
         """
         self._prevent_execution = False
 
-    def execute(self, cmd: str, exec_params: ExecParams) -> None:
+    def execute(self, cmd: Union[str, Job], exec_params: ExecParams) -> None:
         """Execute the stored in <cmd>, outputting to stderr when possible.
 
-        :param str cmd: The command to be executed.
+        :param str cmd: The command/job to be executed.
         :param ExecParams exec_params: Parameters used to execute the command.
         """
+        if isinstance(cmd, str):
+            job = exec_params.builder.prepare_job(cmd, exec_params)
+        else:
+            job = cmd
 
-        job = exec_params.builder.prepare_job(cmd, exec_params)
         if not self._prevent_execution:
             job.execute()
 
-    def execute_lazy(self, cmd: str, exec_params: ExecParams) -> bool:
+    def execute_lazy(self, cmd: Union[str, Job], exec_params: ExecParams) -> bool:
         """Executes <cmd> iff it has not been called this run and all previous steps in the pipeline have been
         successfully executed lazily.
 
@@ -53,11 +56,16 @@ class JobManager:
         :param str cmd: The command to be executed.
         :return: Whether cmd was executed.
         """
-        job = exec_params.builder.prepare_job(cmd, exec_params)
+        if isinstance(cmd, str):
+            job = exec_params.builder.prepare_job(cmd, exec_params)
+        else:
+            job = cmd
+
         execute_job = self._cache_manager.do_execution(job)
         if execute_job:
             if not self._prevent_execution:
                 logger.info(f'Lazily executing `{cmd}`.')
+                job.execute()
             self._cache_manager.cache_execution(job)
             logger.info('Job complete. Storing command in cache.')
             return True
@@ -66,7 +74,7 @@ class JobManager:
             self._cache_manager.cache_skipped(job)
             return False
 
-    def execute_purgeable(self, cmd: str, purgeable: Union[Path, List[Path]], exec_params: ExecParams,
+    def execute_purgeable(self, cmd: Union[str, Job], purgeable: Union[Path, List[Path]], exec_params: ExecParams,
                           lazy: bool = True) -> bool:
         """Executes <cmd> iff it has not been called this run and all previous steps in the pipeline have been
         successfully executed lazily. Adds the given files to the list of files that can be purged after the pipeline
@@ -87,5 +95,7 @@ class JobManager:
 
         if executed:
             self._cache_manager.add_purgeable_data(purgeable)
+
+        return executed
 
 

@@ -1,13 +1,11 @@
-import abc
 import collections
 import logging
 import os
 from dataclasses import dataclass
-from subprocess import run
 from typing import Union, Any, List
 
 from patterns.observer import Observable, Observer
-from utils.defaults import MAX_RUNTIME, NUM_CORES, RAM_PER_CORE
+from constants.defaults import MAX_RUNTIME, NUM_CORES, RAM_PER_CORE
 
 Runtime = collections.namedtuple('Runtime', ['days', 'hours', 'minutes'])
 logger = logging.getLogger('root')
@@ -37,6 +35,39 @@ class Job(Observable):
         os.system(self._cmd)
         self.complete = True
         self.notify_observers()
+
+
+class PythonJob(Job):
+    """
+    === Description ===
+    A job that allows for the execution of a custom command with given arguments.
+
+    === Private Attributes ===
+    to_execute: The command to be executed with args and kwargs.
+    args: To be passed to <to_execute>.
+    kwargs: To be passed to <to_execute<.
+
+    """
+
+    def __init__(self, cmd: str, observers: List[Observer], to_execute, *args, **kwargs) -> None:
+        """
+        Executes <to_execute> using <args> and <kwargs>.
+        :param cmd: A string representation of the command to be executed.
+        :param observers: The observers to notify when this job is executed.
+        :param to_execute: The function or method descriptor to pass <args> and <kwargs> upon execution.
+        :param args: To be passed to <to_execute>.
+        :param kwargs: To be passed to <to_execute>.
+        """
+        super().__init__(cmd, observers)
+        self._to_execute = to_execute
+        self.args = args
+        self.kwargs = kwargs
+
+    def execute(self) -> None:
+        logger.info(f'Executing {repr(self._to_execute)} with args: {str(self.args)} and kwargs: {str(self.kwargs)}.')
+        self._to_execute(*self.args, **self.kwargs)
+        self.notify_observers()
+
 
 
 class JobBuilder:
