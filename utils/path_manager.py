@@ -79,6 +79,7 @@ class PathManager:
     info_archive: Path
     debug_archive: Path
     general_archive: Path
+    home_dir: Path
 
     def __init__(self, working_dir: Path) -> None:
         self.project_dir = working_dir
@@ -107,6 +108,8 @@ class PathManager:
 
         self.logging_directory = self.project_dir / 'logs'
         self.safe_make(self.logging_directory)
+
+        self.home_dir = Path(os.path.expanduser(""))
 
         self.info_archive = self.logging_directory / '.info_archive'
         self.safe_make(self.info_archive)
