@@ -34,6 +34,7 @@ pd = pm.project_dir
 
 # === Testing Data Transfer ===
 
+"""
 remote_files = SSHFileTransferManager(RC_DATA_CREDS)
 ck_dir = Path('/labs/cklab')
 basic_fromrd3 = remote_files.get_files_ignore_existing_job([ck_dir / 'transfer_to_o2.sh',
@@ -51,6 +52,7 @@ jobs.execute_lazy(dir_to_r3, generic_job)
 jobs.execute_lazy(r3_to_loc_dir, generic_job)
 
 remote_files.close()
+"""
 
 # === Testing Job Caching ===
 
