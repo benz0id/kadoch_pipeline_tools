@@ -241,6 +241,7 @@ class Slurmifier(JobBuilder, Observer):
              f'#SBATCH --mem-per-cpu={params.ram_per_core}M',
              f'#SBATCH --mail-user={self._email}',
              f'#SBATCH -p {queue}',
+             f'#SBATCH -w',
              f'#SBATCH -t {runtime_str}',
              f'#SBATCH -o {self.sbatch_out_path}',
              f'#SBATCH -e {self.sbatch_err_path}',

@@ -53,7 +53,7 @@ jobs.execute_lazy(dir_to_r3, generic_job)
 jobs.execute_lazy(r3_to_loc_dir, generic_job)
 
 remote_files.close()
-"""
+
 
 # === Testing Job Caching ===
 
@@ -68,10 +68,9 @@ jobs.execute_lazy('echo d', generic_job)
 testfile = pd / 'test.txt'
 
 jobs.execute_purgeable('touch ' + str(testfile), testfile, generic_job, lazy=False)
+"""
 
 # We're doing slurm jobs now. Since my mac doesn't have slurm, let's disable their execution.
-
-jobs.execute('echo schlurmski', light_o2)
 jobs.execute('for i in {0..100..2}; do echo "Hello"; sleep 1; done', light_o2)
 
 
