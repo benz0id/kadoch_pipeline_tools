@@ -16,7 +16,7 @@ wd = Path("/home/bet488/soft/kadoch_pipeline_tools/test_project")
 # Pipeline Managers
 pm = utils.path_manager.PathManager(wd)
 cm = utils.cache_manager.CacheManager(pm, strict=True) # TODO try strict
-sl = utils.slurmify.Slurmifier(pm, mailtype=["ALL"])
+sl = utils.slurmify.Slurmifier(pm, mailtype=["ALL"], redirect_to_console=False)
 jobs = utils.job_manager.JobManager(cm, pm)
 
 # Job Configurations
