@@ -1,5 +1,6 @@
 import os
 import shutil
+import sys
 from datetime import datetime
 from pathlib import Path
 import logging
@@ -17,6 +18,25 @@ def quotes(s: Union[str, Path]) -> str:
 
     return f'"{s}"'
 
+
+def cmdify(*args: Union[str, Path, int]) -> str:
+    """
+    Attempts to format the given args as strings and join them into a command.
+    :param args: Some number of objects.
+    :return:
+    """
+    formatted = []
+    for arg in args:
+        if isinstance(arg, str):
+            formatted.append(arg)
+        elif isinstance(arg, Path):
+            formatted.append(str(arg))
+        elif isinstance(arg, int):
+            formatted.append(str(arg))
+        else:
+            raise ValueError(f'Unrecognised type: {repr(arg)}')
+
+    return ' '.join(formatted)
 
 
 def sizeof_fmt(num: float) -> str:
@@ -160,6 +180,7 @@ class PathManager:
 
         info_handler = logging.FileHandler(info_file)
         debug_handler = logging.FileHandler(debug_file)
+
         info_handler.setLevel(logging.INFO)
         debug_handler.setLevel(logging.DEBUG)
         info_handler.setFormatter(formatter)
@@ -168,3 +189,5 @@ class PathManager:
         logging.root.addHandler(info_handler)
         logging.root.addHandler(debug_handler)
         logging.root.setLevel(0)
+
+        logging.root.addHandler(logging.StreamHandler(sys.stdout))

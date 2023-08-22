@@ -89,19 +89,27 @@ class ExecParams:
     num_cores: The number of cores to use for the job.
     max_runtime: The maximum runtime of the job.
     ram_per_core: The memory to reserve per CPU, in MiB.
-    builder: builder class required to format the job for execution on the machine.
+    builder: Builder class required to format the job for execution on the machine.
+        Job is just run in active shell session iff None.
+    requires: A list of string names of the programs required to run this job.
     """
 
     max_runtime: Runtime
     num_cores: int
     ram_per_core: int
     builder: JobBuilder
+    requires: List[str]
 
     def __init__(self, max_runtime: Runtime = MAX_RUNTIME,
                  num_cores: int = NUM_CORES,
                  ram_per_core: int = RAM_PER_CORE,
-                 builder: Union[JobBuilder, None] = None) -> None:
+                 builder: Union[JobBuilder, None] = None,
+                 requires: List[str] = None) -> None:
         self.max_runtime = Runtime(*max_runtime)
         self.num_cores = num_cores
         self.ram_per_core = ram_per_core
         self.builder = builder
+        if requires is None:
+            self.requires = []
+        else:
+            self.requires = requires

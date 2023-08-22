@@ -68,7 +68,8 @@ class CacheManager:
         """Read previously executed commands from the cache."""
         with open(self._cache_path, 'r') as file:
             lines = file.readlines()
-            cmds = [line.strip() for line in lines]
+            cmds = ''.join(lines)
+            cmds = cmds.split('\n<END OF COMMAND>\n')
             self._past_cmds = cmds
 
         logger.debug('Previously logged commands:\n\t\t' + '\n\t\t'.join(self._past_cmds))
@@ -88,6 +89,11 @@ class CacheManager:
         :return:
         """
         self._cur_skipped_cmds.append(job.get_cmd())
+
+    def write_cache(self) -> None:
+        """Writes the currently stored cache to a file."""
+        with open(self._cache_path, 'w') as f:
+            f.writelines([cmd + '\n<END OF COMMAND>\n' for cmd in self._past_cmds] + ['\n'])
 
     def cache_execution(self, job: Job) -> None:
         """
@@ -110,8 +116,7 @@ class CacheManager:
                             f" if they are still in the pipeline:\n\t\t" + '\n\t\t'.join(commands_to_be_repeated))
                 self._past_cmds = self._cur_skipped_cmds[:] + self._cur_exec_cmds[:]
 
-            with open(self._cache_path, 'w') as f:
-                f.writelines([cmd + '\n' for cmd in self._past_cmds] + ['\n'])
+            self.write_cache()
 
     def add_purgeable_data(self, purgeable: Union[List[Path], Path]) -> None:
         """

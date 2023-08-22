@@ -10,8 +10,7 @@ import utils.slurmify
 import utils.job_manager
 
 # Project Directory
-soft = Path("/home/bet488/soft")
-wd = Path("/home/bet488/soft/kadoch_pipeline_tools/test_project")
+wd = Path("/Users/btudorpr/PycharmProjects/kadoch_pipeline_tools/test_project")
 
 # Pipeline Managers
 pm = utils.path_manager.PathManager(wd)
@@ -24,7 +23,6 @@ jobs = utils.job_manager.JobManager(cm, pm)
 generic_job = ExecParams(max_runtime=(0, 0, 10), num_cores=1, ram_per_core=128, builder=JobBuilder())
 light_o2 = ExecParams(max_runtime=(0, 0, 10), num_cores=1, ram_per_core=128, builder=sl)
 generic_o2 = ExecParams(max_runtime=(0, 1, 0), num_cores=1, ram_per_core=128, builder=sl)
-# heavy_o2 = ExecParams(max_runtime=(0, 1, 0), num_cores=30, ram_per_core=8192, builder=sl)
 
 # Useful paths.
 pd = pm.project_dir
@@ -35,7 +33,6 @@ pd = pm.project_dir
 # jobs.execute('ls -a', generic_job)
 
 # === Testing Data Transfer ===
-
 """
 remote_files = SSHFileTransferManager(RC_DATA_CREDS)
 ck_dir = Path('/labs/cklab')
@@ -54,11 +51,11 @@ jobs.execute_lazy(dir_to_r3, generic_job)
 jobs.execute_lazy(r3_to_loc_dir, generic_job)
 
 remote_files.close()
-
+"""
 
 # === Testing Job Caching ===
 
-jobs.execute_lazy('echo a', generic_job)
+jobs.execute_lazy('echo a \n echo b\n\nls | grep a', generic_job)
 jobs.execute_lazy('echo b', generic_job)
 
 jobs.execute_lazy('echo New Step!', generic_job)
@@ -69,7 +66,7 @@ jobs.execute_lazy('echo d', generic_job)
 testfile = pd / 'test.txt'
 
 jobs.execute_purgeable('touch ' + str(testfile), testfile, generic_job, lazy=False)
-"""
+
 
 # We're doing slurm jobs now. Since my mac doesn't have slurm, let's disable their execution.
 jobs.execute('for i in {0..100..2}; do echo "Hello"; sleep 1; done', light_o2)

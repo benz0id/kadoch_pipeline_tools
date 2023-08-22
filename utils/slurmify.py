@@ -12,7 +12,7 @@ from typing import List, Tuple, TextIO, Any
 from patterns.observer import Observer
 from utils.job_formatter import Runtime, JobBuilder, Job, ExecParams
 from utils.path_manager import PathManager, quotes
-
+from constants.program_paths import o2_paths, requirements
 global paths_manager
 
 # Core charge rate in dollars per hour.
@@ -233,7 +233,7 @@ class Slurmifier(JobBuilder, Observer):
 
         prog = 'command'.split(' ')[0].split('/')[-1]
 
-        slurm_script = '\n'.join(
+        slurm_script = \
             [f'#!/bin/bash',
              f'#SBATCH --job-name=PythonPipelineRunning{prog}',
              f'#SBATCH --mail-type={",".join(self.mailtype)}',
@@ -244,10 +244,18 @@ class Slurmifier(JobBuilder, Observer):
              f'#SBATCH -W',
              f'#SBATCH -t {runtime_str}',
              f'#SBATCH -o {self.sbatch_out_path}',
-             f'#SBATCH -e {self.sbatch_err_path}',
-             f'',
-             f'{command}'
-             ])
+             f'#SBATCH -e {self.sbatch_err_path}'
+             ]
+
+        # Add lines to install the given modules.
+        for requirement in params.requires:
+            if requirement not in o2_paths:
+                raise ValueError(f"{requirement} not in known list of programs.")
+            slurm_script.append(f'module load {requirement}/{requirements[requirement]}')
+
+        slurm_script.append(command)
+
+        slurm_script = '\n'.join(slurm_script)
 
         # Make a unique script name.
         slurm_script_name = datetime.now().strftime("%m-%d-%Y|%H-%M-%S.%f.sh")
