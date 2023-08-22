@@ -9,7 +9,7 @@ import utils.slurmify
 import utils.job_manager
 
 # Project Directory
-wd = Path("/Users/btudorpr/PycharmProjects/kadoch_pipeline_tools/test_project")
+wd = Path("/home/bet488/soft/kadoch_pipeline_tools/test_project")
 
 # Pipeline Managers
 pm = utils.path_manager.PathManager(wd)
