@@ -241,7 +241,7 @@ class Slurmifier(JobBuilder, Observer):
              f'#SBATCH --mem-per-cpu={params.ram_per_core}M',
              f'#SBATCH --mail-user={self._email}',
              f'#SBATCH -p {queue}',
-             # f'#SBATCH -w',
+             f'#SBATCH -W',
              f'#SBATCH -t {runtime_str}',
              f'#SBATCH -o {self.sbatch_out_path}',
              f'#SBATCH -e {self.sbatch_err_path}',
@@ -253,7 +253,7 @@ class Slurmifier(JobBuilder, Observer):
         slurm_script_name = datetime.now().strftime("%m-%d-%Y|%H-%M-%S.%f.sh")
         with open(self._slurm_scripts_dir / slurm_script_name, 'w') as file:
             file.write(slurm_script)
-        slurm_command = 'sbatch -w ' + quotes(self._slurm_scripts_dir / slurm_script_name)
+        slurm_command = 'sbatch ' + quotes(self._slurm_scripts_dir / slurm_script_name)
 
         logger.info("Slurm Script Successfully Created")
         logger.info(command + ' -> ' + slurm_command)
