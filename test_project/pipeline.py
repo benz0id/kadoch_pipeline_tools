@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from constants.data_paths import RC_DATA_CREDS
 from utils.file_transfer import SSHFileTransferManager
 from utils.job_formatter import ExecParams, JobBuilder
 
@@ -9,6 +10,7 @@ import utils.slurmify
 import utils.job_manager
 
 # Project Directory
+soft = Path("/home/bet488/soft")
 wd = Path("/home/bet488/soft/kadoch_pipeline_tools/test_project")
 
 # Pipeline Managers
@@ -32,7 +34,7 @@ pd = pm.project_dir
 
 # === Testing Data Transfer ===
 
-remote_files = SSHFileTransferManager(pd / 'test.json')
+remote_files = SSHFileTransferManager(RC_DATA_CREDS)
 ck_dir = Path('/labs/cklab')
 basic_fromrd3 = remote_files.get_files_ignore_existing_job([ck_dir / 'transfer_to_o2.sh',
                                         ck_dir / 'peaks.list.txt'],
