@@ -72,7 +72,7 @@ jobs.execute_purgeable('touch ' + str(testfile), testfile, generic_job, lazy=Fal
 # We're doing slurm jobs now. Since my mac doesn't have slurm, let's disable their execution.
 
 jobs.execute('echo schlurmski', light_o2)
-jobs.execute('for i in {0..100..2}; do; echo "Hello!"; done;', light_o2)
+jobs.execute('for i in {0..100..2}; do echo "Hello"; sleep 1; done', light_o2)
 
 
 sl.stop_readers()
