@@ -251,7 +251,7 @@ class Slurmifier(JobBuilder, Observer):
         for requirement in params.requires:
             if requirement not in o2_paths:
                 raise ValueError(f"{requirement} not in known list of programs.")
-            slurm_script.append(f'module load {requirement}/{requirements[requirement]}')
+            slurm_script.append(f'module load {requirement}/{params.requires[requirement]}')
 
         slurm_script.append(command)
 

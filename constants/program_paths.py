@@ -17,9 +17,10 @@ requirements = {
 
 # Create namespace containing names for program and their respective path on O2
 o2_paths = {}
+
 for prog in requirements:
     version = requirements[prog]
-    o2_paths[prog] = f'/n/app/{prog}/{version}/bin/{prog}'
+    o2_paths[prog] = Path(f'/n/app/{prog}/{version}/bin/{prog}')
 
 progs = Namespace(**o2_paths)
 

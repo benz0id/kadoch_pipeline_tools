@@ -2,7 +2,7 @@ import collections
 import logging
 import os
 from dataclasses import dataclass
-from typing import Union, Any, List
+from typing import Union, Any, List, Dict
 
 from patterns.observer import Observable, Observer
 from constants.defaults import MAX_RUNTIME, NUM_CORES, RAM_PER_CORE
@@ -98,18 +98,18 @@ class ExecParams:
     num_cores: int
     ram_per_core: int
     builder: JobBuilder
-    requires: List[str]
+    requires: Dict[str, str]
 
     def __init__(self, max_runtime: Runtime = MAX_RUNTIME,
                  num_cores: int = NUM_CORES,
                  ram_per_core: int = RAM_PER_CORE,
                  builder: Union[JobBuilder, None] = None,
-                 requires: List[str] = None) -> None:
+                 requires: Dict[str, str] = None) -> None:
         self.max_runtime = Runtime(*max_runtime)
         self.num_cores = num_cores
         self.ram_per_core = ram_per_core
         self.builder = builder
         if requires is None:
-            self.requires = []
+            self.requires = {}
         else:
             self.requires = requires

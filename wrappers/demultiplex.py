@@ -1,23 +1,26 @@
 import os
 from pathlib import Path
+from typing import Dict
+
 from constants.program_paths import progs
 from utils.exceptions import UpstreamPipelineError
 from utils.job_formatter import ExecParams, Job
 from utils.path_manager import cmdify, PathManager
+from wrappers.wrapper import ProgramWrapper
 
 
-class Demultiplexer:
+class Demultiplexer(ProgramWrapper):
     """
     === Description ===
     Manages the demultiplexing of Illumina bcl files.
     https://support.illumina.com/content/dam/illumina-support/documents/documentation/software_documentation/bcl2fastq/bcl2fastq2-v2-20-software-guide-15051736-03.pdf
-
-    === Private Attributes ===
     """
+
+    def _get_dependencies(self) -> Dict[str, str]:
+        return {}
 
     def __init__(self, path_manager: PathManager):
         self._pm = path_manager
-
 
     def get_default_demultiplex_job(self, exec_params: ExecParams) -> Job:
         """

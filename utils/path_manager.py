@@ -19,7 +19,7 @@ def quotes(s: Union[str, Path]) -> str:
     return f'"{s}"'
 
 
-def cmdify(*args: Union[str, Path, int]) -> str:
+def cmdify(*args: Union[str, Path, int, float]) -> str:
     """
     Attempts to format the given args as strings and join them into a command.
     :param args: Some number of objects.
@@ -32,6 +32,8 @@ def cmdify(*args: Union[str, Path, int]) -> str:
         elif isinstance(arg, Path):
             formatted.append(str(arg))
         elif isinstance(arg, int):
+            formatted.append(str(arg))
+        elif isinstance(arg, float):
             formatted.append(str(arg))
         else:
             raise ValueError(f'Unrecognised type: {repr(arg)}')
