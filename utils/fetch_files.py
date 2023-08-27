@@ -111,5 +111,6 @@ def copy_to(directory: Path, file: Path) -> None:
     :param directory: A directory.
     :return: None.
     """
-    os.system(' '.join(['cp', str(file), str(directory / file.name)]))
+    new_path = directory / file.name
+    os.system(' '.join(['cp', str(file), str(new_path)]))
 
