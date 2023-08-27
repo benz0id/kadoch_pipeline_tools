@@ -3,9 +3,12 @@ from pathlib import Path
 from typing import List, Union
 from utils.cache_manager import CacheManager
 from utils.path_manager import PathManager
-from utils.job_formatter import ExecParams, Job
+from utils.job_formatter import ExecParams, Job, JobBuilder
 
 logger = logging.getLogger(__name__)
+
+default_job = ExecParams(max_runtime=(0, 0, 10), num_cores=1,
+                             ram_per_core=128, builder=JobBuilder())
 class JobManager:
     """
     Responsible for managing the execution of jobs.
@@ -34,7 +37,8 @@ class JobManager:
         """
         self._prevent_execution = False
 
-    def execute(self, cmd: Union[str, Job], exec_params: ExecParams) -> None:
+    def execute(self, cmd: Union[str, Job],
+                exec_params: ExecParams = default_job) -> None:
         """Execute the stored in <cmd>, outputting to stderr when possible.
 
         :param str cmd: The command/job to be executed.
@@ -48,7 +52,8 @@ class JobManager:
         if not self._prevent_execution:
             job.execute()
 
-    def execute_lazy(self, cmd: Union[str, Job], exec_params: ExecParams) -> bool:
+    def execute_lazy(self, cmd: Union[str, Job],
+                     exec_params: ExecParams = default_job) -> bool:
         """Executes <cmd> iff it has not been called this run and all previous steps in the pipeline have been
         successfully executed lazily.
 
@@ -74,7 +79,9 @@ class JobManager:
             self._cache_manager.cache_skipped(job)
             return False
 
-    def execute_purgeable(self, cmd: Union[str, Job], purgeable: Union[Path, List[Path]], exec_params: ExecParams,
+    def execute_purgeable(self, cmd: Union[str, Job],
+                          purgeable: Union[Path, List[Path]],
+                          exec_params: ExecParams = default_job,
                           lazy: bool = True) -> bool:
         """Executes <cmd> iff it has not been called this run and all previous steps in the pipeline have been
         successfully executed lazily. Adds the given files to the list of files that can be purged after the pipeline
