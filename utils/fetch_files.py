@@ -42,18 +42,21 @@ def get_matching_strs(strs: List[str],
     valid = []
     # Find all matching strings.
     for s in strs:
-        matches_wanted_re = any([re.match(reg, s)
-                                 for reg in matching])
-        matches_not_wanted_re = not any([re.match(reg, s)
-                                         for reg in not_matching])
+        matches = [re.match(reg, s) for reg in matching]
+        matches_wanted_re = any(matches)
+        print(matches)
+
+        matches = [[re.match(reg, s) for reg in not_matching]]
+        matches_not_wanted_re = not any(matches)
+        print(matches)
 
         if matches_wanted_re and not matches_not_wanted_re:
             valid.append(s)
 
     s = ' '.join([
         '\nSearching for matches in \n\t', '\n\t'.join(strs),
-        '\nMust match one of', ', '.join(matching),
-        '\nCannot match any of', ', '.join(not_matching),
+        '\nMust match one of: ', ', '.join(matching),
+        '\nCannot match any of: ', ', '.join(not_matching),
         '\nMatches found: \n\t', '\n\t'.join(valid)
     ])
     logger.debug(s)
