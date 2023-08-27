@@ -69,7 +69,7 @@ class PeakCaller:
                                            outfile_name=peaksfile_name,
                                            *args, **kwargs), params)
             peakfiles.append(out_dir / (peaksfile_name +
-                                        '.bed_peaks.narrowPeak'))
+                                        '_peaks.narrowPeak'))
 
         return peakfiles
 
