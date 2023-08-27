@@ -65,6 +65,7 @@ class O2Job(Job):
         os.system(self._slurm_script_cmd)
         self.complete = True
         self.notify_observers()
+        print('job complete')
 
 
 class FileToConsole:
@@ -276,9 +277,12 @@ class Slurmifier(JobBuilder, Observer):
             Job has been executed. Add cost to net cost.
 
         """
-        logger.info('')
+
 
         if isinstance(obj, O2Job):
+            print(f'Updating current expenditure from '
+                        f'{self._max_current_expenditure} to '
+                        f'{self._max_current_expenditure + obj.cost}')
             self._max_current_expenditure += obj.cost
         else:
             raise ValueError("Slurmifier received invalid object type in notify call:" +
