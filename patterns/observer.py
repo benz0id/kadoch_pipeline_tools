@@ -24,5 +24,5 @@ class Observable(ABC):
 
     def notify_observers(self) -> None:
         for observer in self._observers:
-            observer.notify()
+            observer.notify(self)
 
