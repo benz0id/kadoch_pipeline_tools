@@ -268,7 +268,8 @@ class Slurmifier(JobBuilder, Observer):
         logger.info(command + ' -> ' + slurm_command)
         logger.debug(slurm_script)
 
-        return O2Job(command, slurm_command, get_O2_cost(params))
+        return O2Job(command, slurm_command, get_O2_cost(params),
+                     observers=[self])
 
     def notify(self, obj: Any) -> None:
         """
@@ -277,6 +278,7 @@ class Slurmifier(JobBuilder, Observer):
             Job has been executed. Add cost to net cost.
 
         """
+        print('Received', obj, '-', obj.cost)
 
 
         if isinstance(obj, O2Job):
