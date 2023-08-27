@@ -11,7 +11,7 @@ Regexes = Union[List[Regex], Regex]
 def get_matching_strs(strs: List[str],
                       matching: Regexes,
                       not_matching: Regexes = None,
-                      containing: bool = True,
+                      containing: bool = False,
                       verbose: bool = False) -> List[str]:
     """
     Gets all strings in <strs> that match any of <matching> and none of
