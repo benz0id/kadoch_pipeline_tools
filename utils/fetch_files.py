@@ -44,11 +44,9 @@ def get_matching_strs(strs: List[str],
     for s in strs:
         matches = [re.match(reg, s) for reg in matching]
         matches_wanted_re = any(matches)
-        print(matches)
 
         matches = [[re.match(reg, s) for reg in not_matching]]
         matches_not_wanted_re = not any(matches)
-        print(matches)
 
         if matches_wanted_re and not matches_not_wanted_re:
             valid.append(s)
