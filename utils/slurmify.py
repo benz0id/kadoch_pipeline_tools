@@ -329,8 +329,8 @@ class Slurmifier(JobBuilder, Observer):
         """
         Print a quick report of the cost of the jobs run by this manager.
         """
-        print(f"Maximum Expenditure: {self._max_current_expenditure:.2f}/"
-              f"{self._max_cost:.2f}")
+        print(f"Expenditure - max ${self._max_current_expenditure:.2f} / "
+              f"$ {self._max_cost:.2f}")
 
     def stop_readers(self) -> None:
         """
