@@ -29,7 +29,7 @@ def get_matching_strs(strs: List[str],
     # Do some typechecking to allow for iterable or non-iterable inputs.
     if not_matching is None:
         not_matching = []
-    elif isinstance(not_matching, list):
+    elif not isinstance(not_matching, list):
         not_matching = [not_matching]
     if not isinstance(matching, list):
         matching = [matching]
