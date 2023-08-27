@@ -76,7 +76,6 @@ class MACSPeakCaller(ProgramWrapper):
                      "-q", cutoff_q_val,
                      "-g", genome,
                      "--outdir", output_directory,
-                     "--extsize", extension_size,
                      *optionals)
 
         params.requires.update(self.requires)
