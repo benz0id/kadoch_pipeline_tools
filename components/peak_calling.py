@@ -57,6 +57,8 @@ class PeakCaller:
 
         peakfiles = []
         for bam in bams:
+            if not bam.exists():
+                raise ValueError(str(bam) + "does not exist.")
             filename = str(bam).split('/')[-1]
             peaksfile_name = filename[:-4]
             params = self.heavy_job
