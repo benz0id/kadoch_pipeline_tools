@@ -192,4 +192,4 @@ class PathManager:
         logging.root.addHandler(debug_handler)
         logging.root.setLevel(0)
 
-        logging.root.addHandler(logging.StreamHandler(sys.stdout))
+        # logging.root.addHandler(logging.StreamHandler(sys.stdout))
