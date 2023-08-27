@@ -241,11 +241,13 @@ class Slurmifier(JobBuilder, Observer):
              f'#SBATCH --mem-per-cpu={params.ram_per_core}M',
              f'#SBATCH --mail-user={self._email}',
              f'#SBATCH -p {queue}',
-             f'#SBATCH -W',
              f'#SBATCH -t {runtime_str}',
              f'#SBATCH -o {self.sbatch_out_path}',
              f'#SBATCH -e {self.sbatch_err_path}'
              ]
+
+        if params.wait:
+            slurm_script.append(f'#SBATCH -W')
 
         # Add lines to install the given modules.
         for requirement in params.requires:

@@ -99,12 +99,16 @@ class ExecParams:
     ram_per_core: int
     builder: JobBuilder
     requires: Dict[str, str]
+    wait: bool
+
 
     def __init__(self, max_runtime: Runtime = MAX_RUNTIME,
                  num_cores: int = NUM_CORES,
                  ram_per_core: int = RAM_PER_CORE,
                  builder: Union[JobBuilder, None] = None,
-                 requires: Dict[str, str] = None) -> None:
+                 requires: Dict[str, str] = None,
+                 wait: bool = True) -> None:
+        self.wait = wait
         self.max_runtime = Runtime(*max_runtime)
         self.num_cores = num_cores
         self.ram_per_core = ram_per_core
