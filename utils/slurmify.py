@@ -325,6 +325,13 @@ class Slurmifier(JobBuilder, Observer):
                   , file=sys.stderr)
             exit(1)
 
+    def expenditure_report(self) -> None:
+        """
+        Print a quick report of the cost of the jobs run by this manager.
+        """
+        print(f"Maximum Expenditure: {self._max_current_expenditure:.2f}/"
+              f"{self._max_cost:.2f}")
+
     def stop_readers(self) -> None:
         """
         Stops the threads reading from the slurm output files.
