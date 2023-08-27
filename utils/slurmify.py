@@ -276,6 +276,7 @@ class Slurmifier(JobBuilder, Observer):
             Job has been executed. Add cost to net cost.
 
         """
+        logger.info('')
 
         if isinstance(obj, O2Job):
             self._max_current_expenditure += obj.cost

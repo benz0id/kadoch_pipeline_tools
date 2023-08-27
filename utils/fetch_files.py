@@ -97,7 +97,8 @@ def get_matching_files(directory: Path,
                                        verbose)
 
     if paths:
-        matching_files = [Path(match) for match in matching_files]
+        matching_files = [Path(directory / match)
+                          for match in matching_files]
 
     return matching_files
 
