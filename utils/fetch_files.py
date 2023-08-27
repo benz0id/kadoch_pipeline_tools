@@ -103,3 +103,13 @@ def get_matching_files(directory: Path,
     return matching_files
 
 
+def copy_to(directory: Path, file: Path) -> None:
+    """
+    Copies the given file into the given directory. Overwrites any files
+    with the same name in the directory.
+    :param file: A file.
+    :param directory: A directory.
+    :return: None.
+    """
+    os.system(' '.join(['cp', str(file), str(directory / file.name)]))
+
