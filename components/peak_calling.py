@@ -52,7 +52,7 @@ class PeakCaller:
         """
         out_dir = self.pm.project_dir / peaks_dir_name
 
-        self.run(cmdify('mkdir', out_dir),
+        self.run(cmdify('mkdir', self.pm.project_dir / out_dir),
                  self.light_job)
 
         peakfiles = []
