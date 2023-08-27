@@ -143,7 +143,20 @@ class PathManager:
         self.safe_make(self.general_archive)
 
         self.move_logs_to_archive()
+        self.pipeline_backup()
         self.configure_logging()
+
+    def pipeline_backup(self) -> None:
+        """
+        Make a backup of all python files in project directory.
+        :return:
+        """
+        time_str = datetime.now().strftime("%m-%d-%Y_%I:%M:%S_%p.py")
+        for filename in os.listdir(self.project_dir):
+            if '.py' in filename:
+                os.system(cmdify(
+                    'cp', self.project_dir / filename,
+                          self.general_archive / (filename[-3] + time_str)))
 
     def move_logs_to_archive(self) -> None:
         """
@@ -158,7 +171,8 @@ class PathManager:
             to_rem = []
             for i, logfile in enumerate(existing_logfiles):
                 if identifier in str(logfile):
-                    shutil.move(self.logging_directory / logfile, archive_file / os.path.basename(logfile))
+                    shutil.move(self.logging_directory / logfile,
+                                archive_file / os.path.basename(logfile))
                     to_rem.append(i)
 
             for i in sorted(to_rem, reverse=True):
@@ -175,8 +189,10 @@ class PathManager:
 
         formatter = logging.Formatter(fmt=format, datefmt=datefmt)
 
-        info_file = self.logging_directory / datetime.now().strftime("INFO-%m-%d-%Y_%I:%M:%S_%p.log")
-        debug_file = self.logging_directory / datetime.now().strftime("DEBUG-%m-%d-%Y_%I:%M:%S_%p.log")
+        info_file = self.logging_directory / datetime.now().strftime(
+            "INFO-%m-%d-%Y_%I:%M:%S_%p.log")
+        debug_file = self.logging_directory / datetime.now().strftime(
+            "DEBUG-%m-%d-%Y_%I:%M:%S_%p.log")
 
         logging.root.handlers = []
 
