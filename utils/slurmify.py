@@ -65,7 +65,6 @@ class O2Job(Job):
         os.system(self._slurm_script_cmd)
         self.complete = True
         self.notify_observers()
-        print('job complete')
 
 
 class FileToConsole:
