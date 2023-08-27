@@ -58,7 +58,7 @@ class PeakCaller:
         peakfiles = []
         for bam in bams:
             filename = str(bam).split('/')[-1]
-            peaksfile_name = filename[:-4] + '.bed_peaks.narrowPeak'
+            peaksfile_name = filename[:-4]
             params = self.heavy_job
 
             self.run(self.macs2.call_peaks(bam,
@@ -68,7 +68,8 @@ class PeakCaller:
                                            control_bam,
                                            outfile_name=peaksfile_name,
                                            *args, **kwargs), params)
-            peakfiles.append(out_dir / peaksfile_name)
+            peakfiles.append(out_dir / (peaksfile_name +
+                                        '.bed_peaks.narrowPeak'))
 
         return peakfiles
 
