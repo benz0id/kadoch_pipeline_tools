@@ -30,7 +30,7 @@ def cmdify(*args: Union[str, Path, int, float]) -> str:
         if isinstance(arg, str):
             formatted.append(arg)
         elif isinstance(arg, Path):
-            formatted.append(str(arg))
+            formatted.append(quotes(arg))
         elif isinstance(arg, int):
             formatted.append(str(arg))
         elif isinstance(arg, float):
