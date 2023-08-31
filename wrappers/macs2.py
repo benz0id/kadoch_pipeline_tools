@@ -80,3 +80,4 @@ class MACSPeakCaller(ProgramWrapper):
 
         params.requires.update(self.requires)
         return params.builder.prepare_job(cmd, exec_params=params)
+    

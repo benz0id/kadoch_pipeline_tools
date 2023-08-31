@@ -73,8 +73,8 @@ class Demultiplexer(ProgramWrapper):
 
         return self.get_demultiplex_job(seq_dir, samplesheet_path, out_path, exec_params)
 
-    def get_demultiplex_job(self, sequencing_dir: Path, sample_sheet_path: Path, output_dir: Path,
-                            exec_params: ExecParams) -> Job:
+    def get_demultiplex_cmd(self, sequencing_dir: Path, sample_sheet_path: Path, output_dir: Path,
+                            exec_params: ExecParams) -> str:
         """
         Demultiplexes the sequencing data at <sequencing_dir>, outputting fastqs, stats, and reports to
         <output_dir>.
@@ -95,7 +95,7 @@ class Demultiplexer(ProgramWrapper):
             '--output_dir', output_dir,
             '--sample_sheet', sample_sheet_path
         )
-        return exec_params.builder.prepare_job(cmd, exec_params)
+        return cmd
 
 
 

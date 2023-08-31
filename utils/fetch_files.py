@@ -107,6 +107,7 @@ def copy_to(directory: Path, file: Path, avoid_recopy: bool = False) -> Path:
     """
     Copies the given file into the given directory. Overwrites any files
     with the same name in the directory.
+    :param avoid_recopy: Do no copy files that exist at target dest iff true.
     :param file: A file.
     :param directory: A directory.
     :return: Filepath to the new file.

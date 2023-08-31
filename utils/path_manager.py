@@ -103,7 +103,8 @@ class PathManager:
     general_archive: Path
     home_dir: Path
 
-    def __init__(self, working_dir: Path) -> None:
+    def __init__(self, working_dir: Path, verbose:bool = False) -> None:
+        self.verbose = verbose
         self.project_dir = working_dir
         self.configure_required_dirs()
 
@@ -207,5 +208,5 @@ class PathManager:
         logging.root.addHandler(info_handler)
         logging.root.addHandler(debug_handler)
         logging.root.setLevel(0)
-
-        # logging.root.addHandler(logging.StreamHandler(sys.stdout))
+        if self.verbose:
+            logging.root.addHandler(logging.StreamHandler(sys.stdout))
