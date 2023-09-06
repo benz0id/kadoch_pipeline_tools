@@ -34,6 +34,7 @@ class FastQC(ProgramWrapper):
             if len(fqc) == n_cores:
                 cmd = self.run_fast_qc(fqc, out_dir, exec_params)
                 jobs.append(exec_params.builder.prepare_job(cmd, exec_params))
+                fqc = []
 
         if fqc:
             cmd = self.run_fast_qc(fqc, out_dir, exec_params)
