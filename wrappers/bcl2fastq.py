@@ -75,17 +75,27 @@ class Demultiplexer(ProgramWrapper):
 
     def get_demultiplex_cmd(self, sequencing_dir: Path,
                             sample_sheet_path: Path, output_dir: Path,
-                            num_cores) -> str:
+                            num_cores, reports_dir: Path = None,
+                            stats_dir: Path = None
+                            ) -> str:
         """
         Demultiplexes the sequencing data at <sequencing_dir>, outputting fastqs, stats, and reports to
         <output_dir>.
 
+        :param stats_dir: Directory into which the stats should be placed
+        :param reports_dir: Directory into which the reports should be placed.
         :param sequencing_dir: Directory containing results of Illumina sequencing run.
         :param sample_sheet_path: The path to the sample sheet describing the indexing regions used in the given run.
         :param output_dir: The directory into which raw fastqs will be placed, alongside run reports and stats.
         :param num_cores: The number of cores required to run the job.
         :return: A job that will execute the demultiplexing procedure as described.
         """
+        optionals = []
+        if reports_dir:
+            optionals.extend(['--reports-dir', reports_dir])
+        if stats_dir:
+            optionals.extend(['--stats-dir', stats_dir])
+
         cmd = cmdify(
             progs.bcl2fastq,
             '-r', num_cores,
@@ -93,7 +103,11 @@ class Demultiplexer(ProgramWrapper):
             '-w', num_cores,
             '--runfolder-dir', sequencing_dir,
             '--output-dir', output_dir,
-            '--sample-sheet', sample_sheet_path
+            '--sample-sheet', sample_sheet_path,
+            "--ignore-missing-bcls",
+            "--no-lane-splitting",
+            "--barcode-mismatches \"1,1\"",
+            *optionals
         )
         return cmd
 
