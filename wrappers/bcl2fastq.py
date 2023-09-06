@@ -9,7 +9,7 @@ from utils.path_manager import cmdify, PathManager
 from wrappers.wrapper import ProgramWrapper
 
 
-class Demultiplexer(ProgramWrapper):
+class b(ProgramWrapper):
     """
     === Description ===
     Manages the demultiplexing of Illumina bcl files.
@@ -71,10 +71,11 @@ class Demultiplexer(ProgramWrapper):
         sample_ind = sample_inds.index(True)
         samplesheet_path = seq_dir / os.listdir(seq_dir)[sample_ind]
 
-        return self.get_demultiplex_job(seq_dir, samplesheet_path, out_path, exec_params)
+        return self.get_demultiplex_cmd(seq_dir, samplesheet_path, out_path, exec_params)
 
-    def get_demultiplex_cmd(self, sequencing_dir: Path, sample_sheet_path: Path, output_dir: Path,
-                            exec_params: ExecParams) -> str:
+    def get_demultiplex_cmd(self, sequencing_dir: Path,
+                            sample_sheet_path: Path, output_dir: Path,
+                            num_cores) -> str:
         """
         Demultiplexes the sequencing data at <sequencing_dir>, outputting fastqs, stats, and reports to
         <output_dir>.
@@ -82,10 +83,9 @@ class Demultiplexer(ProgramWrapper):
         :param sequencing_dir: Directory containing results of Illumina sequencing run.
         :param sample_sheet_path: The path to the sample sheet describing the indexing regions used in the given run.
         :param output_dir: The directory into which raw fastqs will be placed, alongside run reports and stats.
-        :param exec_params: The parameters used to execute the given command.
+        :param num_cores: The number of cores required to run the job.
         :return: A job that will execute the demultiplexing procedure as described.
         """
-        num_cores = exec_params.num_cores
         cmd = cmdify(
             progs.bcl2fastq,
             '-r', num_cores,

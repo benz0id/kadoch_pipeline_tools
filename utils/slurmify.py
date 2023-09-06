@@ -21,7 +21,11 @@ CORE_CHARGE_RATE = 0.0105
 # Cost of RAM in dollars per hour.
 RAM_CHARGE_RATE = 0.0013
 
+# How long to wait before trying to read from one of the input files.
 READER_SLEEP_INTERVAL = 0.1
+
+# How long to wait before checking if all active jobs have finished.
+SLURMIFIER_WAIT_INTERVAL = 0.01
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +68,30 @@ class O2Job(Job):
         logger.info('Executing slurm script' + self._slurm_script_cmd)
         os.system(self._slurm_script_cmd)
         self.complete = True
+        self.notify_observers()
+
+
+class ArrayableO2(O2Job):
+    """
+    === Description ===
+    A variant O2 job that executes the given job in another thread in order to
+    avoid pausing.
+
+    === Public Attributes ===
+    thread: the thread started by this job.
+    """
+
+    thread: Thread
+
+    def __init__(self, cmd: str, slurm_script_cmd: str, cost: float,
+                 observers: List[Observer] = None) -> None:
+        super().__init__(cmd, slurm_script_cmd, cost, observers)
+
+    def execute(self) -> None:
+        logger.info('Executing slurm script' + self._slurm_script_cmd)
+        self.thread = Thread(target=os.system, args=self._slurm_script_cmd)
+        self.thread.start()
+        self.complete = False
         self.notify_observers()
 
 
@@ -134,19 +162,40 @@ class Slurmifier(JobBuilder, Observer):
     === Description ===
     Run system commands using the SLURM job scheduler.
 
+    === Private Attributes ===
+
+    email: User email address.
+    mailtype: What job events should prompt an email to the user.
+    priority: Whether to add jobs to the priority queue.
+    path_manager: Source for project path information.
+    slurm_scripts_dir: Directory containing temporary slurm scripts created
+        by this Slurmifier.
+
+    active_threads: A list of threads stated by this Slurmifier, each
+        executing some command. Used to enable waiting for the completion of
+        job arrays.
+
+    std_out_reader: Reads input to <sbatch_out_path> to stdout if active.
+    std_err_reader: Reads input to <sbatch_err_path> to stderr if active.
+
+    max_cost: The maximum aggregate cost of all jobs pushed to this class.
+    max_current_expenditure: The maximum amount that could have possibly been
+        spent by this slurmifier throughout it's execution. This is likely a
+        wicked overestimate.
+
+
     === Public Attributes ===
 
-    === Private Attributes ===
-    _email: User email address.
-    _mailtype: What job events should prompt an email to the user.
-    _priority: Whether to add jobs to the priority queue.
-
+    sbatch_out_path: Path to the sbatch output text file.
+    sbatch_err_path: Path to the sbatch error text file.
     """
     _email: str
     _mailtype: str
     _priority: bool
     _path_manager: PathManager
     _slurm_scripts_dir: Path
+
+    _active_threads: List[Thread]
 
     sbatch_out_path: Path
     sbatch_err_path: Path
@@ -171,6 +220,8 @@ class Slurmifier(JobBuilder, Observer):
         self._priority = priority
         self._path_manager = path_manager
         self._slurm_scripts_dir = self._path_manager.make_dir(Path('.slurm_scripts'))
+
+        self._active_threads = []
 
         self._max_cost = max_cost
         self._max_current_expenditure = 0
@@ -267,8 +318,12 @@ class Slurmifier(JobBuilder, Observer):
         logger.info(command + ' -> ' + slurm_command)
         logger.debug(slurm_script)
 
-        return O2Job(command, slurm_command, get_O2_cost(params),
-                     observers=[self])
+        if params.wait:
+            return ArrayableO2(command, slurm_command, get_O2_cost(params),
+                               observers=[self])
+        else:
+            return O2Job(command, slurm_command, get_O2_cost(params),
+                         observers=[self])
 
     def notify(self, obj: Any) -> None:
         """
@@ -283,9 +338,18 @@ class Slurmifier(JobBuilder, Observer):
                         f'{self._max_current_expenditure} to '
                         f'{self._max_current_expenditure + obj.cost}')
             self._max_current_expenditure += obj.cost
+        if isinstance(obj, ArrayableO2):
+            self._active_threads.append(obj.thread)
         else:
             raise ValueError("Slurmifier received invalid object type in notify call:" +
                              repr(obj))
+
+    def wait_for_all_jobs(self) -> None:
+        """
+        Wait for all slurm jobs started by the slurmifier to complete.
+        """
+        while any ([thread.is_alive() for thread in self._active_threads]):
+            sleep(SLURMIFIER_WAIT_INTERVAL)
 
     def prepare_job(self, cmd: str, exec_params: ExecParams) -> O2Job:
         """
