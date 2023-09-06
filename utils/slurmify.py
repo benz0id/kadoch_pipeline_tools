@@ -175,6 +175,10 @@ class Slurmifier(JobBuilder, Observer):
         executing some command. Used to enable waiting for the completion of
         job arrays.
 
+    array_mode_active: If true, all slurm jobs are executed in seperate
+        threads, and are made to pause. This allows for running and
+        progress tracking of multiple slurm jobs.
+
     std_out_reader: Reads input to <sbatch_out_path> to stdout if active.
     std_err_reader: Reads input to <sbatch_err_path> to stderr if active.
 
@@ -196,6 +200,7 @@ class Slurmifier(JobBuilder, Observer):
     _slurm_scripts_dir: Path
 
     _active_threads: List[Thread]
+    _array_mode_active: bool
 
     sbatch_out_path: Path
     sbatch_err_path: Path
@@ -222,6 +227,7 @@ class Slurmifier(JobBuilder, Observer):
         self._slurm_scripts_dir = self._path_manager.make_dir(Path('.slurm_scripts'))
 
         self._active_threads = []
+        self._run_array = False
 
         self._max_cost = max_cost
         self._max_current_expenditure = 0
@@ -297,7 +303,7 @@ class Slurmifier(JobBuilder, Observer):
              f'#SBATCH -e {self.sbatch_err_path}'
              ]
 
-        if params.wait:
+        if params.wait or self._array_mode_active:
             slurm_script.append(f'#SBATCH -W')
 
         # Add lines to install the given modules.
@@ -318,7 +324,7 @@ class Slurmifier(JobBuilder, Observer):
         logger.info(command + ' -> ' + slurm_command)
         logger.debug(slurm_script)
 
-        if not params.wait:
+        if self._array_mode_active:
             return ArrayableO2(command, slurm_command, get_O2_cost(params),
                                observers=[self])
         else:
@@ -340,9 +346,17 @@ class Slurmifier(JobBuilder, Observer):
                         f'{self._max_current_expenditure + obj.cost}')
             self._max_current_expenditure += obj.cost
 
+    def begin_array(self) -> None:
+        """
+        All subsequent slurm jobs are started in separate threads and are made
+        to be pausing. Call <self.wait_for_all_jobs> in order to wait for all
+        of these jobs to complete.
+        """
+
     def wait_for_all_jobs(self) -> None:
         """
-        Wait for all slurm jobs started by the slurmifier to complete.
+        Wait for all slurm jobs started by the slurmifier since the last
+        <self.begin_array> call to complete.
         """
         while any([thread.is_alive() for thread in self._active_threads]):
             sleep(SLURMIFIER_WAIT_INTERVAL)
