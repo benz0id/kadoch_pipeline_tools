@@ -27,6 +27,9 @@ READER_SLEEP_INTERVAL = 0.1
 # How long to wait before checking if all active jobs have finished.
 SLURMIFIER_WAIT_INTERVAL = 0.01
 
+# Print out the jobs still running in the array every this interval.
+PRINT_WAITING_FOR_EVERY = 20
+
 logger = logging.getLogger(__name__)
 
 
@@ -359,8 +362,19 @@ class Slurmifier(JobBuilder, Observer):
         Wait for all slurm jobs started by the slurmifier since the last
         <self.begin_array> call to complete.
         """
+        t = PRINT_WAITING_FOR_EVERY
+
         while any([thread.is_alive() for thread in self._active_threads]):
             sleep(SLURMIFIER_WAIT_INTERVAL)
+            t -= SLURMIFIER_WAIT_INTERVAL
+
+            if t <= 0:
+                print('Waiting for:')
+                for thread in self._active_threads:
+                    if thread.is_alive():
+                        print('\n\t', thread)
+
+        print('All threads complete.')
 
         self._array_mode_active = False
 
