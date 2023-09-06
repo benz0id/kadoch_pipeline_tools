@@ -19,10 +19,12 @@ class JobManager:
     prevent_execution: Whether to actually execute commands.
     """
 
-    def __init__(self, cache_manager: CacheManager, path_manager: PathManager):
+    def __init__(self, cache_manager: CacheManager, path_manager: PathManager,
+                 verbose: bool = True):
         self._cache_manager = cache_manager
         self._path_manager = path_manager
         self._prevent_execution = False
+        self._verbose = verbose
 
     def disable_execution(self) -> None:
         """
@@ -49,6 +51,8 @@ class JobManager:
         else:
             job = cmd
 
+        if self._verbose and not self._prevent_execution:
+            print(repr(exec_params), '\n\t/bin/bash', job.get_cmd())
         if not self._prevent_execution:
             job.execute()
 

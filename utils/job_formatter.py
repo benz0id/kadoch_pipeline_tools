@@ -102,7 +102,6 @@ class ExecParams:
     requires: Dict[str, str]
     wait: bool
 
-
     def __init__(self, max_runtime: Runtime = MAX_RUNTIME,
                  num_cores: int = NUM_CORES,
                  ram_per_core: int = RAM_PER_CORE,
@@ -118,3 +117,12 @@ class ExecParams:
             self.requires = {}
         else:
             self.requires = requires
+
+    def __repr__(self):
+        return f'ExecParams(max_runtime={self.max_runtime}, ' \
+               f'num_cores={self.num_cores}, ' \
+               f'ram_per_core={self.ram_per_core}, ' \
+               f'builder={self.builder}, ' \
+               f'requires={self.requires}, ' \
+               f'wait={self.wait}'
+
