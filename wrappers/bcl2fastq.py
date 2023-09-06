@@ -92,8 +92,8 @@ class Demultiplexer(ProgramWrapper):
             '-p', num_cores,
             '-w', num_cores,
             '--runfolder-dir', sequencing_dir,
-            '--output_dir', output_dir,
-            '--sample_sheet', sample_sheet_path
+            '--output-dir', output_dir,
+            '--sample-sheet', sample_sheet_path
         )
         return cmd
 
