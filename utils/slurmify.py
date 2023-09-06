@@ -89,7 +89,7 @@ class ArrayableO2(O2Job):
 
     def execute(self) -> None:
         logger.info('Executing slurm script' + self._slurm_script_cmd)
-        self.thread = Thread(target=os.system, args=self._slurm_script_cmd)
+        self.thread = Thread(target=os.system, args=[self._slurm_script_cmd])
         self.thread.start()
         self.complete = False
         self.notify_observers()
