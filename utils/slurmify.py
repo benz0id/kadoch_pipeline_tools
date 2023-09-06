@@ -378,6 +378,7 @@ class Slurmifier(JobBuilder, Observer):
                 for thread in self._active_threads:
                     if thread.is_alive():
                         print('\n\t', thread)
+                t = PRINT_WAITING_FOR_EVERY
 
         print('All threads complete.')
 
