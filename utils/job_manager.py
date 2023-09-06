@@ -53,6 +53,9 @@ class JobManager:
 
         if self._verbose and not self._prevent_execution:
             print(repr(exec_params), '\n\t/bin/bash', job.get_cmd())
+        elif self._verbose and self._prevent_execution:
+            print('!!!Not Executing!!!:\n', repr(exec_params), '\n\t/bin/bash',
+                  job.get_cmd())
         if not self._prevent_execution:
             job.execute()
 
@@ -72,6 +75,12 @@ class JobManager:
 
         execute_job = self._cache_manager.do_execution(job)
         if execute_job:
+            if self._verbose and not self._prevent_execution:
+                print(repr(exec_params), '\n\t/bin/bash', job.get_cmd())
+            elif self._verbose and self._prevent_execution:
+                print('!!!Not Executing!!!:\n', repr(exec_params),
+                      '\n\t/bin/bash',
+                      job.get_cmd())
             if not self._prevent_execution:
                 logger.info(f'Lazily executing `{cmd}`.')
                 job.execute()
