@@ -9,7 +9,7 @@ from utils.path_manager import cmdify, PathManager
 from wrappers.wrapper import ProgramWrapper
 
 
-class b(ProgramWrapper):
+class bcl2fastq(ProgramWrapper):
     """
     === Description ===
     Manages the demultiplexing of Illumina bcl files.
