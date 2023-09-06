@@ -362,6 +362,11 @@ class Slurmifier(JobBuilder, Observer):
         Wait for all slurm jobs started by the slurmifier since the last
         <self.begin_array> call to complete.
         """
+
+        if not any([thread.is_alive() for thread in self._active_threads]):
+            print('No active threads - continuing.')
+            self._array_mode_active = False
+            return
         t = PRINT_WAITING_FOR_EVERY
 
         while any([thread.is_alive() for thread in self._active_threads]):
