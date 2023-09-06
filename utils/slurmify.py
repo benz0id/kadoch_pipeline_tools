@@ -227,7 +227,7 @@ class Slurmifier(JobBuilder, Observer):
         self._slurm_scripts_dir = self._path_manager.make_dir(Path('.slurm_scripts'))
 
         self._active_threads = []
-        self._run_array = False
+        self._array_mode_active = False
 
         self._max_cost = max_cost
         self._max_current_expenditure = 0
