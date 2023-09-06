@@ -49,7 +49,8 @@ class PythonJob(Job):
 
     """
 
-    def __init__(self, cmd: str, observers: List[Observer], to_execute, *args, **kwargs) -> None:
+    def __init__(self, cmd: str, observers: List[Observer], to_execute, *args,
+                 **kwargs) -> None:
         """
         Executes <to_execute> using <args> and <kwargs>.
         :param cmd: A string representation of the command to be executed.

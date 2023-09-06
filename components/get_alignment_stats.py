@@ -13,13 +13,20 @@ def get_alignment_stats(stats_filepaths: List[Path], out_filepath: Path,
     :param out_filepath: The path to the resultant tsv file.
     :return: The path to the resultant tsv file.
     """
-    stats_files_exist = all([path.exists() for path in stats_filepaths])
-    if not stats_files_exist:
-        raise ValueError("One or more of the given stats files foes not exist.")
-    out_dir_exists = out_filepath.parent.exists()
+    dne = []
+    for filepath in stats_filepaths:
+        if not filepath.exists():
+            dne.append(filepath)
+    if dne:
+        s = ''
+        for missing_file in dne:
+            s += '\n\t' + str(missing_file)
 
-    if not out_dir_exists:
-        raise ValueError("The supplied output directory does not exist.")
+        raise ValueError('The following file(s) could not be found:' + s)
+
+    if not out_filepath.parent.exists():
+        raise ValueError(f"The supplied output directory: {out_filepath} "
+                         f"does not exist.")
 
     with open(stats_filepaths[0], 'r') as sample_stats_file:
         header = sample_stats_file.readline()
