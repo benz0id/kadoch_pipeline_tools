@@ -52,10 +52,10 @@ class JobManager:
             job = cmd
 
         if self._verbose and not self._prevent_execution:
-            print(repr(exec_params), '\n\t/bin/bash', job.get_cmd())
+            print('\n\n', repr(exec_params), '\n\t/bin/bash', job.get_cmd(), '\n\n')
         elif self._verbose and self._prevent_execution:
-            print('!!!Not Executing!!!:\n', repr(exec_params), '\n\t/bin/bash',
-                  job.get_cmd())
+            print('\n\n', '!!!Not Executing!!!:\n', repr(exec_params), '\n\t/bin/bash',
+                  job.get_cmd(), '\n\n')
         if not self._prevent_execution:
             job.execute()
 
