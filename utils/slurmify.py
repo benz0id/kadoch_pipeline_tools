@@ -318,7 +318,7 @@ class Slurmifier(JobBuilder, Observer):
         logger.info(command + ' -> ' + slurm_command)
         logger.debug(slurm_script)
 
-        if params.wait:
+        if not params.wait:
             return ArrayableO2(command, slurm_command, get_O2_cost(params),
                                observers=[self])
         else:
@@ -349,10 +349,11 @@ class Slurmifier(JobBuilder, Observer):
 
     def prepare_job(self, cmd: str, exec_params: ExecParams) -> O2Job:
         """
-        Creates a job that will execute the given <cmd> in an environment that provides the resources as specified in
-        <exec_params>.
+        Creates a job that will execute the given <cmd> in an environment
+        that provides the resources as specified in <exec_params>.
         :param cmd: The command to be executed.
-        :param exec_params: Parameters for the runtime environment of the command.
+        :param exec_params: Parameters for the runtime environment of the
+        command.
         :return: An executable job.
         """
         self.do_expenditure_check(cmd, exec_params)
