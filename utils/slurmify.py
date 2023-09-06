@@ -352,6 +352,7 @@ class Slurmifier(JobBuilder, Observer):
         to be pausing. Call <self.wait_for_all_jobs> in order to wait for all
         of these jobs to complete.
         """
+        self._array_mode_active = True
 
     def wait_for_all_jobs(self) -> None:
         """
@@ -360,6 +361,8 @@ class Slurmifier(JobBuilder, Observer):
         """
         while any([thread.is_alive() for thread in self._active_threads]):
             sleep(SLURMIFIER_WAIT_INTERVAL)
+
+        self._array_mode_active = False
 
     def prepare_job(self, cmd: str, exec_params: ExecParams) -> O2Job:
         """
