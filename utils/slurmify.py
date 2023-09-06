@@ -332,14 +332,13 @@ class Slurmifier(JobBuilder, Observer):
             Job has been executed. Add cost to net cost.
 
         """
-
-        if isinstance(obj, O2Job):
+        if isinstance(obj, ArrayableO2):
+            self._active_threads.append(obj.thread)
+        elif isinstance(obj, O2Job):
             logger.info(f'Updating current expenditure from '
                         f'{self._max_current_expenditure} to '
                         f'{self._max_current_expenditure + obj.cost}')
             self._max_current_expenditure += obj.cost
-        if isinstance(obj, ArrayableO2):
-            self._active_threads.append(obj.thread)
         else:
             raise ValueError("Slurmifier received invalid object type in notify call:" +
                              repr(obj))
@@ -348,7 +347,7 @@ class Slurmifier(JobBuilder, Observer):
         """
         Wait for all slurm jobs started by the slurmifier to complete.
         """
-        while any ([thread.is_alive() for thread in self._active_threads]):
+        while any([thread.is_alive() for thread in self._active_threads]):
             sleep(SLURMIFIER_WAIT_INTERVAL)
 
     def prepare_job(self, cmd: str, exec_params: ExecParams) -> O2Job:
