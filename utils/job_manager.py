@@ -8,7 +8,29 @@ from utils.job_formatter import ExecParams, Job, JobBuilder
 logger = logging.getLogger(__name__)
 
 default_job = ExecParams(max_runtime=(0, 0, 10), num_cores=1,
-                             ram_per_core=128, builder=JobBuilder())
+                         ram_per_core=128, builder=JobBuilder())
+
+
+def combine_cmds(cmds: List[str], num_per: int) -> List[str]:
+    """
+    Divides the cmds into (len(cmds) // num_per + 1) combined cmds,
+    where each cmd contains at most <num_per> of the original commands.
+    :param cmds: A list of commands.
+    :param num_per: The number of cmds to assign to each job.
+    :return: A list of jobs that will execute all cmds.
+    """
+    combined_cmds = []
+    to_exec = []
+    for cmd in cmds:
+        to_exec.append(cmd)
+        if len(to_exec) == num_per:
+            combined_cmds.append('\n'.join(to_exec))
+            to_exec = []
+    if to_exec:
+        combined_cmds.append('\n'.join(to_exec))
+    return combined_cmds
+
+
 class JobManager:
     """
     Responsible for managing the execution of jobs.
@@ -52,9 +74,11 @@ class JobManager:
             job = cmd
 
         if self._verbose and not self._prevent_execution:
-            print('\n\n', repr(exec_params), '\n\t/bin/bash', job.get_cmd(), '\n\n')
+            print('\n\n', repr(exec_params), '\n\t/bin/bash', job.get_cmd(),
+                  '\n\n')
         elif self._verbose and self._prevent_execution:
-            print('\n\n', '!!!Not Executing!!!:\n', repr(exec_params), '\n\t/bin/bash',
+            print('\n\n', '!!!Not Executing!!!:\n', repr(exec_params),
+                  '\n\t/bin/bash',
                   job.get_cmd(), '\n\n')
         if not self._prevent_execution:
             job.execute()
@@ -88,7 +112,8 @@ class JobManager:
             logger.info('Job complete. Storing command in cache.')
             return True
         else:
-            logger.info(f'Skipping `{cmd}`, as it already exists in the cache.')
+            logger.info(
+                f'Skipping `{cmd}`, as it already exists in the cache.')
             self._cache_manager.cache_skipped(job)
             return False
 
@@ -117,5 +142,3 @@ class JobManager:
             self._cache_manager.add_purgeable_data(purgeable)
 
         return executed
-
-
