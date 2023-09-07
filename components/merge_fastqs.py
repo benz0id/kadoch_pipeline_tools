@@ -108,6 +108,7 @@ def merge_fastqs(fastq1_dir: Path, fastq2_dir: Path, mapping: Dict[str, str],
                            fastq1_dir / fastq1_name,
                            fastq2_dir / fastq2_name))
 
+    # Get all fastq pairs, with slightly different PE behaviour.
     if not paired_end:
         for id1 in mapping:
             id2 = mapping[id1]
@@ -117,15 +118,19 @@ def merge_fastqs(fastq1_dir: Path, fastq2_dir: Path, mapping: Dict[str, str],
             id2 = mapping[id1]
             get_fastq_pair(id1, id2, ['R2'], ['R2'])
             get_fastq_pair(id1, id2, ['R1'], ['R1'])
+
+    # Convert all fastq pairs into cat commands.
     cmds = []
     new_fastqs = []
-    strs = []
+    cmd_str_rep = []
+
     for new_fastq, fastq1, fastq2 in to_combine:
         cmds.append(cmdify('cat', fastq1, fastq2, '>', new_fastq))
-        strs.append(cmdify('cat', fastq1.name, fastq2.name, '>', new_fastq.name))
+        cmd_str_rep.append(cmdify('cat', fastq1.name, fastq2.name,
+                                  '>', new_fastq.name))
         new_fastqs.append(new_fastq)
 
-    s = 'Creating the following merged fastqs.\n\t' + '\n\t'.join(strs)
+    s = 'Creating the following merged fastqs.\n\t' + '\n\t'.join(cmd_str_rep)
     logger.info(s)
     if verbose:
         print(s)

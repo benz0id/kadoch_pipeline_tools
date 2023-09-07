@@ -103,7 +103,8 @@ def get_matching_files(directory: Path,
     return matching_files
 
 
-def copy_to(directory: Path, file: Path, avoid_recopy: bool = False) -> Path:
+def copy_to(directory: Path, file: Union[Path, List[Path]],
+            avoid_recopy: bool = False) -> Path:
     """
     Copies the given file into the given directory. Overwrites any files
     with the same name in the directory.
@@ -112,6 +113,12 @@ def copy_to(directory: Path, file: Path, avoid_recopy: bool = False) -> Path:
     :param directory: A directory.
     :return: Filepath to the new file.
     """
+    if isinstance(file, list):
+        for ind_file in file:
+            copy_to(directory,
+                    ind_file,
+                    avoid_recopy)
+
     new_path = directory / file.name
 
     if avoid_recopy and new_path.exists():
