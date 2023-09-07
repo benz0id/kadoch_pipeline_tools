@@ -12,7 +12,8 @@ logger = logging.getLogger(__name__)
 
 
 def merge_fastqs(fastq1_dir: Path, fastq2_dir: Path, mapping: Dict[str, str],
-                 out_dir: Path, paired_end: bool = False) \
+                 out_dir: Path, paired_end: bool = False,
+                 verbose: bool = False) \
         -> Tuple[List[str], List[Path]]:
     """
         Merges the fastqs in <fastq1_dir> with the fastqs in <fastq2_dir>. Uses the
@@ -93,7 +94,9 @@ def merge_fastqs(fastq1_dir: Path, fastq2_dir: Path, mapping: Dict[str, str],
                  f"\n{mult}"
         if s:
             print(s, sys.stderr)
-            logger.error(s)
+            logger.fatal(s)
+            raise ValueError(s)
+
 
         # Create the name for the new fastq file.
         fastq1_name = matching1[0]
@@ -116,9 +119,16 @@ def merge_fastqs(fastq1_dir: Path, fastq2_dir: Path, mapping: Dict[str, str],
             get_fastq_pair(id1, id2, ['R1'], ['R1'])
     cmds = []
     new_fastqs = []
+    strs = []
     for new_fastq, fastq1, fastq2 in to_combine:
-        cmds.append(cmdify('cat', fastq1.name, fastq2.name, '>', new_fastq.name))
+        cmds.append(cmdify('cat', fastq1, fastq2, '>', new_fastq))
+        strs.append(cmdify('cat', fastq1.name, fastq2.name, '>', new_fastq.name))
         new_fastqs.append(new_fastq)
+
+    s = 'Creating the following merged fastqs.\n\t' + '\n\t'.join(strs)
+    logger.info(s)
+    if verbose:
+        print(s)
 
     return cmds, new_fastqs
 
