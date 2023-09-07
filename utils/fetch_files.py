@@ -130,7 +130,8 @@ def copy_to(directory: Path, file: Union[Path, List[Path]],
     return new_path
 
 
-def copy_to_cmds(directory: Path, files: List[Path]) \
+def copy_to_cmds(directory: Path, files: List[Path],
+                 avoid_recopy: bool = False) \
         -> List[str]:
     """
     Copies the given file into the given directory. Overwrites any files
@@ -142,7 +143,7 @@ def copy_to_cmds(directory: Path, files: List[Path]) \
     """
     cmds = []
     for file in files:
-        if (directory / file.name).exists():
+        if (directory / file.name).exists() and avoid_recopy:
             pass
         else:
             cmds.append(cmdify('cp', file, directory))
