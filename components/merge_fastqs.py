@@ -103,7 +103,7 @@ def merge_fastqs(fastq1_dir: Path, fastq2_dir: Path, mapping: Dict[str, str],
         fastq2_name = matching2[0]
         name_comps = fastq1_name.split(f1_patt)
 
-        new_name = name_comps[0] + f1_patt + '&' + f2_patt + name_comps[1]
+        new_name = name_comps[0] + f1_patt + '-' + f2_patt + name_comps[1]
         to_combine.append((out_dir / new_name,
                            fastq1_dir / fastq1_name,
                            fastq2_dir / fastq2_name))
