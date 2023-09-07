@@ -117,7 +117,7 @@ def merge_fastqs(fastq1_dir: Path, fastq2_dir: Path, mapping: Dict[str, str],
     cmds = []
     new_fastqs = []
     for new_fastq, fastq1, fastq2 in to_combine:
-        cmdify('cat', fastq1, fastq2, new_fastq)
+        cmds.append(cmdify('cat', fastq1, fastq2, new_fastq))
         new_fastqs.append(new_fastq)
 
     return cmds, new_fastqs
