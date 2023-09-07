@@ -136,7 +136,8 @@ class ExecParams:
         :return:
         """
         for req in new_requirements:
-            if req in self._requires:
+            if req in self._requires and \
+                    self._requires[req] != new_requirements[req]:
                 s = f"Conflicting requirements detected." \
                     f"\n\tParams: {repr(self)}" \
                     f"\n\tOld Req: {self._requires[req]}" \
