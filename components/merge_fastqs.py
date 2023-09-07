@@ -46,7 +46,7 @@ def merge_fastqs(fastq1_dir: Path, fastq2_dir: Path, mapping: Dict[str, str],
 
     $ mkdir out_dir
     >>> cmds = merge_fastqs(Path("fastqs1"), Path("fastqs2"),
-    >>>         {"CG123": "CG500"}, Path("out_dir"), paired_end=True)
+    >>>         {"CG123": "CG500"}, Path("out_dir"), paired_end=True)[0]
     >>> os.system(cmds[0])
     >>> os.system(cmds[1])
 
