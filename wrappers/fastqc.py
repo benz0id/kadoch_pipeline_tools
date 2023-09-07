@@ -29,22 +29,23 @@ class FastQC(ProgramWrapper):
         fqc = []
         jobs = []
 
+        exec_params.add_requirements(self._get_dependencies())
+
         for fastq in fastq_files:
             fqc.append(fastq)
             if len(fqc) == n_cores:
-                cmd = self.run_fast_qc(fqc, out_dir, exec_params)
+                cmd = self.run_fast_qc(fqc, out_dir, exec_params.num_cores)
                 jobs.append(exec_params.builder.prepare_job(cmd, exec_params))
                 fqc = []
 
         if fqc:
-            cmd = self.run_fast_qc(fqc, out_dir, exec_params)
+            cmd = self.run_fast_qc(fqc, out_dir, exec_params.num_cores)
             jobs.append(exec_params.builder.prepare_job(cmd, exec_params))
 
         return jobs
 
-
     def run_fast_qc(self, fastq_files: List[Path], out_dir: Path,
-                    exec_params: ExecParams) -> str:
+                    num_cores: int) -> str:
         """
         Creates a command that would perform fastqc on the given fasta files.
         :param fastq_files: A list of fastq files.
@@ -59,10 +60,8 @@ class FastQC(ProgramWrapper):
             'fastqc',
             *fastq_files,
             '-o', out_dir,
-            '-t', exec_params.num_cores
+            '-t', num_cores
         )
-
-        exec_params.requires.update(self._get_dependencies())
 
         return cmd
 

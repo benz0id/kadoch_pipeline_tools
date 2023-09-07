@@ -24,4 +24,4 @@ for prog in requirements:
 
 progs = Namespace(**o2_paths)
 
-
+trimmomatic_jar_path = "/n/app/trimmomatic/0.36/bin/trimmomatic-0.36.jar"

@@ -78,6 +78,6 @@ class MACSPeakCaller(ProgramWrapper):
                      "--outdir", output_directory,
                      *optionals)
 
-        params.requires.update(self.requires)
+        params.add_requirements(self.requires)
         return params.builder.prepare_job(cmd, exec_params=params)
     

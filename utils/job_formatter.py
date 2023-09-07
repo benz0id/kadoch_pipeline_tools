@@ -1,6 +1,8 @@
 import collections
 import logging
 import os
+import sys
+from copy import copy
 from dataclasses import dataclass
 from typing import Union, Any, List, Dict
 
@@ -8,7 +10,7 @@ from patterns.observer import Observable, Observer
 from constants.defaults import MAX_RUNTIME, NUM_CORES, RAM_PER_CORE
 
 Runtime = collections.namedtuple('Runtime', ['days', 'hours', 'minutes'])
-logger = logging.getLogger('root')
+logger = logging.getLogger(__name__)
 
 
 class Job(Observable):
@@ -99,7 +101,7 @@ class ExecParams:
     num_cores: int
     ram_per_core: int
     builder: JobBuilder
-    requires: Dict[str, str]
+    _requires: Dict[str, str]
     wait: bool
 
     def __init__(self, max_runtime: Runtime = MAX_RUNTIME,
@@ -114,15 +116,41 @@ class ExecParams:
         self.ram_per_core = ram_per_core
         self.builder = builder
         if requires is None:
-            self.requires = {}
+            self._requires = {}
         else:
-            self.requires = requires
+            self._requires = requires
 
     def __repr__(self):
         return f'ExecParams(max_runtime={self.max_runtime}, ' \
                f'num_cores={self.num_cores}, ' \
                f'ram_per_core={self.ram_per_core}, ' \
                f'builder={self.builder}, ' \
-               f'requires={self.requires}, ' \
+               f'requires={self._requires}, ' \
                f'wait={self.wait}'
+
+    def add_requirements(self, new_requirements: Dict[str, str]) -> None:
+        """
+        Adds all the given requirements to this execution parameter. Warns the
+        user if incompatible requirements are detected.
+        :param new_requirements:
+        :return:
+        """
+        for req in new_requirements:
+            if req in self._requires:
+                s = f"Conflicting requirements detected." \
+                    f"\n\tParams: {repr(self)}" \
+                    f"\n\tOld Req: {self._requires[req]}" \
+                    f"\n\tNew Req: {new_requirements[req]}"
+                logger.error(s)
+                print(s, file=sys.stderr)
+            self._requires[req] = new_requirements[req]
+
+    def get_requirements(self) -> Dict[str, str]:
+        """
+        :return: All the packages their versions required by these execution
+        parameters.
+        """
+        return copy(self._requires)
+
+
 
