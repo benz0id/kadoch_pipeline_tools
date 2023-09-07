@@ -310,8 +310,8 @@ class Slurmifier(JobBuilder, Observer):
             slurm_script.append(f'#SBATCH -W')
 
         # Add lines to install the given modules.
-        for requirement in params.requires:
-            slurm_script.append(f'module load {requirement}/{params.requires[requirement]}')
+        for requirement in params.get_requirements():
+            slurm_script.append(f'module load {requirement}/{params.get_requirements()[requirement]}')
 
         slurm_script.append(command)
 
