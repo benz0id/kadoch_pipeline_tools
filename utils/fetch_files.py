@@ -4,6 +4,8 @@ import re
 from pathlib import Path
 from typing import List, Union
 
+from utils.path_manager import cmdify
+
 logger = logging.getLogger(__name__)
 
 Regex = str
@@ -126,4 +128,24 @@ def copy_to(directory: Path, file: Union[Path, List[Path]],
 
     os.system(' '.join(['cp', str(file), str(new_path)]))
     return new_path
+
+
+def copy_to_cmds(directory: Path, files: List[Path]) \
+        -> List[str]:
+    """
+    Copies the given file into the given directory. Overwrites any files
+    with the same name in the directory.
+    :param avoid_recopy: Do no copy files that exist at target dest iff true.
+    :param file: A file.
+    :param directory: A directory.
+    :return: Filepath to the new file.
+    """
+    cmds = []
+    for file in files:
+        if (directory / file.name).exists():
+            pass
+        else:
+            cmds.append(cmdify('cp', file, directory))
+    return cmds
+
 
