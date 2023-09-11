@@ -66,8 +66,8 @@ class PeakPCAAnalyser:
         self._jobs = job_manager
         self._files = file_manager
         self._light_job = copy(light_job_params)
-        self._parallel_job = copy(heavy_job_params)
-        self._heavy_job = copy(parallel_job_params)
+        self._parallel_job = copy(parallel_job_params)
+        self._heavy_job = copy(heavy_job_params)
         self._heavy_job.wait = True
         self._heavy_job.add_requirements({"bedtools": "2.30.0"})
 
@@ -258,7 +258,6 @@ class PeakPCAAnalyser:
         :return:
         """
         pass
-
 
     def do_peaks_pca_analysis(self, beds: List[Path], bams: List[Path],
                               analysis_dir: Path) -> None:
