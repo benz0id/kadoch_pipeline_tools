@@ -242,7 +242,7 @@ class PeakPCAAnalyser:
             outfile.write('\t'.join(parsed_col_names) + '\n')
 
             for row_num in range(nrow):
-                outfile.write('\t'.join(list(counts_array[:, row_num])) + '\n')
+                outfile.write('\t'.join([str(val) for val in counts_array[:, row_num]]) + '\n')
 
         return counts_array
 
@@ -288,7 +288,7 @@ class PeakPCAAnalyser:
         matrix_path = analysis_dir / 'counts_matrix.tsv'
         self.make_counts_matrix(counts_files, matrix_path)
 
-        self.generate_pca_plot()
+        self.generate_pca_plot(matrix_path)
 
 
 
