@@ -86,12 +86,14 @@ class PeakPCAAnalyser:
         :param common_peak_out: Path in which to create the merged bed file.
         :return:
         """
-        cat_unmerged = self._files.puregable_files_dir / (get_unique_filename() + '.bed')
+        unique_filename = '.'.join(str(common_peak_out).split('/'))
+
+        cat_unmerged = self._files.puregable_files_dir / (unique_filename + '.cat.bed')
         self._jobs.execute_lazy(cmdify('cat', *beds, '>', cat_unmerged),
                                 self._heavy_job)
 
         merged = self._files.puregable_files_dir / (
-                    get_unique_filename() + '.bed')
+                    unique_filename + '.merged.bed')
 
         self._jobs.execute_lazy(
             cmdify('bedtools merge -i', cat_unmerged, '>', merged),
@@ -242,7 +244,7 @@ class PeakPCAAnalyser:
             outfile.write('\t'.join(parsed_col_names) + '\n')
 
             for row_num in range(nrow):
-                outfile.write('\t'.join([str(val) for val in counts_array[:, row_num]]) + '\n')
+                outfile.write('\t'.join([str(val) for val in counts_array[row_num, :]]) + '\n')
 
         return counts_array
 
