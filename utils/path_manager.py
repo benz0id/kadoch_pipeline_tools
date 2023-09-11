@@ -102,6 +102,7 @@ class PathManager:
     debug_archive: Path
     general_archive: Path
     home_dir: Path
+    puregable_files_dir: Path
 
     def __init__(self, working_dir: Path, verbose:bool = False) -> None:
         self.verbose = verbose
@@ -131,6 +132,9 @@ class PathManager:
 
         self.logging_directory = self.project_dir / 'logs'
         self.safe_make(self.logging_directory)
+
+        self.puregable_files_dir = self.project_dir / '.purgeable'
+        self.safe_make(self.puregable_files_dir)
 
         self.home_dir = Path(os.path.expanduser(""))
 

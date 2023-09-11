@@ -1,6 +1,7 @@
 import logging
 import os
 import re
+from datetime import datetime
 from pathlib import Path
 from typing import List, Union
 
@@ -148,5 +149,13 @@ def copy_to_cmds(directory: Path, files: List[Path],
         else:
             cmds.append(cmdify('cp', file, directory))
     return cmds
+
+
+def get_unique_filename() -> str:
+    """
+    Gets a unique filename using the current time.
+    :return: A unique filename.
+    """
+    return datetime.now().strftime("%m-%d-%Y-%I-%M-%S-%p")
 
 
