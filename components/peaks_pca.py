@@ -108,8 +108,8 @@ class PeakPCAAnalyser:
     _verbose: bool
 
     def __init__(self, job_manager: JobManager, file_manager: PathManager,
-                 cache_manager: CacheManager,
                  light_job_params: ExecParams, heavy_job_params: ExecParams,
+                 parallel_job_params: ExecParams,
                  start_job_array_fxn: Callable, wait_job_array_fxn: Callable,
                  verbose: bool = False) \
             -> None:
