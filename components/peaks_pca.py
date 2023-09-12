@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import List, Callable
 
 import numpy as np
+import scipy
 
 from utils.cache_manager import CacheManager
 from utils.fetch_files import get_unique_filename
@@ -15,6 +16,7 @@ from utils.job_formatter import ExecParams, PythonJob
 from utils.job_manager import JobManager
 from utils.path_manager import PathManager, cmdify
 from constants.data_paths import HG19_IDXSTATS
+from utils.utils import ExperimentalDesign
 
 import seaborn as sns
 import pandas as pd
@@ -46,7 +48,7 @@ def generate_pca_plot(counts_matrix_path: Path,
     counts_matrix = counts_dataframe.loc[:, :].values
 
     # Normalise sample.
-    norm_counts = StandardScaler().fit_transform(counts_matrix.T)
+    norm_counts = scipy.stats.zscore(counts_matrix.T)
 
     pca = PCA(n_components=2)
     pcs = pca.fit_transform(norm_counts)
@@ -437,7 +439,8 @@ class PeakPCAAnalyser:
         self._jobs.execute_lazy(pj)
 
         plot = generate_pca_plot(matrix_path, experimental_design)
-        plt.savefig(analysis_dir / 'pca.svg', format='svg')
+        plt.savefig(analysis_dir / (get_unique_filename() + 'pca.svg'),
+                    format='svg')
 
 
 

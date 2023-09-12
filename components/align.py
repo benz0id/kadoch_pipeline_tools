@@ -15,10 +15,6 @@ class Aligner:
         "sambamba": "0.7.1"
     }
 
-
-
-
-
     def atac_alignment_script(self, r1_fastq: Path, r2_fastq: Path) -> str:
         """
         Gets an alignment script to perform
