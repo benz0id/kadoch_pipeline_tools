@@ -10,7 +10,7 @@ import numpy as np
 
 from utils.fetch_files import get_unique_filename
 from sklearn.preprocessing import StandardScaler
-from utils.job_formatter import ExecParams
+from utils.job_formatter import ExecParams, PythonJob
 from utils.job_manager import JobManager
 from utils.path_manager import PathManager, cmdify
 from constants.data_paths import HG19_IDXSTATS
@@ -228,7 +228,8 @@ class PeakPCAAnalyser:
                 for count_file_name in new_count_names]
 
     def get_number_of_mapped_reads(self, sample_names: List[str],
-                                   bamfiles: List[Path]) -> List[int]:
+                                   bamfiles: List[Path], store: Path = None) \
+            -> List[int]:
         """
         Gets the reads that mapped in for each sample in <sample names>
         For each sample name, there must exist a bam file containing that name
@@ -239,6 +240,7 @@ class PeakPCAAnalyser:
         :return: The number of reads in each bamfile, ordered by the
             <sample_names>.
         """
+
         # Construct map from each count file to the bam file with a
         # matching name, ensuring a 1:1 mapping.
         count_to_bam_map = {}
@@ -273,7 +275,7 @@ class PeakPCAAnalyser:
         s = 'Normalisation info:\n'
         for counts_file, norm_factors in zip(sample_names, norm_factors):
             bam_file = count_to_bam_map[counts_file]
-            s += ('\t' + counts_file.name + '\t' +
+            s += ('\t' + counts_file + '\t' +
                   bam_file.name + '\t' +
                   str(norm_factors) + '\n')
 
