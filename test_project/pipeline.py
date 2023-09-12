@@ -19,6 +19,7 @@ sl = utils.slurmify.Slurmifier(pm, mailtype=["ALL"],
                                redirect_to_console=True)
 jobs = utils.job_manager.JobManager(cm, pm)
 
+
 # Job Configurations
 generic_job = ExecParams(max_runtime=(0, 0, 10), num_cores=1, ram_per_core=128, builder=JobBuilder())
 light_o2 = ExecParams(max_runtime=(0, 0, 10), num_cores=1, ram_per_core=128, builder=sl)

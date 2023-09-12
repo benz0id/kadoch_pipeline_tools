@@ -1,3 +1,6 @@
+import itertools
+import logging
+import subprocess
 from copy import copy
 from pathlib import Path
 from typing import List, Callable
@@ -5,12 +8,71 @@ from typing import List, Callable
 import numpy as np
 
 from utils.fetch_files import get_unique_filename
+from sklearn.preprocessing import StandardScaler
 from utils.job_formatter import ExecParams
 from utils.job_manager import JobManager
 from utils.path_manager import PathManager, cmdify
 from constants.data_paths import HG19_IDXSTATS
 
+import seaborn as sns
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.decomposition import PCA
+
+from utils.utils import ExperimentalDesign
+
 HG19_GENOME = HG19_IDXSTATS
+
+logger = logging.getLogger(__name__)
+
+
+def generate_pca_plot(counts_matrix_path: Path,
+                      design: ExperimentalDesign) -> sns.scatterplot:
+    """
+    Generates a PCA plot displaying a dimensionality reduced -
+    representation of the given counts matrix.
+
+    :param design: The design of the experiment.
+    :param counts_matrix_path: A matrix with the number of counts for each
+        peak.
+    :return:
+    """
+    # Extract raw data from the counts matrix.
+    counts_dataframe = pd.read_csv(counts_matrix_path, sep='\t')
+    sample_names = counts_dataframe.columns
+    counts_matrix = counts_dataframe.loc[:, :].values
+
+    # Normalise sample.
+    norm_counts = StandardScaler().fit_transform(counts_matrix.T)
+
+    pca = PCA(n_components=2)
+    pcs = pca.fit_transform(norm_counts)
+
+    pcdf = pd.DataFrame(data=pcs,
+                        columns=['principal component 1',
+                                 'principal component 2'])
+
+    pcdf['reps'] = [design.get_rep_num(sample)
+                    for sample in sample_names]
+    pcdf['labels'] = [design.get_condition(sample)
+                      for sample in sample_names]
+
+    props = pca.explained_variance_ratio_*100
+
+    ax = sns.scatterplot(data=pcdf,
+                         x='principal component 1',
+                         y='principal component 2',
+                         hue='labels', style='reps',
+                         palette=sns.cubehelix_palette(
+                             len(design.get_conditions())))
+
+    ax.set(title='PCA',
+           xlabel='PC%d:%.2f%%' % (1, props[0]),
+           ylabel='PC%d:%.2f%%' % (2, props[1])
+           )
+
+    return ax
+
 
 class PeakPCAAnalyser:
     """
@@ -39,10 +101,13 @@ class PeakPCAAnalyser:
     _start_job_array: Callable
     _wait_job_array: Callable
 
+    _verbose: bool
+
     def __init__(self, job_manager: JobManager, file_manager: PathManager,
                  light_job_params: ExecParams, heavy_job_params: ExecParams,
                  parallel_job_params: ExecParams,
-                 start_job_array_fxn: Callable, wait_job_array_fxn: Callable) \
+                 start_job_array_fxn: Callable, wait_job_array_fxn: Callable,
+                 verbose: bool = False) \
             -> None:
         """
         Initialises a PCA analyser that executes its jobs using the given
@@ -73,6 +138,7 @@ class PeakPCAAnalyser:
 
         self._start_job_array = start_job_array_fxn
         self._wait_job_array = wait_job_array_fxn
+        self._verbose = verbose
 
     def find_all_common_peaks(self, beds: list[Path], common_peak_out: Path,
                               genome_index: Path = HG19_GENOME) -> None:
@@ -88,12 +154,13 @@ class PeakPCAAnalyser:
         """
         unique_filename = '.'.join(str(common_peak_out).split('/'))
 
-        cat_unmerged = self._files.puregable_files_dir / (unique_filename + '.cat.bed')
+        cat_unmerged = self._files.puregable_files_dir / (
+                    unique_filename + '.cat.bed')
         self._jobs.execute_lazy(cmdify('cat', *beds, '>', cat_unmerged),
                                 self._heavy_job)
 
         merged = self._files.puregable_files_dir / (
-                    unique_filename + '.merged.bed')
+                unique_filename + '.merged.bed')
 
         self._jobs.execute_lazy(
             cmdify('bedtools merge -i', cat_unmerged, '>', merged),
@@ -128,7 +195,7 @@ class PeakPCAAnalyser:
         """
 
         self._start_job_array()
-        new_count_names =[]
+        new_count_names = []
         for i, bamfile in enumerate(bamfiles):
 
             if out_count_names:
@@ -158,9 +225,67 @@ class PeakPCAAnalyser:
         return [out_dir / count_file_name
                 for count_file_name in new_count_names]
 
+    def get_number_of_mapped_reads(self, sample_names: List[str],
+                                   bamfiles: List[Path]) -> List[int]:
+        """
+        Gets the reads that mapped in for each sample in <sample names>
+        For each sample name, there must exist a bam file containing that name
+        in <bamfiles>.
+
+        :param sample_names: The names of a given number of samples.
+        :param bamfiles: The bamfiles generated for each of those samples
+        :return: The number of reads in each bamfile, ordered by the
+            <sample_names>.
+        """
+        # Construct map from each count file to the bam file with a
+        # matching name, ensuring a 1:1 mapping.
+        count_to_bam_map = {}
+        for col_name in sample_names:
+            matching_bam = None
+
+            for bam in bamfiles:
+                if col_name in bam.name and matching_bam:
+                    raise ValueError(
+                        "Detected multiple bams with sample names matching"
+                        " a count file name.\n\t" + '\n\t'.join([
+                            str(col_name), bam.name, matching_bam.name
+                        ]))
+                elif col_name in bam.name:
+                    matching_bam = bam
+
+            if not matching_bam:
+                raise ValueError(
+                    "The given bam files do not contain a matching name "
+                    "for " + str(col_name))
+            else:
+                count_to_bam_map[col_name] = matching_bam
+
+        norm_factors = np.array(len(sample_names), dtype=float)
+        for i, col_name in enumerate(sample_names):
+            bamfile = count_to_bam_map[col_name]
+            result = subprocess.run(['samtools view', '-c', str(bamfile)],
+                                    stdout=subprocess.PIPE)
+            n_reads = int(str(result.stdout).split(' ')[0])
+            norm_factors[i] = n_reads
+
+        s = 'Normalisation info:\n'
+        for counts_file, norm_factors in zip(sample_names, norm_factors):
+            bam_file = count_to_bam_map[counts_file]
+            s += ('\t' + counts_file.name + '\t' +
+                  bam_file.name + '\t' +
+                  str(norm_factors) + '\n')
+
+        logger.info(s)
+        if self._verbose:
+            print(s)
+
+        return norm_factors
+
     def make_counts_matrix(self, counts_files: List[Path],
                            matrix_out_path: Path,
-                           counts_names: List[str] = None) -> np.array:
+                           counts_names: List[str] = None,
+                           bams_to_normalise_to: List[
+                               Path] = None) -> np.array:
         """
         Aggreagates all the counts in the given counts files into a single
         matrix
@@ -195,13 +320,12 @@ class PeakPCAAnalyser:
         === Output ===
 
         SAMPLE1, SAMPLE2, SAMPLE 3
-        1   4    0
+        12  45    0
         0   1    1
         1   1    1
         900 50  50
         ...
 
-        Creates a csv file for
 
 
         :param counts_files: A list of count bed files, with the counts in the
@@ -209,6 +333,8 @@ class PeakPCAAnalyser:
             bed file.
         :param matrix_out_path: The path to the matrix tsv file to create.
         :param counts_names: The name of each column in the counts_files array.
+        :param bams_to_normalise_to: A list of bamfiles with names matching
+            the names of each counts file or the supplied counts names.
         :return:
         """
 
@@ -216,10 +342,11 @@ class PeakPCAAnalyser:
             nrow = len(peaksfile.readlines())
         ncol = len(counts_files)
 
-        counts_array = np.zeros((nrow, ncol), dtype=int)
+        counts_array = np.zeros((nrow, ncol), dtype=float)
 
         parsed_col_names = []
 
+        # Collect all counts values and store in NP array.#TODO imp with pandas
         for i, counts_file in enumerate(counts_files):
             if counts_names:
                 col_name = counts_names[i]
@@ -240,34 +367,35 @@ class PeakPCAAnalyser:
                 contig, start, stop, count = vals
                 counts_array[j, i] = int(count)
 
+        # Normalise to cpms if bam files are provided.
+        if bams_to_normalise_to:
+            norm_factors = self.get_number_of_mapped_reads(parsed_col_names,
+                                                           bams_to_normalise_to)
+            for col in range(len(parsed_col_names)):
+                fac = norm_factors[col]
+                column = counts_array[:, col]
+                counts_array[:, col] = column / fac * 10 ** 6
+
         with open(matrix_out_path, 'w') as outfile:
             outfile.write('\t'.join(parsed_col_names) + '\n')
 
             for row_num in range(nrow):
-                outfile.write('\t'.join([str(val) for val in counts_array[row_num, :]]) + '\n')
+                outfile.write('\t'.join(
+                    [str(val) for val in counts_array[row_num, :]]) + '\n')
 
         return counts_array
 
-    def generate_pca_plot(self, counts_matrix: Path, *args, **kwargs) -> None:
-        """
-        Generates a PCA plot displaying a dimensionality reduced -
-        representation of the given counts matrix.
-
-        :param counts_matrix: A matrix with the number of counts for each
-            peak.
-        :param args: Additional argumdents to pass to the graphing function.
-        :param kwargs: Additional arguments to pass to the graphing function.
-        :return:
-        """
-        pass
-
     def do_peaks_pca_analysis(self, beds: List[Path], bams: List[Path],
-                              analysis_dir: Path) -> None:
+                              analysis_dir: Path,
+                              experimental_design: ExperimentalDesign = None,
+                              normalise_by_counts: bool = True) -> None:
         """
         Performs PCA analysis on the given bedfiles, placing results and
         intermediary files in <analysis_dir>.
 
 
+        :param experimental_design: The design of this experiment.
+        :param normalise_by_counts:
         :param beds: A list of bedfiles, to find common peaks on and generate
             PCA plots for.
         :param bams: A list of bam files, to aggregate counts from.
@@ -277,7 +405,7 @@ class PeakPCAAnalyser:
         if not analysis_dir.exists():
             self._jobs.execute(cmdify('mkdir', analysis_dir))
 
-        common_peaks_path = analysis_dir / 'common_peaks'
+        common_peaks_path = analysis_dir / 'common_peaks.bed'
         self.find_all_common_peaks(beds, common_peaks_path)
 
         counts_dir = analysis_dir / 'counts'
@@ -286,13 +414,22 @@ class PeakPCAAnalyser:
 
         counts_files = self.generate_counts(common_peaks_path, bams,
                                             counts_dir)
+        counts_files = sorted(counts_files,
+                              key=lambda x: str(x).split('_')[1])
 
-        matrix_path = analysis_dir / 'counts_matrix.tsv'
-        self.make_counts_matrix(counts_files, matrix_path)
+        if not normalise_by_counts:
+            matrix_path = analysis_dir / 'merged_counts_matrix.tsv'
+            bams_to_normalise_to = []
+        else:
+            matrix_path = analysis_dir / 'merged_counts_matrix_normalized.tsv'
+            bams_to_normalise_to = bams
 
-        self.generate_pca_plot(matrix_path)
+        self.make_counts_matrix(
+            counts_files, matrix_path,
+            bams_to_normalise_to=bams_to_normalise_to)
 
-
+        plot = generate_pca_plot(matrix_path, experimental_design)
+        plt.savefig(analysis_dir / 'pca.svg', format='svg')
 
 
 
