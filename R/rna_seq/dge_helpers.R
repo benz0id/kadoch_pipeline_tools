@@ -160,6 +160,34 @@ get_gene_counts_bar <- function(expression_data, gene_name, sample_descs,
   return(plot)
 }
 
+#' Generate A Basic Bar Plot
+#'
+#' @param values Some number of integer values.
+#' @param value_labels Labels for each value.
+#' @param groups The group to which each value belongs.
+#' @param title The title of the barplot
+#' @param x The X axis title.
+#' @param y The Y axis title
+#' @param fill The title for the fill bar.
+#'
+#' @return A horizontal barplot.
+#' @export
+#'
+#' @examples
+get_basic_bar <- function(values, value_labels, groups, title, x, y,
+fill){
+  counts_df <- data.frame(label=value_labels, values=values, group=groups)
+
+  plot <- ggplot(counts_df, aes(x = label, y = values, fill = group)) +
+    scale_y_continuous(labels = scales::label_number(), limits = c(0, max(counts_df$values))) +
+    geom_col() +
+    labs(title = title,
+         x = x, y = y, fill = fill) +
+    theme(plot.title = element_text(face = "bold")) +
+    coord_flip()
+  return(plot)
+}
+
 
 #' Perform Basic Preliminary Analyses on Read Count Information
 #'
