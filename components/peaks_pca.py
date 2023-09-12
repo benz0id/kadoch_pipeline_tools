@@ -63,14 +63,14 @@ def generate_pca_plot(counts_matrix_path: Path,
     pcdf['labels'] = [design.get_condition(sample)
                       for sample in sample_names]
 
-    props = pca.explained_variance_ratio_*100
+    props = pca.explained_variance_ratio_ * 100
 
     ax = sns.scatterplot(data=pcdf,
                          x='principal component 1',
                          y='principal component 2',
                          hue='labels', style='reps',
-                         palette=sns.color_palette(
-                             len(design.get_conditions())))
+                         palette=sns.color_palette('colorblind',
+                                                   len(design.get_conditions())))
 
     ax.set(title='PCA',
            xlabel='PC%d:%.2f%%' % (1, props[0]),
@@ -162,7 +162,7 @@ class PeakPCAAnalyser:
         unique_filename = '.'.join(str(common_peak_out).split('/'))
 
         cat_unmerged = self._files.puregable_files_dir / (
-                    unique_filename + '.cat.bed')
+                unique_filename + '.cat.bed')
         self._jobs.execute_lazy(cmdify('cat', *beds, '>', cat_unmerged),
                                 self._heavy_job)
 
@@ -443,11 +443,6 @@ class PeakPCAAnalyser:
                        bams_to_normalise_to=bams_to_normalise_to)
         self._jobs.execute_lazy(pj)
 
-
-
         plot = generate_pca_plot(matrix_path, experimental_design)
         plt.savefig(analysis_dir / (get_unique_filename() + 'pca.svg'),
                     format='svg')
-
-
-
