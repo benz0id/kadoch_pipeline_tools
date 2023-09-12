@@ -432,7 +432,7 @@ class PeakPCAAnalyser:
 
         pj = PythonJob('make ' + str(matrix_path), [], self.make_counts_matrix,
                        counts_files=counts_files,
-                       matrix_path=matrix_path,
+                       matrix_out_path=matrix_path,
                        bams_to_normalise_to=bams_to_normalise_to)
         self._jobs.execute_lazy(pj)
 
