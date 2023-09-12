@@ -1,5 +1,6 @@
 import itertools
 import logging
+import os
 import subprocess
 from copy import copy
 from pathlib import Path
@@ -37,6 +38,7 @@ def generate_pca_plot(counts_matrix_path: Path,
         peak.
     :return:
     """
+    # Extract raw data from the counts matrix.
     # Extract raw data from the counts matrix.
     counts_dataframe = pd.read_csv(counts_matrix_path, sep='\t')
     sample_names = counts_dataframe.columns
@@ -263,7 +265,7 @@ class PeakPCAAnalyser:
         norm_factors = np.array(len(sample_names), dtype=float)
         for i, col_name in enumerate(sample_names):
             bamfile = count_to_bam_map[col_name]
-            result = subprocess.run(['samtools view', '-c', str(bamfile)],
+            result = subprocess.run(['samtools', 'view', '-c', str(bamfile)],
                                     stdout=subprocess.PIPE)
             n_reads = int(str(result.stdout).split(' ')[0])
             norm_factors[i] = n_reads
