@@ -30,152 +30,34 @@ HG19_GENOME = HG19_IDXSTATS
 logger = logging.getLogger(__name__)
 
 
-def generate_pca_plot2(counts_matrix_path: Path,
-                      design: ExperimentalDesign) -> sns.scatterplot:
-    """
-    Generates a PCA plot displaying a dimensionality reduced -
-    representation of the given counts matrix.
-
-    :param design: The design of the experiment.
-    :param counts_matrix_path: A matrix with the number of counts for each
-        peak.
-    :return:
-    """
-    title = 'PCA'
-
-    df = pd.read_csv(counts_matrix_path, sep='\t')
-    labels = df.columns
-    reps = [design.get_rep_num(label) for label in labels]
-
-    df = np.log2(df + 1)
-
-    df = stats.zscore(df, axis=0)
-
-    pca = PCA()
-
-    rot = pca.fit_transform(df.T)
-    rot = pd.DataFrame(rot)
-
-    props = pca.explained_variance_ratio_ * 100
-
-    if labels is not None:
-        rot['labels'] = labels
-
-    if reps is not None:
-        rot['reps'] = reps
-    size = None
-
-    l = []
-
-    for i, j in itertools.combinations(range(3), 2):
-
-        f, ax = plt.subplots(figsize=(5, 5))
-
-        if labels is not None and reps is not None:
-            if size is None:
-                ax = sns.scatterplot(data=rot, x=i, y=j, hue='labels',
-                                     style='reps')
-            elif size is not None:
-                ax = sns.scatterplot(data=rot, x=i, y=j, hue='labels',
-                                     style='reps', size='size')
-        elif labels is not None:
-            ax = sns.scatterplot(data=rot, x=i, y=j, hue='labels')
-
-        elif reps is not None:
-            ax = sns.scatterplot(data=rot, x=i, y=j, hue='reps')
-
-        else:
-            ax = sns.scatterplot(data=rot)
-
-        ax.set(title=title,
-               xlabel='PC%d:%.2f%%' % (i + 1, props[i]),
-               ylabel='PC%d:%.2f%%' % (j + 1, props[j])
-               )
-
-        if labels is not None or reps is not None:
-            ax.legend(loc='center left', bbox_to_anchor=(1, 0.5),
-                      frameon=False)
-
-        l.append(f)
-
-
-def generate_pca_plot3(counts_matrix_path: Path,
-                      design: ExperimentalDesign) -> sns.scatterplot:
-    """
-    Generates a PCA plot displaying a dimensionality reduced -
-    representation of the given counts matrix.
-
-    :param design: The design of the experiment.
-    :param counts_matrix_path: A matrix with the number of counts for each
-        peak.
-    :return:
-    """
-
-    df = pd.read_csv(counts_matrix_path, sep='\t')
-    samples = df.columns
-    reps = [design.get_rep_num(label) for label in samples]
-    conds = [design.get_condition(label) for label in samples]
-
-    df = np.log2(df + 1)
-
-    df = stats.zscore(df, axis=0)
-
-    pca = PCA()
-
-    rot = pca.fit_transform(df.T)
-    rot = pd.DataFrame(rot)
-
-    props = pca.explained_variance_ratio_ * 100
-
-    if conds is not None:
-        rot['labels'] = conds
-
-    if reps is not None:
-        rot['reps'] = reps
-
-    for i, j in itertools.combinations(range(3), 2):
-
-        ax = sns.scatterplot(data=rot,
-                             x=i,
-                             y=j,
-                             hue='labels',
-                             palette=sns.color_palette('colorblind',
-                                                       len(design.get_conditions())))
-
-        ax.set(title='PCA',
-               xlabel='PC%d:%.2f%%' % (1, props[0]),
-               ylabel='PC%d:%.2f%%' % (2, props[1])
-               )
-
 
 
 def generate_pca_plot(counts_matrix_path: Path,
-                      design: ExperimentalDesign) -> sns.scatterplot:
+                      design: ExperimentalDesign,
+                      out_filepath: Path, dims: int = 3) -> sns.scatterplot:
     """
     Generates a PCA plot displaying a dimensionality reduced -
     representation of the given counts matrix.
 
+    :param dims:
+    :param out_filepath:
     :param design: The design of the experiment.
     :param counts_matrix_path: A matrix with the number of counts for each
         peak.
     :return:
     """
     # Extract raw data from the counts matrix.
-    df = pd.read_csv(counts_matrix_path, sep='\t')
-    samples = df.columns
+    counts_dataframe = pd.read_csv(counts_matrix_path, sep='\t')
+    samples = counts_dataframe.columns
+
     reps = [design.get_rep_num(label) for label in samples]
     conds = [design.get_condition(label) for label in samples]
 
-
     counts_dataframe = pd.read_csv(counts_matrix_path, sep='\t')
-    sample_names = counts_dataframe.columns
-
     counts_matrix = np.log2(counts_dataframe + 1)
 
     # norm_counts = scaler.fit_transform(counts_matrix)
     norm_counts = stats.zscore(counts_matrix, axis=0)
-
-    num_comp = 5
 
     pca = PCA()
     pcs = pca.fit_transform(norm_counts.T)
@@ -189,19 +71,21 @@ def generate_pca_plot(counts_matrix_path: Path,
 
     props = pca.explained_variance_ratio_ * 100
 
-    ax = sns.scatterplot(data=pcdf,
-                         x='principal component 1',
-                         y='principal component 2',
-                         hue='labels',
-                         palette=sns.color_palette('colorblind',
-                                                   len(design.get_conditions())))
+    # Compare multiple principle components.
+    for i, j in itertools.combinations(range(dims), 2):
+        ax = sns.scatterplot(data=pcdf,
+                             x='principal component ' + str(i + 1),
+                             y='principal component ' + str(j + 1),
+                             hue='labels', shape='reps',
+                             palette=sns.color_palette('colorblind',
+                                                       len(design.get_conditions())))
 
-    ax.set(title='PCA',
-           xlabel='PC%d:%.2f%%' % (1, props[0]),
-           ylabel='PC%d:%.2f%%' % (2, props[1])
-           )
-
-    return ax
+        ax.set(title='PCA',
+               xlabel='PC%d:%.2f%%' % (1, props[i]),
+               ylabel='PC%d:%.2f%%' % (2, props[j])
+               )
+        filename = ''.join(['pc', str(i + 1), '_vs_', 'pc', str(j + 1)])
+        plt.savefig(out_filepath / filename)
 
 
 class PeakPCAAnalyser:
@@ -567,6 +451,4 @@ class PeakPCAAnalyser:
                        bams_to_normalise_to=bams_to_normalise_to)
         self._jobs.execute_lazy(pj)
 
-        plot = generate_pca_plot(matrix_path, experimental_design)
-        plt.savefig(analysis_dir / (get_unique_filename() + 'pca.svg'),
-                    format='svg')
+        generate_pca_plot(matrix_path, experimental_design, analysis_dir, 4)
