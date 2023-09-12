@@ -262,7 +262,7 @@ class PeakPCAAnalyser:
             else:
                 count_to_bam_map[col_name] = matching_bam
 
-        norm_factors = np.array(len(sample_names), dtype=float)
+        norm_factors = np.zeros(len(sample_names), dtype=float)
         for i, col_name in enumerate(sample_names):
             bamfile = count_to_bam_map[col_name]
             result = subprocess.run(['samtools', 'view', '-c', str(bamfile)],
