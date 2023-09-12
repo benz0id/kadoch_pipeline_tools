@@ -96,7 +96,6 @@ class PeakPCAAnalyser:
 
     _jobs: JobManager
     _files: PathManager
-    _cache: CacheManager
 
     _light_job: ExecParams
     _parallel_job: ExecParams
@@ -134,7 +133,6 @@ class PeakPCAAnalyser:
 
         self._jobs = job_manager
         self._files = file_manager
-        self._cache = cache_manager
 
         self._light_job = copy(light_job_params)
         self._parallel_job = copy(parallel_job_params)
