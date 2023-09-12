@@ -267,7 +267,7 @@ class PeakPCAAnalyser:
             bamfile = count_to_bam_map[col_name]
             result = subprocess.run(['samtools', 'view', '-c', str(bamfile)],
                                     stdout=subprocess.PIPE)
-            n_reads = int(str(result.stdout).split(' ')[0])
+            n_reads = int((result.stdout).decode('utf-8').split(' ')[0])
             norm_factors[i] = n_reads
 
         s = 'Normalisation info:\n'
