@@ -48,7 +48,8 @@ def generate_pca_plot(counts_matrix_path: Path,
     counts_matrix = counts_dataframe.loc[:, :].values
 
     # Normalise sample.
-    norm_counts = scipy.stats.zscore(counts_matrix.T)
+    # norm_counts = scipy.stats.zscore(counts_matrix.T)
+    norm_counts = counts_matrix.T
 
     pca = PCA(n_components=2)
     pcs = pca.fit_transform(norm_counts)
