@@ -8,6 +8,7 @@ from typing import List, Callable
 
 import numpy as np
 
+from utils.cache_manager import CacheManager
 from utils.fetch_files import get_unique_filename
 from sklearn.preprocessing import StandardScaler
 from utils.job_formatter import ExecParams, PythonJob
@@ -95,6 +96,7 @@ class PeakPCAAnalyser:
 
     _jobs: JobManager
     _files: PathManager
+    _cache: CacheManager
 
     _light_job: ExecParams
     _parallel_job: ExecParams
@@ -106,8 +108,8 @@ class PeakPCAAnalyser:
     _verbose: bool
 
     def __init__(self, job_manager: JobManager, file_manager: PathManager,
+                 cache_manager: CacheManager,
                  light_job_params: ExecParams, heavy_job_params: ExecParams,
-                 parallel_job_params: ExecParams,
                  start_job_array_fxn: Callable, wait_job_array_fxn: Callable,
                  verbose: bool = False) \
             -> None:
@@ -132,6 +134,8 @@ class PeakPCAAnalyser:
 
         self._jobs = job_manager
         self._files = file_manager
+        self._cache = cache_manager
+
         self._light_job = copy(light_job_params)
         self._parallel_job = copy(parallel_job_params)
         self._heavy_job = copy(heavy_job_params)
@@ -228,7 +232,7 @@ class PeakPCAAnalyser:
                 for count_file_name in new_count_names]
 
     def get_number_of_mapped_reads(self, sample_names: List[str],
-                                   bamfiles: List[Path], store: Path = None) \
+                                   bamfiles: List[Path]) \
             -> List[int]:
         """
         Gets the reads that mapped in for each sample in <sample names>
@@ -264,20 +268,20 @@ class PeakPCAAnalyser:
             else:
                 count_to_bam_map[col_name] = matching_bam
 
-        norm_factors = np.zeros(len(sample_names), dtype=float)
+        norm_factors = []
         for i, col_name in enumerate(sample_names):
             bamfile = count_to_bam_map[col_name]
             result = subprocess.run(['samtools', 'view', '-c', str(bamfile)],
                                     stdout=subprocess.PIPE)
             n_reads = int((result.stdout).decode('utf-8').split(' ')[0])
-            norm_factors[i] = n_reads
+            norm_factors.append(n_reads)
 
         s = 'Normalisation info:\n'
-        for counts_file, norm_factors in zip(sample_names, norm_factors):
+        for counts_file, norm_factor in zip(sample_names, norm_factors):
             bam_file = count_to_bam_map[counts_file]
             s += ('\t' + counts_file + '\t' +
                   bam_file.name + '\t' +
-                  str(norm_factors) + '\n')
+                  str(norm_factor) + '\n')
 
         logger.info(s)
         if self._verbose:
@@ -428,9 +432,9 @@ class PeakPCAAnalyser:
             matrix_path = analysis_dir / 'merged_counts_matrix_normalized.tsv'
             bams_to_normalise_to = bams
 
-        self.make_counts_matrix(
-            counts_files, matrix_path,
-            bams_to_normalise_to=bams_to_normalise_to)
+        pj = PythonJob('make ' + str(matrix_path), [], self.make_counts_matrix,
+                       self, counts_files=counts_files, matrix_path=matrix_path, bams_to_normalise_to=bams_to_normalise_to)
+        self._jobs.execute_lazy(pj)
 
         plot = generate_pca_plot(matrix_path, experimental_design)
         plt.savefig(analysis_dir / 'pca.svg', format='svg')
