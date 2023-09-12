@@ -7,7 +7,6 @@ from pathlib import Path
 from typing import List, Callable
 
 import numpy as np
-import scipy
 
 from utils.cache_manager import CacheManager
 from utils.fetch_files import get_unique_filename
@@ -47,12 +46,10 @@ def generate_pca_plot(counts_matrix_path: Path,
     sample_names = counts_dataframe.columns
     counts_matrix = counts_dataframe.loc[:, :].values
 
-    print(counts_dataframe.loc[:40, :].values)
-
-
     # Normalise sample.
-    # norm_counts = scipy.stats.zscore(counts_matrix.T)
-    norm_counts = counts_matrix.T
+    scaler = StandardScaler()
+
+    norm_counts = scaler.fit_transform(counts_matrix.T)
 
     pca = PCA(n_components=2)
     pcs = pca.fit_transform(norm_counts)
@@ -72,7 +69,7 @@ def generate_pca_plot(counts_matrix_path: Path,
                          x='principal component 1',
                          y='principal component 2',
                          hue='labels', style='reps',
-                         palette=sns.cubehelix_palette(
+                         palette=sns.color_palette(
                              len(design.get_conditions())))
 
     ax.set(title='PCA',
@@ -397,6 +394,10 @@ class PeakPCAAnalyser:
 
         return counts_array
 
+    def filter_counts_matrix(self, in_matrix: Path, out_matrix: Path,
+                             threshold: int) -> None:
+        pass
+
     def do_peaks_pca_analysis(self, beds: List[Path], bams: List[Path],
                               analysis_dir: Path,
                               experimental_design: ExperimentalDesign = None,
@@ -441,6 +442,8 @@ class PeakPCAAnalyser:
                        matrix_out_path=matrix_path,
                        bams_to_normalise_to=bams_to_normalise_to)
         self._jobs.execute_lazy(pj)
+
+
 
         plot = generate_pca_plot(matrix_path, experimental_design)
         plt.savefig(analysis_dir / (get_unique_filename() + 'pca.svg'),
