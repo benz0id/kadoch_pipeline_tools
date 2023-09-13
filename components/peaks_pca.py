@@ -30,7 +30,7 @@ HG19_GENOME = HG19_IDXSTATS
 
 logger = logging.getLogger(__name__)
 
-
+MAX_PCA_DIMS = 5
 
 
 def generate_pca_plot(counts_matrix_path: Path,
@@ -60,7 +60,7 @@ def generate_pca_plot(counts_matrix_path: Path,
     # norm_counts = scaler.fit_transform(counts_matrix)
     norm_counts = stats.zscore(counts_matrix, axis=0)
 
-    pca = PCA()
+    pca = PCA(MAX_PCA_DIMS)
     pcs = qnorm.quantile_normalize(norm_counts.T)
 
     pcdf = pd.DataFrame(data=pcs,
