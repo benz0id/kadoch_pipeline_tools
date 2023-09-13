@@ -454,4 +454,7 @@ class PeakPCAAnalyser:
                        bams_to_normalise_to=bams_to_normalise_to)
         self._jobs.execute_lazy(pj)
 
-        generate_pca_plot(matrix_path, experimental_design, analysis_dir, 4)
+        args = (matrix_path, experimental_design, analysis_dir, 4)
+        pj = PythonJob('Generate PCA figures' + str(args), [],
+                       generate_pca_plot, *args)
+        self._jobs.execute_lazy(pj)
