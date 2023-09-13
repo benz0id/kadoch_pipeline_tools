@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import List, Callable
 
 import numpy as np
+import qnorm as qnorm
 from scipy.stats import stats
 
 from utils.cache_manager import CacheManager
@@ -60,7 +61,7 @@ def generate_pca_plot(counts_matrix_path: Path,
     norm_counts = stats.zscore(counts_matrix, axis=0)
 
     pca = PCA()
-    pcs = pca.fit_transform(norm_counts.T)
+    pcs = qnorm.quantile_normalize(norm_counts.T)
 
     pcdf = pd.DataFrame(data=pcs,
                         columns=['principal component ' + str(i)
@@ -76,7 +77,7 @@ def generate_pca_plot(counts_matrix_path: Path,
         ax = sns.scatterplot(data=pcdf,
                              x='principal component ' + str(i + 1),
                              y='principal component ' + str(j + 1),
-                             hue='labels', shape='reps',
+                             hue='labels', style='reps',
                              palette=sns.color_palette('colorblind',
                                                        len(design.get_conditions())))
 
@@ -338,13 +339,11 @@ class PeakPCAAnalyser:
         === Output ===
 
         SAMPLE1, SAMPLE2, SAMPLE 3
-        12  45    0
+        12  45   0
         0   1    1
         1   1    1
         900 50  50
         ...
-
-
 
         :param counts_files: A list of count bed files, with the counts in the
             fourth column. All counts must have been generated from a single
