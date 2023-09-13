@@ -60,8 +60,10 @@ def generate_pca_plot(counts_matrix_path: Path,
     # norm_counts = scaler.fit_transform(counts_matrix)
     norm_counts = stats.zscore(counts_matrix, axis=0)
 
-    pca = PCA(MAX_PCA_DIMS)
     pcs = qnorm.quantile_normalize(norm_counts.T)
+
+    pca = PCA(MAX_PCA_DIMS)
+    pcs = pca.fit_transform(pcs)
 
     pcdf = pd.DataFrame(data=pcs,
                         columns=['principal component ' + str(i)
