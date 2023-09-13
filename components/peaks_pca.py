@@ -172,25 +172,14 @@ class PeakPCAAnalyser:
         :param common_peak_out: Path in which to create the merged bed file.
         :return:
         """
-        unique_filename = '.'.join(str(common_peak_out).split('/'))
-
-        cat_unmerged = self._files.puregable_files_dir / (
-                unique_filename + '.cat.bed')
-        self._jobs.execute_lazy(cmdify('cat', *beds, '>', cat_unmerged))
-
-        merged = self._files.puregable_files_dir / (
-                unique_filename + '.merged.bed')
 
         self._jobs.execute_lazy(
-            cmdify('bedtools merge -i', cat_unmerged, '>', merged),
-            self._heavy_job)
-
-        self._jobs.execute_lazy(
-            cmdify('bedtools sort',
-                   '-i', merged,
+            cmdify('cat', *beds, '|',
+                    'bedtools merge', '|',
+                   'bedtools sort',
                    '-faidx', genome_index,
-                   '>', common_peak_out),
-            self._heavy_job)
+                   '>', common_peak_out
+                   ))
 
     def generate_counts(self, bedfile: Path, bamfiles: List[Path],
                         out_dir: Path, out_count_names: List[str] = None,
