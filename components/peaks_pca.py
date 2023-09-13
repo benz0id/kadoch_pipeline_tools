@@ -176,8 +176,7 @@ class PeakPCAAnalyser:
 
         cat_unmerged = self._files.puregable_files_dir / (
                 unique_filename + '.cat.bed')
-        self._jobs.execute_lazy(cmdify('cat', *beds, '>', cat_unmerged),
-                                self._heavy_job)
+        self._jobs.execute_lazy(cmdify('cat', *beds, '>', cat_unmerged))
 
         merged = self._files.puregable_files_dir / (
                 unique_filename + '.merged.bed')

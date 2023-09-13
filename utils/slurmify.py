@@ -28,7 +28,7 @@ READER_SLEEP_INTERVAL = 0.1
 SLURMIFIER_WAIT_INTERVAL = 0.01
 
 # Print out the jobs still running in the array every this interval.
-PRINT_WAITING_FOR_EVERY = 20
+PRINT_WAITING_FOR_EVERY = 5
 
 logger = logging.getLogger(__name__)
 
