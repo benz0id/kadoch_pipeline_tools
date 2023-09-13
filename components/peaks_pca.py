@@ -87,7 +87,8 @@ def generate_pca_plot(counts_matrix_path: Path,
                xlabel='PC%d:%.2f%%' % (1, props[i]),
                ylabel='PC%d:%.2f%%' % (2, props[j])
                )
-        filename = ''.join(['pc', str(i + 1), '_vs_', 'pc', str(j + 1)])
+        filename = ''.join(['pc', str(i + 1), '_vs_', 'pc',
+                            str(j + 1) + '.svg'])
         plt.show()
         plt.savefig(out_filepath / filename)
 
