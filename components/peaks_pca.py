@@ -175,9 +175,9 @@ class PeakPCAAnalyser:
 
         self._jobs.execute_lazy(
             cmdify('cat', *beds, '|',
-                    'bedtools merge', '|',
-                   'bedtools sort',
+                   'bedtools sort', '|',
                    '-faidx', genome_index,
+                   'bedtools merge',
                    '>', common_peak_out
                    ))
 
