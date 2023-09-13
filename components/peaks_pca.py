@@ -455,6 +455,6 @@ class PeakPCAAnalyser:
         self._jobs.execute_lazy(pj)
 
         args = (matrix_path, experimental_design, analysis_dir, 4)
-        pj = PythonJob('Generate PCA figures' + str(args), [],
+        pj = PythonJob('Generate PCA figures' + str(args[-2:]), [],
                        generate_pca_plot, *args)
         self._jobs.execute_lazy(pj)
