@@ -127,8 +127,8 @@ class DistanceToTSS:
         :param figure_out_path: Path to final figure.
         :return: The path to the final figure.
         """
-        beds_dir = storage_dir / get_unique_filename()
-        positional_info_dir = storage_dir / get_unique_filename()
+        beds_dir = storage_dir / 'raw_beds'
+        positional_info_dir = storage_dir / 'bed_with_pos_info'
 
         self._jobs.execute_lazy(
             cmdify('mkdir', beds_dir, positional_info_dir))
