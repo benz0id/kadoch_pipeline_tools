@@ -109,7 +109,7 @@ class DistanceToTSS:
 
         os.chdir(temp_dir.parent)
         cmd = cmdify("perl $soft/getDistanceToTSSmatrix.pl",
-                     temp_dir.name + '/',
+                     str(temp_dir) + '/',
                      tmpfile_name,
                      "\n",
                      'mv', tmpfile_name, distance_to_tss_tsv)
