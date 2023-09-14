@@ -78,7 +78,7 @@ class DistanceToTSS:
         out_files = [beds_dir / (str(bed)[:-4] + ".nearestGene.txt")
                      for bed in beds]
         os.chdir(beds_dir.parent)
-        cmd = cmdify("perl $addNearestGeneToBED.pl",
+        cmd = cmdify("perl $soft/addNearestGeneToBED.pl",
                      "hg19.ensembl.genebody.protein_coding.txt",
                      beds_dir.name + '/')
         self._jobs.execute_lazy(cmd, self._med_job)
