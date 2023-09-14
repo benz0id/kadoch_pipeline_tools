@@ -119,12 +119,16 @@ class DistanceToTSS:
         os.chdir(self._paths.project_dir)
 
     def generate_tss_barplot(self, beds: List[Path], storage_dir: Path,
+                             figure_bars: List[str],
                              figure_out_path: Path = None) -> Path:
         """
         Generates stacked TSS bargraphs for the given bedfiles.
         :param beds: Bed files to include in the barplot.
         :param storage_dir: Directory in which to store intermediary files.
-        :param figure_out_path: Path to final figure.
+        :param figure_bars: The names to appear under each bar in the final
+            barplot. These will appear in order, and each must match map
+             1-1 to one of the filenames in bedfiles.
+        :param figure_out_path: Path to final figure. 'out.svg' by default.
         :return: The path to the final figure.
         """
         beds_dir = storage_dir / 'raw_beds'
@@ -139,5 +143,16 @@ class DistanceToTSS:
 
         distance_to_tss_tsv = storage_dir / 'distance_to_tss.tsv'
         self.make_distance_to_tss_tsv(aug_beds, distance_to_tss_tsv)
+
+        if not figure_out_path:
+            figure_out_path = storage_dir / 'out.svg'
+
+        cmd = cmdify('Rscript $Rcode/atac_seq/make_distance_to_tss_barplot.R',
+                     distance_to_tss_tsv, figure_out_path, *figure_bars)
+        self._jobs.execute_lazy(cmd)
+
+        figure_out_path
+
+
 
 
