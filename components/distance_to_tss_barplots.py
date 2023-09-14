@@ -80,7 +80,7 @@ class DistanceToTSS:
         os.chdir(beds_dir.parent)
         cmd = cmdify("perl $soft/addNearestGeneToBED.pl",
                      "$soft/hg19.ensembl.genebody.protein_coding.txt",
-                     beds_dir.name + '/')
+                     str(beds_dir) + '/')
         self._jobs.execute_lazy(cmd, self._med_job)
         os.chdir(self._paths.project_dir)
 
