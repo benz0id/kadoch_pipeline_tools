@@ -9,8 +9,6 @@ from utils.job_manager import JobManager
 from utils.path_manager import PathManager, cmdify
 
 
-class JobManger:
-    pass
 
 
 class DistanceToTSS:
@@ -77,7 +75,7 @@ class DistanceToTSS:
         """
 
         beds = get_matching_files(beds_dir, [".*\.bed$"], paths=True)
-        out_files = [beds_dir / (bed[:-4] + ".nearestGene.txt")
+        out_files = [beds_dir / (str(bed)[:-4] + ".nearestGene.txt")
                      for bed in beds]
         os.chdir(beds_dir.parent)
         cmd = cmdify("perl $addNearestGeneToBED.pl",
