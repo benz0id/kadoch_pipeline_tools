@@ -1,7 +1,7 @@
 import os
 from copy import copy
 from pathlib import Path
-from typing import Callable, List
+from typing import Callable, List, Dict
 
 from utils.fetch_files import get_matching_files, get_unique_filename
 from utils.job_formatter import ExecParams
@@ -118,8 +118,8 @@ class DistanceToTSS:
 
         os.chdir(self._paths.project_dir)
 
-    def generate_tss_barplot(self, beds: List[Path], storage_dir: Path,
-                             bed_to_bar_name: Dict[Path, str],
+    def generate_tss_barplot(self, bed_to_bar_name: Dict[Path, str],
+                             storage_dir: Path,
                              figure_out_path: Path = None) -> Path:
         """
         Generates stacked TSS bargraphs for the given bedfiles.
@@ -136,7 +136,10 @@ class DistanceToTSS:
         self._jobs.execute_lazy(
             cmdify('mkdir', beds_dir, positional_info_dir))
 
-        self._jobs.execute_lazy(cmdify('cp', *beds, beds_dir))
+        for bed in bed_to_bar_name:
+            bar_name = bed_to_bar_name[bed]
+            self._jobs.execute_lazy(cmdify('cp', bed,
+                                           beds_dir / (bar_name + '.bed')))
 
         aug_beds = self.add_positional_info(beds_dir, positional_info_dir)
 
@@ -147,7 +150,8 @@ class DistanceToTSS:
             figure_out_path = storage_dir / 'out.svg'
 
         cmd = cmdify('Rscript $Rcode/atac_seq/make_distance_to_tss_barplot.R',
-                     distance_to_tss_tsv, figure_out_path, *figure_bars)
+                     distance_to_tss_tsv, figure_out_path,
+                     *bed_to_bar_name.values())
         self._jobs.execute_lazy(cmd)
 
         figure_out_path
