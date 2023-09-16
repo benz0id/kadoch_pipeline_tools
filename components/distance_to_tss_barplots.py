@@ -62,7 +62,7 @@ class DistanceToTSS:
         self._med_job.wait = True
         self._light_job.wait = True
 
-    def x(self, beds_dir: Path, out_dir: Path) -> List[Path]:
+    def add_positional_info(self, beds_dir: Path, out_dir: Path) -> List[Path]:
         """
         For each bed in beds_dir, creates a txt file that adds the position of
         the nearest gene and the distance to the nearest transcriptional start
