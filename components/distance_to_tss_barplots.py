@@ -62,7 +62,7 @@ class DistanceToTSS:
         self._med_job.wait = True
         self._light_job.wait = True
 
-    def add_positional_info(self, beds_dir: Path, out_dir: Path) -> List[Path]:
+    def x(self, beds_dir: Path, out_dir: Path) -> List[Path]:
         """
         For each bed in beds_dir, creates a txt file that adds the position of
         the nearest gene and the distance to the nearest transcriptional start
@@ -100,7 +100,7 @@ class DistanceToTSS:
             the distance to the nearest TSS for each bed in
             <nearest_gene_beds_dir>.
         """
-        temp_dir = self._paths.puregable_files_dir / get_unique_filename()
+        temp_dir = self._paths.puregable_files_dir
         self._jobs.execute_lazy(cmdify('mkdir', temp_dir))
         self._jobs.execute_lazy(cmdify('cp', *nearest_gene_beds, temp_dir))
 
@@ -148,13 +148,13 @@ class DistanceToTSS:
 
         if not figure_out_path:
             figure_out_path = storage_dir / 'out.svg'
-
+        print(*bed_to_bar_name.values())
         cmd = cmdify('Rscript $Rcode/atac_seq/make_distance_to_tss_barplot.R',
                      distance_to_tss_tsv, figure_out_path,
                      *bed_to_bar_name.values())
         self._jobs.execute_lazy(cmd)
 
-        figure_out_path
+        return figure_out_path
 
 
 
