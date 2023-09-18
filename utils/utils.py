@@ -1,5 +1,6 @@
 from copy import copy
-from typing import List, Dict
+from pathlib import Path
+from typing import List, Dict, Union
 
 
 def combine_cmds(cmds: List[str], num_per: int) -> List[str]:
@@ -87,3 +88,32 @@ class ExperimentalDesign:
 
     def get_rep_num(self, sample: str) -> int:
         return self._sample_to_rep_number[sample]
+
+
+def write_samples_file(filenames: List[Union[Path, str]],
+                       out_path: Path) -> None:
+    """
+    Given some filenames, generates a samples file.
+
+    >>> filenames = ['20230811_CGRNA087_HCC44_Rep1_S15_R1_001.fastq']
+    >>> write_samples_file(filenames, Path('samples.txt'))
+    >>> with open('samples.txt', 'r') as inf:
+    >>>     print(inf.readline())
+    CGRNA087	20230811_CGRNA087_HCC44_Rep1_S15_R1_001
+
+
+    :param filenames: A list of filenames, with the sample at the second
+        position after splitting by '_'.
+    :param out_path: Path to the text file to write.
+    """
+    lines = {}
+    for filename in filenames:
+        sample_id = filename.split('_')[1]
+        name = filename.split('.')[0]
+        lines[name] = sample_id
+
+    with open(out_path, 'w') as out_file:
+        for filename in sorted(lines):
+            out_file.write(filename + '\t' + lines[filename])
+
+
