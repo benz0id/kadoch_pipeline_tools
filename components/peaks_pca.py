@@ -18,6 +18,7 @@ from utils.job_manager import JobManager
 from utils.path_manager import PathManager, cmdify
 from constants.data_paths import HG19_IDXSTATS
 from utils.utils import ExperimentalDesign
+from operator import itemgetter
 
 import seaborn as sns
 import pandas as pd
@@ -54,10 +55,12 @@ def generate_pca_plot(counts_matrix_path: Path,
     # Extract raw data from the counts matrix.
     counts_dataframe = pd.read_csv(counts_matrix_path, sep='\t')
 
-    if n_info_cols > 0:
-        counts_dataframe.drop(columns=list(range(n_info_cols)))
-
     samples = counts_dataframe.columns
+    if n_info_cols > 0:
+        to_rem = itemgetter(samples, range(n_info_cols))
+        counts_dataframe = counts_dataframe.drop(columns=to_rem)
+        samples = counts_dataframe.columns
+
     print(samples)
     if sample_ids:
         samples = [sample.split('_')[1] for sample in samples]
