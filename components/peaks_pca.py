@@ -57,7 +57,7 @@ def generate_pca_plot(counts_matrix_path: Path,
 
     samples = counts_dataframe.columns
     if n_info_cols > 0:
-        to_rem = itemgetter(samples, range(n_info_cols))
+        to_rem = itemgetter(*samples, list(range(n_info_cols)))
         counts_dataframe = counts_dataframe.drop(columns=to_rem)
         samples = counts_dataframe.columns
 
