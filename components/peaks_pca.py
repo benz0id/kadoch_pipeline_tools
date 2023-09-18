@@ -35,7 +35,8 @@ MAX_PCA_DIMS = 5
 
 def generate_pca_plot(counts_matrix_path: Path,
                       design: ExperimentalDesign,
-                      out_filepath: Path, dims: int = 3) -> sns.scatterplot:
+                      out_filepath: Path, dims: int = 3,
+                      n_info_cols: int = 0, sample_ids: bool = False) -> sns.scatterplot:
     """
     Generates a PCA plot displaying a dimensionality reduced -
     representation of the given counts matrix.
@@ -45,10 +46,17 @@ def generate_pca_plot(counts_matrix_path: Path,
     :param design: The design of the experiment.
     :param counts_matrix_path: A matrix with the number of counts for each
         peak.
+    :param n_info_cols: The number of leading info columns to ignore.
+    :param sample_ids: Whether to expect the column headers to be sample ids
+        rather than sample names.
     :return:
     """
     # Extract raw data from the counts matrix.
     counts_dataframe = pd.read_csv(counts_matrix_path, sep='\t')
+
+    if n_info_cols > 0:
+        counts_dataframe.drop(range(n_info_cols))
+
     samples = counts_dataframe.columns
 
     reps = [design.get_rep_num(label) for label in samples]
