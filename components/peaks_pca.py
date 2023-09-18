@@ -62,11 +62,11 @@ def generate_pca_plot(counts_matrix_path: Path,
         samples = counts_dataframe.columns
         counts_dataframe = counts_dataframe[samples].astype(float)
 
-    print(counts_dataframe.loc[1:5, :])
     if sample_ids:
         samples = [sample.strip().split('_')[1] for sample in samples]
+        counts_dataframe.columns = samples
 
-    counts_dataframe.columns = samples
+    print(counts_dataframe.loc[1:5, :])
 
     reps = [design.get_rep_num(label) for label in samples]
     conds = [design.get_condition(label) for label in samples]
