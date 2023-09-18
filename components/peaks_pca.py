@@ -71,7 +71,6 @@ def generate_pca_plot(counts_matrix_path: Path,
     reps = [design.get_rep_num(label) for label in samples]
     conds = [design.get_condition(label) for label in samples]
 
-    counts_dataframe = pd.read_csv(counts_matrix_path, sep='\t')
     counts_matrix = np.log2(counts_dataframe + 1)
 
     # norm_counts = scaler.fit_transform(counts_matrix)
