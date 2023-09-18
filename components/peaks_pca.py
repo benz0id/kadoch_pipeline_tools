@@ -66,8 +66,6 @@ def generate_pca_plot(counts_matrix_path: Path,
         samples = [sample.strip().split('_')[1] for sample in samples]
         counts_dataframe.columns = samples
 
-    print(counts_dataframe.loc[1:5, :])
-
     reps = [design.get_rep_num(label) for label in samples]
     conds = [design.get_condition(label) for label in samples]
 
@@ -107,6 +105,7 @@ def generate_pca_plot(counts_matrix_path: Path,
                             str(j + 1) + '.svg'])
         plt.show()
         plt.savefig(out_filepath / filename)
+        plt.close()
 
 
 class PeakPCAAnalyser:
