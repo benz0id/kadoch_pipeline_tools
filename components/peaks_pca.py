@@ -55,7 +55,7 @@ def generate_pca_plot(counts_matrix_path: Path,
     counts_dataframe = pd.read_csv(counts_matrix_path, sep='\t')
 
     if n_info_cols > 0:
-        counts_dataframe.drop(list(range(n_info_cols)))
+        counts_dataframe.drop(columns=list(range(n_info_cols)))
 
     samples = counts_dataframe.columns
     print(samples)
