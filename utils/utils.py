@@ -118,7 +118,7 @@ def write_samples_file(filenames: List[Union[Path, str]],
     for filename in filenames:
         sample_id = filename.split('_')[1]
         name = filename.split('.')[0]
-        lines[name] = sample_id
+        lines[sample_id] = name
 
     with open(out_path, 'w') as out_file:
         for filename in sorted(lines):
