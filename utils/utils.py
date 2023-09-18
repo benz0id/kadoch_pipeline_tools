@@ -122,6 +122,6 @@ def write_samples_file(filenames: List[Union[Path, str]],
 
     with open(out_path, 'w') as out_file:
         for filename in sorted(lines):
-            out_file.write(filename + '\t' + lines[filename])
+            out_file.write(filename + '\t' + lines[filename] + '\n')
 
 
