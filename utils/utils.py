@@ -106,6 +106,14 @@ def write_samples_file(filenames: List[Union[Path, str]],
         position after splitting by '_'.
     :param out_path: Path to the text file to write.
     """
+    parsed_filenames = []
+    for filename in filenames:
+        if isinstance(filename, Path):
+            parsed_filenames.append(filename.name)
+        else:
+            parsed_filenames.append(filename)
+    filenames = parsed_filenames
+
     lines = {}
     for filename in filenames:
         sample_id = filename.split('_')[1]
