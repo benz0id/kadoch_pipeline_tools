@@ -60,7 +60,7 @@ def generate_pca_plot(counts_matrix_path: Path,
         to_rem = [samples[i] for i in range(n_info_cols)]
         counts_dataframe = counts_dataframe.drop(columns=to_rem)
         samples = counts_dataframe.columns
-        counts_dataframe = counts_dataframe[samples].astype(int)
+        counts_dataframe = counts_dataframe[samples].astype(float)
 
     print(counts_dataframe.loc[1:5, :])
     if sample_ids:
