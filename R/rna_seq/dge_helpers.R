@@ -135,7 +135,8 @@ extract_condition <- function(sample_name, expected_components){
 #'
 #' @examples
 get_gene_counts_bar <- function(expression_data, gene_name, sample_descs,
-                                groups, title, x, y, fill="Condition", num_desc_cols=1){
+                                groups, title, x, y, fill="Condition", 
+                                num_desc_cols=1, colours=NULL){
   gene_row <- which(gene_name == expression_data$gene_name)
   
   if (length(gene_row) == 0){
@@ -147,17 +148,9 @@ get_gene_counts_bar <- function(expression_data, gene_name, sample_descs,
   
   counts <- expression_data[gene_row, (num_desc_cols + 1): ncol(expression_data)]
   
-  counts_df <- data.frame(sample=sample_descs, counts=as.numeric(counts),
-                          group=groups)
+  plt <- get_basic_bar(as.numeric(counts), sample_descs, groups, title, x, y, fill, colours)
   
-  plot <- ggplot(counts_df, aes(x = sample, y = counts, fill = group)) + 
-    scale_y_continuous(labels = scales::label_number(), limits = c(0, max(counts_df$counts))) +
-    geom_col() +
-    labs(title = title,
-         x = x, y = y, fill = fill) +
-    theme(plot.title = element_text(face = "bold")) +
-    coord_flip()
-  return(plot)
+  return(plt)
 }
 
 #' Generate A Basic Bar Plot
@@ -175,17 +168,79 @@ get_gene_counts_bar <- function(expression_data, gene_name, sample_descs,
 #'
 #' @examples
 get_basic_bar <- function(values, value_labels, groups, title, x, y,
-fill){
-  counts_df <- data.frame(label=value_labels, values=values, group=groups)
+fill, colours=NULL){
+  if (is.null(colours)){
+    n <- length(unique(groups))
+    colours <- colorspace::heat_hcl(n, 100, l=c(50, 90), power=1)
+  }
+  
+  if (! is.factor(value_labels)){
+    value_labels <- factor(value_labels, ordered = TRUE,
+                           levels=rev(value_labels))
+  }
+  
+  if (! is.factor(groups)){
+    groups <- factor(groups, ordered = TRUE,
+                           levels=unique(groups))
+  }
+  
+  counts_df <- data.frame(label=value_labels, bars=values, group=groups)
 
-  plot <- ggplot(counts_df, aes(x = label, y = values, fill = group)) +
-    scale_y_continuous(labels = scales::label_number(), limits = c(0, max(counts_df$values))) +
+  plot <- ggplot(counts_df, aes(x = label, y = bars, fill = group)) +
+    scale_y_continuous(labels = scales::label_number(), limits = c(0, max(values))) +
     geom_col() +
     labs(title = title,
          x = x, y = y, fill = fill) +
     theme(plot.title = element_text(face = "bold")) +
-    coord_flip()
+    coord_flip() + 
+    scale_fill_manual(values=colours) +
+    theme_bw()
+  
+  
   return(plot)
+}
+
+
+
+#' Reorder Columns Belonging to Groups
+#'
+#' @param dataframe A dataframe containing n columns.
+#' 
+#' @param groups A vector of categories to which each column belongs,
+#'  i.e. dataframe[, i] represents a sample belonging to groups[i].
+#'    length(groups) == ncol(dataframe)
+#'  
+#' @param group_order A vector representing the order of the values in groups.
+#'  where 
+#'    length(group_order) <= groups
+#'    all(group_order %in% unique(groups))
+#'
+#' @return A dataframe ordered by group_order
+#' @export
+#'
+#' @examples
+reorder_df_columns <- function(dataframe, groups, group_order, num_desc_columns=1){
+  fac <- factor(groups, ordered=TRUE,levels = group_order)
+  return(cbind(dataframe[1], dataframe[, (order(fac) + 1)]))
+}
+
+
+#' Reorder A Vector
+#' 
+#' @param groups A vector of categories (any type).
+#'  
+#' @param group_order A vector representing the order of the values in groups.
+#'  where 
+#'    length(group_order) <= groups
+#'    all(group_order %in% unique(groups))
+#'
+#' @return A dataframe ordered by group_order
+#' @export
+#'
+#' @examples
+reorder_groups <- function(groups, group_order){
+  fac <- factor(groups, levels = group_order, ordered=TRUE)
+  return(groups[order(fac)])
 }
 
 
@@ -198,21 +253,15 @@ fill){
 #' @export
 #'
 #' @examples
-reads_analysis <- function(raw_counts, groups, num_desc_columns=1){
+reads_analysis <- function(raw_counts, groups, num_desc_columns=1, colours=NULL){
   
   # Extract count information.
   counts_per_samples <- apply(raw_counts[2:ncol(raw_counts)], MARGIN=2, FUN = sum)
-  data <- data.frame(sample=names(counts_per_samples), count=counts_per_samples,
-                     group=groups)
-  
-  
-  plt <- ggplot(data,aes(x = sample, y = count, fill = group)) + 
-    scale_y_continuous(labels = scales::label_number(), limits = c(NA, max(data$count))) +
-    geom_col() +
-    labs(title = "Total Number of Reads in Each Sample",
-         x = "Sample", y = "Total Reads", fill = "Condition") +
-    theme(plot.title = element_text(face = "bold")) +
-    coord_flip()
+  print(colours)
+  plt <- get_basic_bar(values = counts_per_samples, names(counts_per_samples),
+                              groups, title = "Total Number of Reads in Each Sample",
+                              x = "Sample", y = "Total Reads", fill = "Treatment",
+                              colours = colours)
   return(plt)
 }
 
@@ -641,7 +690,7 @@ get_de_gene_names <- function(de_gene_list, adjpval_threshold, logfc_threshold,
 
 DEFAULT_VOLCANO_TITLE <- "Identifying Key DE Genes Through Significance and Magnitude of DE"
 
-#' Create a volcano plot representing 
+#' Create a Volcano Plot
 #'
 #' @param de_gene_list A data frame containing all differentially expressed 
 #' genes.
@@ -698,32 +747,32 @@ volcano <- function(de_gene_list, logfc_threshold, sig_threshold, reference_cond
     de_gene_data$delabel[to_highlight] <- de_gene_data$gene_name[to_highlight]
   }
   
-  # Generate a caption.
+  # Generate a caption. Ignore NA genes.
   caption <- paste0(c('Fold change relative to ', reference_cond, 
                       ' | logFC Threshold = +/-', as.character(logfc_threshold), 
                       ' | Significance Threshold = ', as.character(sig_threshold),
-                      ' | N Up = ', as.character(sum(up)),
-                      ' | N Down = ', as.character(sum(down))), 
+                      ' | N Up = ', as.character(sum(up & ! is.na(up))),
+                      ' | N Down = ', as.character(sum(down& ! is.na(down)))), 
                     collapse='')
   
   # Plot the data.
-  p <- ggplot(data=de_gene_data, aes(x=logFC, y=-log2(adj.P.Val), col=diffexpressed, label = delabel)) + 
+  plt <- ggplot(data=de_gene_data, aes(x=logFC, y=-log2(adj.P.Val), col=diffexpressed, label = delabel)) + 
     geom_point() + 
     geom_vline(xintercept=c(-logfc_threshold, logfc_threshold), col="red") +
     geom_hline(yintercept=-log2(sig_threshold), col="red") +
     scale_color_manual(values=c('blue','grey', 'red')) +
     geom_label(na.rm=TRUE) +
     labs(title=title,
-         caption=caption)
+         caption=caption,) + 
+    theme_bw() +
+    theme(legend.position = 'none')
   
   if (save_plot){
-    png(file=paste0(c('output/', title, '_volcano_plot.png'), collapse = ''),
-        width = 1500, height = 700, res=100)
-    print(p)
-    dev.off()
+    ggsave(paste0(c('output/', title, '_volcano_plot.svg'), collapse = ''),
+           plot=plt, width=5, height=5)
   }
   
-  return(p)
+  return(plt)
 }
 
 

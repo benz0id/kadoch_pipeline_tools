@@ -6,12 +6,15 @@
 #' @param out_dir 
 #' @param return_dataframe If the specified rank file exists, return it, else
 #' create a new one and return it without saving.
+#' @param mult_hyp_testing Whether to extract multiple hypothesis testing P values,
+#' as opposed to regular p values.
 #'
 #' @return A path to the rank file.
 #' @export
 #'
 #' @examples
-get_rank_list <- function(de_list, ref_condition, treat_condition, out_dir='output'){
+get_rank_list <- function(de_list, ref_condition, treat_condition, out_dir='output',
+                          mult_hyp_testing=TRUE){
   
   rankfile_path <- paste0(c(out_dir, '/', ref_condition, '-', treat_condition, '.rnk'), collapse='')
   
@@ -20,15 +23,21 @@ get_rank_list <- function(de_list, ref_condition, treat_condition, out_dir='outp
   dir_pvals <- numeric()
   for (i in seq_along(de_list$adj.P.Val)){
     logfc <- de_list$logFC[i]
-    adjpval <- de_list$adj.P.Val[i]
-    dir_pvals[i] <- -log10(adjpval) * sign(logfc)
+    
+    if (mult_hyp_testing){
+      pval <- de_list$adj.P.Val[i]
+    } else {
+      pval <- de_list$P.Value[i]
+    }
+    
+    dir_pvals[i] <- -log10(pval) * sign(logfc)
   }
   
   de_list$rank <- dir_pvals
   
   rnk$dir.adj.P.Val <- dir_pvals
   
-  rnk <- rnk[order(rnk$dir.adj.P.Val, decreasing=FALSE),]
+  rnk <- rnk[order(rnk$dir.adj.P.Val, decreasing=TRUE),]
   
   write.table(rnk, rankfile_path, sep='\t', row.names=FALSE, col.names = FALSE)
   
@@ -161,12 +170,13 @@ get_gsea_dir <- function(date='latest', safe=TRUE){
 #' @export
 #'
 #' @examples
-get_analysis_path <- function(ref_condition, compare_cond, date='latest'){
+get_analysis_path <- function(ref_condition, compare_cond, geneset, date='latest'){
   
   # Find the matching analysis file name.
   results_dir_contents <- list.files(get_gsea_dir(date))
-  analysis_regex <- paste0(c(ref_condition, '_vs_', compare_cond, '.Gsea'), collapse = '')
+  analysis_regex <- paste0(c(ref_condition, '_vs_', compare_cond, '_', geneset, '.Gsea'), collapse = '')
   results_filename <- results_dir_contents[grepl(analysis_regex, results_dir_contents)]
+  print(results_filename)
   
   # Ensure that the correct number of file names were found.
   if (length(results_filename) == 0){
@@ -204,7 +214,8 @@ get_run_gsea_command <- function(gsea_path, rank_path, seed,
                                  rerun=FALSE,
                                  output_dir=NA){
   
-  analysis_name <- paste0(c(reference_cond, '_vs_', compare_cond), collapse = '')
+  analysis_name <- paste0(c(reference_cond, '_vs_', compare_cond, '_',
+                            genesets), collapse = '')
   
   if (is.na(output_dir)){
   output_dir <- get_gsea_dir(date=Sys.Date(), safe=FALSE)
@@ -237,7 +248,7 @@ get_run_gsea_command <- function(gsea_path, rank_path, seed,
     
     "-chip",  "ftp.broadinstitute.org://pub/gsea/msigdb/human/annotations/Human_Gene_Symbol_with_Remapping_MSigDB.v2023.1.Hs.chip",
     
-    "-create_svgs", "false",
+    "-create_svgs", "true",
     
     "-include_only_symbols","true",
     
@@ -266,10 +277,12 @@ get_run_gsea_command <- function(gsea_path, rank_path, seed,
 #' @export
 #'
 #' @examples
-get_gsea_collapsed_rank_list <- function(ref_condition, compare_cond, 
+get_gsea_collapsed_rank_list <- function(ref_condition, compare_cond, genesets,
                                          analysis_name='latest'){
   
   analysis_path <- get_analysis_path(ref_condition, compare_cond, date=analysis_name)
+  
+  print(analysis_path)
   
   hyphen_title <- paste0(c(ref_condition, '-', compare_cond), collapse = '')
   
@@ -341,9 +354,9 @@ get_matching_file <- function(dir, patt){
 #' @export
 #'
 #' @examples
-get_gsea_results <- function(ref_condition, compare_cond, analysis_name){
+get_gsea_results <- function(ref_condition, compare_cond, genesets, analysis_name){
   
-  analysis_path <- get_analysis_path(ref_condition, compare_cond, analysis_name)
+  analysis_path <- get_analysis_path(ref_condition, compare_cond, genesets, analysis_name)
   
   # Extract results by combining positively and negatively enriched genes.
   pos_path <- get_matching_file(analysis_path, 'gsea_report_for_na_pos.*.tsv')
