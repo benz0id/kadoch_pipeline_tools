@@ -1,9 +1,249 @@
-#' Generate a .rnk File Using The Given DE List
+
+
+# === GSEA Directory Management Funcitons ===
+
+#' Get the Path to the Given Analysis
+#'
+#' @param reference_cond The reference condition
+#' @param compare_cond The condition to be compared.
+#' @param genesets The genesets with which the analysis was conducted.
+#' @param parent_dir The directory containing the analysis sub directories.
+#' 
+#' @return A string representation of a path.
+#' @export
+#'
+#' @examples
+get_analysis_path <- function(ref_condition, compare_cond, genesets, 
+                              parent_dir='gsea_out'){
+  containing_path <- file.path(parent_dir, genesets)
+  
+  # Find the matching analysis file name.
+  results_dir_contents <- list.files(containing_path)
+  analysis_regex <- paste0(c(ref_condition, '_vs_', compare_cond, '_', genesets, '.Gsea'), collapse = '')
+  results_filename <- results_dir_contents[grepl(analysis_regex, results_dir_contents)]
+  print(results_filename)
+  
+  # Ensure that the correct number of file names were found.
+  if (length(results_filename) == 0){
+    stop(paste0(c('No matching analysis for', ref_condition, 'and',
+                  compare_cond, 'found in', containing_path), 
+                collapse = ' '))
+  } else if (length(results_filename) > 1){
+    stop(paste0(c('Multiple matching analysis for', ref_condition, 'and',
+                  compare_cond, 'found in', containing_path, ':',
+                  results_filename), 
+                collapse = ' '))
+  }
+  
+  # Return complete path.
+  return(paste0(c(containing_path, '/', results_filename), collapse=''))
+}
+
+#' Get Whether a Given GSEA Directory Had Been Created
+#'
+#' @param reference_cond The reference condition
+#' @param compare_cond The condition to be compared.
+#' @param genesets The genesets with which the analysis was conducted.
+#' @param parent_dir The directory containing the analysis sub directories.
+#'
+#' @return A string representation of a path.
+#' @export
+#'
+#' @examples
+analysis_exists <- function(ref_condition, compare_cond, geneset, 
+                            parent_dir='gsea_out'){
+  containing_path <- file.path(parent_dir, geneset)
+  
+  # Find the matching analysis file name.
+  results_dir_contents <- list.files(containing_path)
+  analysis_regex <- paste0(c(ref_condition, '_vs_', compare_cond, '_', geneset, '.Gsea'), collapse = '')
+  results_filename <- results_dir_contents[grepl(analysis_regex, results_dir_contents)]
+  print(results_filename)
+  
+  # Ensure that the correct number of file names were found.
+  return(length(results_filename) != 0)
+}
+
+
+#' Get a Path to a File Matching a Pattern in A Directory 
+#'
+#' @param dir The directory to search.
+#' @param patt The pattern to search for.
+#'
+#' @return
+#' @export
+#'
+#' @examples
+get_matching_file <- function(dir, patt){
+  all_files <- list.files(dir)
+  matching_file <- all_files[grepl(patt, all_files)]
+  
+  # Ensure that the correct number of file names were found.
+  if (length(matching_file) == 0){
+    stop(paste0(c('No matching analysis for', patt, 'found in', dir), 
+                collapse = ' '))
+  } else if (length(matching_file) > 1){
+    stop(paste0(c('Multiple matching analysis for', patt, 'found in', dir, ':',
+                  matching_file), 
+                collapse = ' '))
+  }
+  return(file.path(dir, matching_file))
+}
+
+#' Get a Dataframe Contining the Results From the GSEA Analysis.
+#'
+#' @param reference_cond The reference condition
+#' @param compare_cond The condition to be compared.
+#' @param genesets The genesets with which the analysis was conducted.
+#' @param parent_dir The directory containing the analysis sub directories.
+#'
+#' @return
+#' @export
+#'
+#' @examples
+get_gsea_results <- function(ref_condition, compare_cond, genesets){
+  
+  analysis_path <- get_analysis_path(ref_condition, compare_cond, genesets)
+  
+  # Extract results by combining positively and negatively enriched genes.
+  pos_path <- get_matching_file(analysis_path, 'gsea_report_for_na_pos.*.tsv')
+  neg_path <- get_matching_file(analysis_path, 'gsea_report_for_na_neg.*.tsv')
+  
+  pos_df <- read.delim(pos_path, header=TRUE, sep='\t')
+  neg_df <- read.delim(neg_path, header=TRUE, sep='\t')
+  
+  results <- rbind(pos_df, neg_df)
+  
+  # Make sure that we have the expected number of gene sets.
+  gene_sets_path <- file.path(analysis_path, 'edb', 'gene_sets.gmt')
+  expected_num_gene_sets <- R.utils::countLines(gene_sets_path)
+  
+  if (nrow(results) != expected_num_gene_sets){
+    stop(paste0(c(as.character(expected_num_gene_sets - nrow(results)),
+                  ' gene sets were not analysed by GSEA for unknown reasons.'),
+                collapse=''))
+  }
+  return(results)
+}
+
+
+#' Find a .rnk File Using The Given Attributes
 #'
 #' @param de_list 
 #' @param ref_condition 
 #' @param treat_codition 
 #' @param out_dir 
+#' @param return_dataframe If the specified rank file exists, return it, else
+#' create a new one and return it without saving.
+#'
+#' @return A path to the rank file.
+#' @export
+#'
+#' @examples
+fetch_rank_list <- function(ref_condition, treat_condition, out_dir='output'){
+  
+  rankfile_path <- paste0(c(out_dir, '/', ref_condition, '-', treat_condition, '.rnk'), collapse='')
+  
+  if (file.exists(rankfile_path)){
+    return(read.delim(rankfile_path, sep='\t', row.names = NULL, header=FALSE))
+  } else {
+    stop("Specified rank file has not been created.")
+  }
+}
+
+
+#' Get all GSEA Results from the Given Directory
+#' 
+#' @param gsea_out_dir The output directory containing all of the GSEA results.
+#' This directory must only contain directories containing GSEA results.
+#' 
+#'  |gsea_out_dir
+#'  |--- Genesets 1
+#'  |  |--- GSEA Result from Condition 1
+#'  |  |--- GSEA Result from Condition 2
+#'  |--- Genesets 2
+#'  |  |--- GSEA Result from Condition 1
+#'  |  |--- GSEA Result from Condition 2
+#'  |--- h.all
+#'  |  |--- D81WT_vs_D81A_h.all
+#'  |  |--- D81WT_vs_D81N_h.all
+#' 
+#' @return A list containing a list of result dataframes.
+#' 
+#' === Example <gsea_result> Structure ===
+#' 
+#'|--- Genesets 1
+#'|  |--- GSEA Result from Condition 1
+#'|  |--- GSEA Result from Condition 2
+#'|--- Genesets 2
+#'|  |--- GSEA Result from Condition 1
+#'|  |--- GSEA Result from Condition 2
+#'|--- h.all
+#'|  |--- D81WT_vs_D81A_h.all
+#'|  |--- D81WT_vs_D81N_h.all
+#' 
+#' Where each GSEA result contains the values reported in the for both of
+#' gsea_report_for_neg_.tsv and gsea_report_for_pos_.tsv.
+#' 
+get_all_gsea_results <- function(gsea_out_dir='gsea_out', verbose=TRUE){
+  
+  all_gsea_results <- list()
+  for (gs_dir in list.dirs(gsea_out_dir)){
+    print(paste0(c('|--\t', gs_dir), collapse=''))
+    gs_dir_results <- list()
+    all_gsea_results[[gs_dir]] <- gs_dir_results
+    
+    res_path <- file.path(gsea_out_dir, gs_dir)
+    for (gsea_res in list.dirs(res_path)){
+        
+      components <- get_components_from_gsea_name(gsea_res)
+      
+      gs_dir_results[[gsea_res]] <- get_gsea_results(components[1],
+                                                     components[2],
+                                                     components[3])
+      
+      analysis_name <- paste0(c(reference_cond, '_vs_', compare_cond, '_',
+                                genesets), collapse = '')
+      print(paste0(c('|\t|--\t', analysis_name), collapse=''))
+      
+      
+    }
+  }
+}
+
+#' Get the Components of a GSEA Comparison from its Formatted name
+#' 
+#' @param gsea_result_name character formatted 
+#' <ref_cond>_vs_<compare_cond>_<geneset>.Gsea...
+#' 
+#' @return Length 3 named character vector with components equal to  <ref_cond>, 
+#' <compare_cond>, and <geneset>.
+#' 
+get_components_from_gsea_name <- function(gsea_result_name){
+  s1 <- unlist(strsplit(gsea_result_name, '.Gsea'))
+  s2 <- unlist(strsplit(gsea_result_name, '_'))
+  genesets <- s2[length(s2)]
+  
+  s3 <- paste0(s2[-length(s2)], collapse='_')
+  s4 <- unlist(strsplit(gsea_result_name, '_vs_'))
+  ref_cond <- s4[1]
+  compare_cond <- s4[2]
+  
+  rtrn <- c(ref_cond, compare_cond, genesets)
+  names(rtrn) <- c('reference_cond', 'compare_cond', 'genesets')
+  return(rtrn)
+}
+
+
+# === Functional GSEA Analysis Code ===
+
+#' Generate a .rnk File Using The Given DE List
+#'
+#' @param de_list List of DE genes with columns $gene_name, $logFC, and
+#'  $adj.P.Val or $P.Val.
+#' @param ref_condition The name of the reference (often control) condition.
+#' @param treat_codition The name of the treatment condition.
+#' @param out_dir The directory in which to place the ranked list.
 #' @param return_dataframe If the specified rank file exists, return it, else
 #' create a new one and return it without saving.
 #' @param mult_hyp_testing Whether to extract multiple hypothesis testing P values,
@@ -44,158 +284,39 @@ get_rank_list <- function(de_list, ref_condition, treat_condition, out_dir='outp
   return(rankfile_path)
 }
 
-#' Find a .rnk File Using The Given Attributes
-#'
-#' @param de_list 
-#' @param ref_condition 
-#' @param treat_codition 
-#' @param out_dir 
-#' @param return_dataframe If the specified rank file exists, return it, else
-#' create a new one and return it without saving.
-#'
-#' @return A path to the rank file.
-#' @export
-#'
-#' @examples
-fetch_rank_list <- function(ref_condition, treat_condition, out_dir='output'){
-  
-  rankfile_path <- paste0(c(out_dir, '/', ref_condition, '-', treat_condition, '.rnk'), collapse='')
-  
-  if (file.exists(rankfile_path)){
-    return(read.delim(rankfile_path, sep='\t', row.names = NULL, header=FALSE))
-  } else {
-    stop("Specified rank file has not been created.")
-  }
-}
-
-
-
-#' Install Genesets from The NCBI
-#'
-#' Note: not working without login.
-#'
-#'
-#' @param version 
-#'
-#' @return
-#' @export
-#'
-#' @examples
-download_genesets <- function(version='2023.1'){
-  get_ncbi_geneset_hyper <- function(gs_name){
-    hyper <- paste0(c("https://www.gsea-msigdb.org/gsea/msigdb/download_file.jsp?filePath=/msigdb/release/", 
-                      version, '.Hs/', gs_name, ".all.v", version, ".Hs.symbols.gmt"), collapse='')
-    return(hyper)
-  }
-  
-  set_names <- c('h', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8')
-  
-  to_download <- c()
-  
-  for (set_name in set_names){
-    if (! paste0(c(set_name, '.gmt'), collapse='') %in% list.files('genesets')){
-      to_download <- c(to_download, set_name)
-    }
-  }
-  
-  for (set_name in set_names){
-    gs_hyper <- get_ncbi_geneset_hyper(set_name)
-    print(gs_hyper)
-    download.file(gs_hyper, paste0(c("genesets/", set_name, '.gmt'), collapse=''))
-  }
-}
 
 # Some useful formatting formatting functions.
 s <- function(x){return(as.character(x))}
 q <- function(x){return(paste0(c('"', x, '"'), collapse=''))}
 twd <- function(x){return(paste0(c(getwd(), '/', x), collapse=''))}
 
-# Helpers to manage storing of past GSEA results.
-get_latest_gsea_date <- function(){
-  date_to_int <- function(x){
-    # Convert the date sting to an integer for comparison 
-    # 'YYYY-MM-DD' -> YYYYMMDD
-    int_date <- as.numeric(paste0(unlist(strsplit(x, split = '-')), collapse=''))
-    return(int_date)
-  }
-  
-  int_to_date <- function(x){
-    # Convert an 8 digit date YYYYMMDD -> 'YYYY-MM-DD'
-    strdate <- as.character(x)
-    strdate <- paste0(c(substr(strdate, 1, 4), substr(strdate, 5, 6),
-                        substr(strdate, 7, 8)), collapse = '-')
-  }
-  
-  # Get the latest date string.
-  dates <-list.files(twd('gsea_out'))
-  int_dates <- unlist(lapply(dates, date_to_int))
-  max_int_date <- max(int_dates)
-  date <- int_to_date(max_int_date)
-  return(date)
-}
-
-
-#' Get the Path to The GSEA Directory Created on The Specified Date
-#'
-#' @param date 
-#' @param safe Whether to check for existence of directory before returning it.
-#'
-#' @return
-#' @export
-#'
-#' @examples
-get_gsea_dir <- function(date='latest', safe=TRUE){
-  
-  date <- as.character(date)
-  
-  if (as.character(date) == 'latest'){
-    date <- get_latest_gsea_date()
-  }
-  
-  gsea_path <- twd(paste0(c("gsea_out/", as.character(date)), collapse=''))
-  if (safe & !file.exists(gsea_path)){
-    stop(paste0(c(gsea_path, ' does not exist.'), collapse=''))
-  }
-  return(gsea_path)
-  }
-
-
-#' Get the Path to the Given Analysis
-#'
-#' @param reference_cond The reference condition
-#' @param compare_cond The condition to be compared.
-#' @param date The date on which the comparison was performed.
-#'
-#' @return A string representation of a path.
-#' @export
-#'
-#' @examples
-get_analysis_path <- function(ref_condition, compare_cond, geneset, date='latest'){
-  
-  # Find the matching analysis file name.
-  results_dir_contents <- list.files(get_gsea_dir(date))
-  analysis_regex <- paste0(c(ref_condition, '_vs_', compare_cond, '_', geneset, '.Gsea'), collapse = '')
-  results_filename <- results_dir_contents[grepl(analysis_regex, results_dir_contents)]
-  print(results_filename)
-  
-  # Ensure that the correct number of file names were found.
-  if (length(results_filename) == 0){
-    stop(paste0(c('No matching analysis for', ref_condition, 'and',
-                  compare_cond, 'found in', get_gsea_dir(date)), 
-                collapse = ' '))
-  } else if (length(results_filename) > 1){
-    stop(paste0(c('Multiple matching analysis for', ref_condition, 'and',
-                  compare_cond, 'found in', get_gsea_dir(date), ':',
-                  results_filename), 
-                collapse = ' '))
-  }
-  
-  # Return complete path.
-  return(paste0(c(get_gsea_dir(date), '/', results_filename), collapse=''))
-}
 
 
 #' Run Gene Set Enrichment Analysis
+#' 
+#' @param gsea_path Path to the folder containing command line install of GSEA.
+#' 
+#' @param rank_path Path to rankfile.
+#' 
+#' @param seed The seed to use to generate the analyses, for reproducability.
+#' 
+#' @param reference_cond The reference/control condition.
+#' 
+#' @param compare_cond The treatment/comparison condition. A positive enrichment
+#'  score indicates a positive enrichment in this condition.
+#'  
+#' @param genesets The genesets to use, as referenced by the Broad MSIGDB.
+#' 
+#' @param min_set_size The minimum size of any given gene set to be analysed.
+#' 
+#' @param max_set_size The maximum size of any given gene set to be included.
+#' 
+#' @param rerun Whether to re-run the analysis if a matching analysis already 
+#'  exists at a given path. Iff false, creates a second directory for the new
+#'  analysis with a slightly different name.
+#'  
+#' @param output_dir The output directory. Results will be placed in 
+#'  <output_dir>/<genesets>/<ref_condition>_vs_<compare_cond>_<genesets>.Gsea
 #'
 #' @param rank_path Path to the rank
 #' @param seed The random seed with which to do the analysis.
@@ -205,25 +326,34 @@ get_analysis_path <- function(ref_condition, compare_cond, geneset, date='latest
 #' @export
 #'
 #' @examples
-get_run_gsea_command <- function(gsea_path, rank_path, seed,
+#' 
+#' get_run_gsea_command("/n/data1/dfci/pedonc/kadoch/ben/apps/GSEA_4.3.2", 
+#'                       "output/dummy_rnk.rnk", 52, 'DMSO', 'FHD286', 
+#'                       genesets='h.all')
+#' 
+#' 
+#' 
+get_run_gsea_command <- function(gsea_path, 
+                                 rank_path, 
+                                 seed,
                                  reference_cond, 
                                  compare_cond,
                                  genesets='h.all',
                                  min_set_size=20,
                                  max_set_size=500,
                                  rerun=FALSE,
-                                 output_dir=NA){
+                                 output_dir='gsea_out',
+                                 run=FALSE){
   
   analysis_name <- paste0(c(reference_cond, '_vs_', compare_cond, '_',
                             genesets), collapse = '')
   
-  if (is.na(output_dir)){
-  output_dir <- get_gsea_dir(date=Sys.Date(), safe=FALSE)
-  } else if (output_dir =='gs'){
-    output_dir <- get_gsea_dir(date=genesets, safe=FALSE)
+  if (! rerun & analysis_exists(reference_cond, compare_cond, genesets,
+                                parent_dir=output_dir)){
+    warning(paste0(c(analysis_name, 'already exists in', output_dir, '/',
+    'genesets. Avoiding re-run.'), collapse=' '))
+    return('echo Avoiding Re-run')
   }
-  
-  
   
   cmd <- paste0(c(
     paste0(c(gsea_path, "/gsea-cli.sh"), collapse=""), "GSEAPreranked",
@@ -262,7 +392,7 @@ get_run_gsea_command <- function(gsea_path, rank_path, seed,
     
     "-zip_report", "false",
     
-    "-out",  q(output_dir)), collapse=' ')
+    "-out",  q(c(output_dir, '/', genesets))), collapse=' ')
   
   return(cmd)
 }
@@ -277,10 +407,9 @@ get_run_gsea_command <- function(gsea_path, rank_path, seed,
 #' @export
 #'
 #' @examples
-get_gsea_collapsed_rank_list <- function(ref_condition, compare_cond, genesets,
-                                         analysis_name='latest'){
+get_gsea_collapsed_rank_list <- function(ref_condition, compare_cond, genesets){
   
-  analysis_path <- get_analysis_path(ref_condition, compare_cond, date=analysis_name)
+  analysis_path <- get_analysis_path(ref_condition, compare_cond, genesets)
   
   print(analysis_path)
   
@@ -302,11 +431,12 @@ get_gsea_collapsed_rank_list <- function(ref_condition, compare_cond, genesets,
 #' @export
 #'
 #' @examples
-get_gsea_omitted_genes <- function(ref_condition, compare_cond, 
-                                   verbose=TRUE, analysis_name='latest'){
-  rank_file <- fetch_rank_list(ref_condition, compare_cond, 'output')
+get_gsea_omitted_genes <- function(ref_condition, compare_cond, genesets,
+                                   rank_file_parent='output', 
+                                   gsea_parent='gsea_out', verbose=TRUE){
+  rank_file <- fetch_rank_list(ref_condition, compare_cond, rank_file_parent)
   collapsed_rankfile <- get_gsea_collapsed_rank_list(ref_condition, compare_cond,
-                                                     analysis_name)
+                                                     analysis_name, gsea_parent)
   
   num_missing <- length(rank_file$V1) - length(collapsed_rankfile$V1)
   
@@ -318,66 +448,6 @@ get_gsea_omitted_genes <- function(ref_condition, compare_cond,
   return(num_missing)
 }
 
-
-#' Get a Path to a File Matching a Pattern in A Directory 
-#'
-#' @param dir The directory to search.
-#' @param patt The pattern to search for.
-#'
-#' @return
-#' @export
-#'
-#' @examples
-get_matching_file <- function(dir, patt){
-  all_files <- list.files(dir)
-  matching_file <- all_files[grepl(patt, all_files)]
-  
-  # Ensure that the correct number of file names were found.
-  if (length(matching_file) == 0){
-    stop(paste0(c('No matching analysis for', patt, 'found in', dir), 
-                collapse = ' '))
-  } else if (length(matching_file) > 1){
-    stop(paste0(c('Multiple matching analysis for', patt, 'found in', dir, ':',
-                  matching_file), 
-                collapse = ' '))
-  }
-  return(file.path(dir, matching_file))
-}
-
-#' Get a Dataframe Contining the Results From the GSEA Analysis.
-#'
-#' @param ref_condition 
-#' @param compare_cond 
-#' @param date 
-#'
-#' @return
-#' @export
-#'
-#' @examples
-get_gsea_results <- function(ref_condition, compare_cond, genesets, analysis_name){
-  
-  analysis_path <- get_analysis_path(ref_condition, compare_cond, genesets, analysis_name)
-  
-  # Extract results by combining positively and negatively enriched genes.
-  pos_path <- get_matching_file(analysis_path, 'gsea_report_for_na_pos.*.tsv')
-  neg_path <- get_matching_file(analysis_path, 'gsea_report_for_na_neg.*.tsv')
-  
-  pos_df <- read.delim(pos_path, header=TRUE, sep='\t')
-  neg_df <- read.delim(neg_path, header=TRUE, sep='\t')
-  
-  results <- rbind(pos_df, neg_df)
-  
-  # Make sure that we have the expected number of gene sets.
-  gene_sets_path <- file.path(analysis_path, 'edb', 'gene_sets.gmt')
-  expected_num_gene_sets <- R.utils::countLines(gene_sets_path)
-  
-  if (nrow(results) != expected_num_gene_sets){
-    stop(paste0(c(as.character(expected_num_gene_sets - nrow(results)),
-                ' gene sets were not analysed by GSEA for unknown reasons.'),
-                collapse=''))
-  }
-  return(results)
-}
 
 #' Get a Mapping From Vector A to Vector B
 #' 
@@ -399,6 +469,9 @@ get_mapping <- function(a, b){
   }
   return(val_inds)
 }
+
+
+# === Figure Generation ===
 
 
 get_enrichment_heatmap <- function(results,
