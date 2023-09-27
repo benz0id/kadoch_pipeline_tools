@@ -185,30 +185,34 @@ fetch_rank_list <- function(ref_condition, treat_condition, out_dir='output'){
 #' Where each GSEA result contains the values reported in the for both of
 #' gsea_report_for_neg_.tsv and gsea_report_for_pos_.tsv.
 #' 
+#' The <reference>_<comparison>_<genesets> name order is important for 
+#' downstream interpretation.
+#' 
+#' 
 get_all_gsea_results <- function(gsea_out_dir='gsea_out', verbose=TRUE){
   
   all_gsea_results <- list()
-  for (gs_dir in list.dirs(gsea_out_dir)){
+  for (gs_dir in list.files(gsea_out_dir)){
+    
     print(paste0(c('|--\t', gs_dir), collapse=''))
-    gs_dir_results <- list()
-    all_gsea_results[[gs_dir]] <- gs_dir_results
+    all_gsea_results[[gs_dir]] <- list()
     
     res_path <- file.path(gsea_out_dir, gs_dir)
-    for (gsea_res in list.dirs(res_path)){
-        
-      components <- get_components_from_gsea_name(gsea_res)
+    for (gsea_res in list.files(res_path)){
+      print(gsea_res)
       
-      gs_dir_results[[gsea_res]] <- get_gsea_results(components[1],
+      components <- partition_comparison_name(gsea_res)
+      
+      all_gsea_results[[gs_dir]][[gsea_res]] <- get_gsea_results(components[1],
                                                      components[2],
                                                      components[3])
       
-      analysis_name <- paste0(c(reference_cond, '_vs_', compare_cond, '_',
-                                genesets), collapse = '')
+      analysis_name <- paste0(c(components[1], '_vs_', components[2], '_',
+                                components[3]), collapse = '')
       print(paste0(c('|\t|--\t', analysis_name), collapse=''))
-      
-      
     }
   }
+  return(all_gsea_results)
 }
 
 #' Get the Components of a GSEA Comparison from its Formatted name
@@ -219,13 +223,13 @@ get_all_gsea_results <- function(gsea_out_dir='gsea_out', verbose=TRUE){
 #' @return Length 3 named character vector with components equal to  <ref_cond>, 
 #' <compare_cond>, and <geneset>.
 #' 
-get_components_from_gsea_name <- function(gsea_result_name){
+partition_comparison_name <- function(gsea_result_name){
   s1 <- unlist(strsplit(gsea_result_name, '.Gsea'))
-  s2 <- unlist(strsplit(gsea_result_name, '_'))
+  s2 <- unlist(strsplit(s1[1], '_'))
   genesets <- s2[length(s2)]
   
   s3 <- paste0(s2[-length(s2)], collapse='_')
-  s4 <- unlist(strsplit(gsea_result_name, '_vs_'))
+  s4 <- unlist(strsplit(s3, '_vs_'))
   ref_cond <- s4[1]
   compare_cond <- s4[2]
   
@@ -283,6 +287,7 @@ get_rank_list <- function(de_list, ref_condition, treat_condition, out_dir='outp
   
   return(rankfile_path)
 }
+
 
 
 # Some useful formatting formatting functions.
@@ -351,7 +356,7 @@ get_run_gsea_command <- function(gsea_path,
   if (! rerun & analysis_exists(reference_cond, compare_cond, genesets,
                                 parent_dir=output_dir)){
     warning(paste0(c(analysis_name, 'already exists in', output_dir, '/',
-    'genesets. Avoiding re-run.'), collapse=' '))
+                     'genesets. Avoiding re-run.'), collapse=' '))
     return('echo Avoiding Re-run')
   }
   
@@ -474,6 +479,25 @@ get_mapping <- function(a, b){
 # === Figure Generation ===
 
 
+#' Produce a Heatmap Visualising the Gene Set Enrichment REsults
+#'
+#' @param results A list of GSEA results, where each entry corresponds to the
+#' concatentation of gsea_report_for_na_pos.tsv and 
+#' gsea_report_for_na_neg.tsv generated from a single GSEA analysis.
+#' 
+#' @param n The maximum number of gene sets to display.
+#' 
+#' @param max_fdr In order for a gene set to be included as a row in the matrix,
+#' it must be enriched with it's fdr < max_fdr in at least oen of the 
+#' conditions.
+#' 
+#' @param sort_by One of "fdr" or "delta_nes".
+#'  Will include the gene sets with the top abs(NES) or FDR.
+#'
+#' @return A heatmap object.
+#' @export
+#'
+#' @examples
 get_enrichment_heatmap <- function(results,
                                    n=50,
                                    max_fdr=0.05,
@@ -540,14 +564,107 @@ get_enrichment_heatmap <- function(results,
   
   
   heatmap <- ComplexHeatmap::Heatmap(nes_matrix,
-                          show_row_dend = FALSE, show_column_dend = FALSE, 
-                          col=heatmap_col, show_column_names = TRUE, 
-                          show_row_names = TRUE,show_heatmap_legend = TRUE, 
-                          use_raster=TRUE, row_names_side='left',
-                          name='NES', row_names_max_width = unit(15, 'cm'),
-                          cluster_columns = FALSE)
+                                     show_row_dend = FALSE, show_column_dend = FALSE, 
+                                     col=heatmap_col, show_column_names = TRUE, 
+                                     show_row_names = TRUE,show_heatmap_legend = TRUE, 
+                                     use_raster=TRUE, row_names_side='left',
+                                     name='NES', row_names_max_width = unit(15, 'cm'),
+                                     cluster_columns = FALSE)
   return(heatmap)
 }
+
+
+
+
+
+#' Generate a Bubble-Lattice Plot Displaying GSEA Results
+#'
+#' @param all_results A list of lists of the structure described as in the 
+#'  function *get_all_gsea_results*.
+#'  
+#' @param genesets_of_interest A list of geneset names, to be displayed in
+#'  order on the y axis of the 
+#' 
+#' @param comparisons_of_interest The names of the comparisons of interest.
+#'  A list of length 2 vectors, with the first entry being the reference
+#'  condition, and the second entry being the comparison condition.
+#'
+#' @return A bubble-lattice plot.
+#' @export
+#'
+#' @examples
+bubble_lattice_plot <- function(all_results, 
+                                genesets_of_interest, 
+                                comparisons_of_interest,
+                                fdr_threshold){
+  num_rows <- length(genesets_of_interest) * length(lines)
+  
+  formatted_results <- data.frame(DataSet=c(),
+                                  GeneSet=c(),
+                                  NES=numeric(),
+                                  isSig=logical())
+  
+  # Iterate throughout all_results, looking for entries of one of 
+  # <genesets_of_interest> for any of <comparisons_of_interest>
+  for (genesets in names(all_results)){
+    comparison_results <- all_results[[genesets]]
+    
+    for (comparison in names(comparison_results)){
+      parts <- partition_comparison_name(comparison)
+      reference <- parts[['reference_cond']]
+      compare <- parts[['compare_cond']]
+      
+      # This isn't a comparison we care about, so skip it.
+      comp <- list(c(reference, compare))
+      if (! comp %in% comparisons_of_interest){
+        next
+      }
+      
+      comp_data_frame <- comparison_results[[comparison]]
+      comparison <- paste0(c(reference, '_vs_', compare), collapse='')
+      
+      for (row in 1:nrow(comp_data_frame)){
+        geneset <- comp_data_frame$NAME[row]
+        
+        if (!geneset %in% genesets_of_interest){
+          next
+        }
+        
+        nes <- comp_data_frame$NES[row]
+        fdr <- comp_data_frame$FDR.q.val[row]
+        is_sig <- fdr < fdr_threshold
+        
+        new_row <- c(comparison, geneset, nes, is_sig)
+        print(new_row)
+        
+        formatted_results <- rbind(formatted_results, new_row)
+      }
+    }
+  }
+  
+  colnames(formatted_results) <- c("DataSet", "GeneSet", "NES", "isSig")
+  
+  formatted_results$NES <- as.numeric(formatted_results$NES)
+  
+  library(colorspace)
+  library(RColorBrewer)
+  my_color_scale <- colorRampPalette(rev(brewer.pal(11, "RdBu")))
+  
+  data <- formatted_results
+  # Build the ggplot object
+  plt <- ggplot(data, aes(x=DataSet, y=GeneSet, size=abs(NES))) +
+    geom_point(aes(fill=NES, alpha=isSig, color=isSig), pch=21, stroke = 1) + 
+    theme_light() +
+    theme(axis.text.x = element_text(angle = 45, hjust=1)) +
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+    scale_fill_gradientn(colors = my_color_scale(100), limits = c(-4,4)) +
+    scale_color_manual(values = c("grey", "black"), name=paste0(c("FDR < ", as.character(fdr_threshold)), collapse = '')) +
+    scale_alpha_manual(values = c(0.3, 1)) +
+    scale_size_continuous(trans = "log10", range = c(0,8))
+  return(plt)
+}
+
+
 
 
 # Code for getting Hugo Symbols.
