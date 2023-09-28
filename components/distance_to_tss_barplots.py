@@ -9,8 +9,6 @@ from utils.job_manager import JobManager
 from utils.path_manager import PathManager, cmdify
 
 
-
-
 class DistanceToTSS:
     """
 
