@@ -171,7 +171,7 @@ get_basic_bar <- function(values, value_labels, groups, title, x, y,
 fill, colours=NULL){
   if (is.null(colours)){
     n <- length(unique(groups))
-    colours <- colorspace::heat_hcl(n, 100, l=c(50, 90), power=1)
+    colours <- viridis::viridis(n)
   }
   
   if (! is.factor(value_labels)){
