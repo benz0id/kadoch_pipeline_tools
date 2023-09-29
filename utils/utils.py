@@ -3,6 +3,10 @@ from pathlib import Path
 from typing import List, Dict, Union
 
 
+class DesignError(Exception):
+    pass
+
+
 def combine_cmds(cmds: List[str], num_per: int) -> List[str]:
     """
     Divides the cmds into (len(cmds) // num_per + 1) combined cmds,
@@ -21,7 +25,6 @@ def combine_cmds(cmds: List[str], num_per: int) -> List[str]:
     if to_exec:
         combined_cmds.append('\n'.join(to_exec))
     return combined_cmds
-
 
 class ExperimentalDesign:
     """
@@ -89,6 +92,39 @@ class ExperimentalDesign:
     def get_rep_num(self, sample: str) -> int:
         return self._sample_to_rep_number[sample]
 
+    def get_invalid_sample_inds(self, strs: List[str],
+                                fail_on_duplication: bool = True) -> List[int]:
+        """
+        Returns the indices of all elements of <strs> that do not contain a sample
+        id as one of their substrings. Raises and error if a single sample is
+        present more than once as a substring of some <strs>.
+        :param fail_on_duplication:
+        :param strs: A list of strings to be validated.
+        :return: The indices of all invalid <strs>
+        """
+
+        samples = copy(self._samples)
+        seen_samples = []
+        invalid_samples = []
+
+        for i, s in enumerate(strs):
+            sample_found = False
+
+            for sample in samples:
+                if fail_on_duplication and \
+                        sample in s and \
+                        sample in seen_samples:
+                    raise DesignError(sample + ' duplicated in ' + str(strs))
+
+                if sample in s:
+                    seen_samples.append(seen_samples)
+                    sample_found = True
+
+            if not sample_found:
+                invalid_samples.append(i)
+
+        return invalid_samples
+
 
 def write_samples_file(filenames: List[Union[Path, str]],
                        out_path: Path) -> None:
@@ -123,5 +159,12 @@ def write_samples_file(filenames: List[Union[Path, str]],
     with open(out_path, 'w') as out_file:
         for filename in sorted(lines):
             out_file.write(filename + '\t' + lines[filename] + '\n')
+
+
+
+
+
+
+
 
 

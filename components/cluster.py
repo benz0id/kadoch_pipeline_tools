@@ -1,14 +1,19 @@
 ### kmeans cluster helper fx that
 ### returns sorted clustered df with
 ### cluster labels
+from copy import copy
 from pathlib import Path
+from typing import Union
 
 import matplotlib.pyplot as plt
 import pandas as pd
 from seaborn.matrix import ClusterGrid
 from sklearn.cluster import KMeans
+from scipy import stats
 import seaborn as sns
 import numpy as np
+
+from utils.utils import ExperimentalDesign
 
 
 def load_counts_matrix(path: Path, sep: str = '\t') -> pd.DataFrame:
@@ -76,6 +81,64 @@ def vis_clustered_data(df: pd.DataFrame, outfile: Path,
     g = sns.clustermap(df.drop(columns='clusters'), **defaults)
     plt.savefig(outfile)
     return g
+
+
+def quick_clustering_analysis(expression_data: Union[Path, pd.DataFrame],
+                              n_clusters: int,
+                              out_path: Path,
+                              design: ExperimentalDesign,
+                              transform: str = 'zscore') -> pd.DataFrame:
+    """
+    Run clustering analysis on the given expression data.
+
+    :param expression_data: Path to counts-like expression_data,
+        or pre-parsed counts-like data.
+
+    :param n_clusters: The number of clusters to form.
+
+    :param out_path: The path to the output heatmap image.
+
+    :param design: The experimental design.
+
+    :param transform: How to transform each row/value before running
+        clustering. One of ["log", "zscore", "none"].
+
+    :return: Dataframe with clustered reads.
+    """
+
+    if isinstance(expression_data, Path):
+        expression_data = load_counts_matrix(expression_data)
+    else:
+        expression_data = copy(expression_data)
+
+    # Run a bit of filtering and checking on expression data.
+    invalid_columns = design.get_invalid_sample_inds(expression_data.columns)
+    to_remove = [expression_data.columns[i] for i in invalid_columns]
+    expression_data = expression_data.drop(columns=to_remove)
+
+    if transform == 'zscore':
+        expression_data = stats.zscore(expression_data, axis=1)
+    elif transform == 'log':
+        expression_data = np.log2(expression_data + 1)
+    elif transform == 'none':
+        pass
+    else:
+        raise ValueError("Unknown transform requested")
+
+    clustered_data = add_clustering(expression_data,
+                                    n_clusters=n_clusters)
+
+    vis_clustered_data(clustered_data, out_path)
+
+    return clustered_data
+
+
+
+
+
+
+
+
 
 
 def write_out_bed(df: pd.DataFrame, out_path: Path) -> None:
