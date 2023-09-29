@@ -79,7 +79,7 @@ def vis_clustered_data(df: pd.DataFrame, outfile: Path,
 
     defaults.update(kwargs)
     g = sns.clustermap(df.drop(columns='clusters'), **defaults)
-    plt.savefig(outfile)
+    plt.savefig(outfile, dpi=500)
     return g
 
 
@@ -91,7 +91,7 @@ def quick_clustering_analysis(expression_data: Union[Path, pd.DataFrame],
     """
     Run clustering analysis on the given expression data.
 
-    :param expression_data: Path to counts-like expression_data,
+    :param expression_data: Path to counts-like expression_data
         or pre-parsed counts-like data.
 
     :param n_clusters: The number of clusters to form.
@@ -131,14 +131,6 @@ def quick_clustering_analysis(expression_data: Union[Path, pd.DataFrame],
     vis_clustered_data(clustered_data, out_path)
 
     return clustered_data
-
-
-
-
-
-
-
-
 
 
 def write_out_bed(df: pd.DataFrame, out_path: Path) -> None:
