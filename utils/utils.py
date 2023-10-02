@@ -2,6 +2,8 @@ from copy import copy
 from pathlib import Path
 from typing import List, Dict, Union
 
+from sample_sheet import SampleSheet
+
 
 class DesignError(Exception):
     pass
@@ -43,11 +45,13 @@ class ExperimentalDesign:
     _samples: List[str]
     _sample_to_condition: Dict[str, str]
     _sample_to_rep_number: Dict[str, int]
+    _sample_to_sample_id: Dict[str, str]
     _condition_to_samples: Dict[str, List[str]]
     _conditions: List[str]
 
     def __init__(self, sample_to_condition: Dict[str, str],
-                 sample_to_rep_number: Dict[str, int] = None) -> None:
+                 sample_to_rep_number: Dict[str, int] = None,
+                 sample_to_sample_id: Dict[str, str] = None) -> None:
         """
         Initialises this experimental design using the given sample to
         condition mapping.
@@ -57,6 +61,7 @@ class ExperimentalDesign:
         self._samples = sorted(sample_to_condition.keys())
         self._sample_to_condition = copy(sample_to_condition)
         self._condition_to_samples = {}
+        self._sample_to_sample_id = sample_to_sample_id
 
         # Invert sample_to_condition dict.
         for condition in self._sample_to_condition.values():
@@ -159,6 +164,59 @@ def write_samples_file(filenames: List[Union[Path, str]],
     with open(out_path, 'w') as out_file:
         for filename in sorted(lines):
             out_file.write(filename + '\t' + lines[filename] + '\n')
+
+
+def get_model_from_sample_sheet(sample_sheet: Path,
+                                condition_slice: slice = slice(3, -1),
+                                verbose: bool = False) -> ExperimentalDesign:
+    """
+    Infer the experimental model from the sample sheet.
+
+
+    Expects sample names of the format:
+    <date>_<sample_name>_<cell_type>_<conditions...>_Rep<rep_number>.
+
+    :param sample_sheet: Path to the sample sheet.
+    :param condition_slice: After splitting the sample id byu '_',
+        the indices of the components that contain sample info.
+    :param verbose: Whether to print out experimental design info.
+    :return:
+    """
+    sample_sheet = SampleSheet(sample_sheet)
+    sample_to_condition = {}
+    sample_to_rep_number = {}
+    sample_to_sample_id = {}
+
+    for sample in sample_sheet.samples:
+        sample_id = str(sample.sample_id)
+        sample_name = sample_id.split('_')[1]
+
+        if 'rep' in sample_id.lower():
+            replicate_num = int(sample_name.lower().split('rep')[1])
+        else:
+            replicate_num = None
+
+        condition = '_'.join(sample_id.split('_')[condition_slice])
+
+        sample_to_condition[sample_name] = condition
+        sample_to_rep_number[sample_name] = replicate_num
+        sample_to_sample_id[sample_name] = sample_id
+
+    if any([val is None
+            for val in sample_to_rep_number.values()]):
+        sample_to_rep_number = None
+
+    return ExperimentalDesign(sample_to_condition,
+                              sample_to_rep_number,
+                              sample_to_sample_id)
+
+
+
+
+
+
+
+
 
 
 
