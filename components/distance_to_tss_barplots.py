@@ -98,7 +98,7 @@ class DistanceToTSS:
             the distance to the nearest TSS for each bed in
             <nearest_gene_beds_dir>.
         """
-        temp_dir = self._paths.puregable_files_dir
+        temp_dir = self._paths.purgeable_files_dir
         self._jobs.execute_lazy(cmdify('mkdir', temp_dir))
         self._jobs.execute_lazy(cmdify('cp', *nearest_gene_beds, temp_dir))
 

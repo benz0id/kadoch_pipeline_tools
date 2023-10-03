@@ -87,27 +87,109 @@ class PathManager:
     """
 
     === Description ===
-    Class responsible for the creation and management of paths within the project directory.
-    Also, currently handles logging.
+    Responsible for managing the structure of essential project components.
 
-    === Public Attributes ===
+    === Basic Project Structure ===
 
-    working_dir: The working directory of the project.
+    project_dir             (self.project_dir)
+    |---- pipeline.py
+    |---- sample_sheets     (self.sample_sheets_dir)
+    |---- sequencing_dir    (self.sequencing_dir)
+    |     |---- <your sequencing results>
+    |     |---- fastqs      (self.fastqs_dir)
+    |     |---- fastqc
+    |---- cache_dir (self.cache_dir)
+    |     |---- <any caches you create with cache manager>
+    |---- logs              (self.logging_directory)
+    |     |---- info_archive
+    |     |---- debug_archive
+    |     |---- general_archive
+    |     |---- INFO.log
+    |     |---- DEBUG.log
+    |---- .purgeable        (self.purgeable_files_dir)
+    |---- .slurm_scripts
+    |---- sbatch.out
+    |---- sbatch.err
 
+    === Brief Descriptions ===
+
+    project_dir
+        The main project directory.
+    pipeline.py
+        The pipeline that you have written.
+    sample_sheets
+        Directory containing sample sheets.
+    sequencing_dir
+        Directory containing raw sequencing data.
+    <your sequencing results>
+        Raw Illumina sequencing data.
+    fastqs
+        Raw fastqs generated after running basecalling.
+    fastqc
+        Results from fastqc analysis.
+    cache_dir
+        Directory containing text files that log previously executed commands
+        managed by the <cache_manager>.
+    logs
+        Contains various logs.
+    .info_archive
+        All previously generated info logs.
+    .debug_archive
+        All previously generated debug logs.
+    .general_archive
+        Misc logs. Also contains backups of previous versions of pipeline.py.
+    INFO.log
+        Info log from last execution.
+    DEBUG.log
+        Debug log from last execution.
+    .purgeable
+        Temporary files that can be removed after project completion.
+    .slurm_scripts
+        Directory for storing temporary sbatch scripts. Managed by Slurmifier
+    sbatch.out
+        Log file for all sbatch output.
+    sbatch.err
+        Log file for all sbatch err.
     """
     project_dir: Path
-    cache_filepath: Path
+    cache_dir: Path
     logging_directory: Path
     info_archive: Path
     debug_archive: Path
     general_archive: Path
     home_dir: Path
-    puregable_files_dir: Path
+    sequencing_dir: Path
+    purgeable_files_dir: Path
+    sample_sheets_dir: Path
+    fastqs_dir: Path
+    sample_sheet_path: Path
+    sequencing_results: Path
 
-    def __init__(self, working_dir: Path, verbose:bool = False) -> None:
+    def __init__(self, working_dir: Path, verbose: bool = False) -> None:
         self.verbose = verbose
         self.project_dir = working_dir
         self.configure_required_dirs()
+
+    def add_basic_info(self, sequencing_results_name: str,
+                       sample_sheet_name: str) -> None:
+        """
+        Assuming that the <sequencing_results_name> is a subdirectory of
+        self.sequencing_dir and <sample_sheet_name> is within
+        self.sample_sheets_dir, stores paths to these folders.
+
+        :param sequencing_results_name: Name of the raw sequencing results dir,
+        eg: 230915_NB551325_0672_AHHK2NBGXT_GX11457.
+
+        :param sample_sheet_name: The name of the raw sample sheet.
+
+        === Example ===
+
+        >>> pm = PathManager(Path('/project_dir'))
+        >>> pm.add_basic_info("230915_NB551325_0672_AHHK2NBGXT_GX11457",
+        ...                   "My_Sample_Sheet.csv")
+        """
+        self.sample_sheet_path = self.sample_sheets_dir / sample_sheet_name
+        self.sequencing_results = self.sequencing_dir / sequencing_results_name
 
     @staticmethod
     def safe_make(dir: Path) -> bool:
@@ -119,22 +201,32 @@ class PathManager:
             os.makedirs(dir)
         return not exists
 
-    def make_dir(self, relative_path: Path) -> Path:
+    def rel_make(self, relative_path: Path) -> Path:
         """Creates the given directory in the working directory."""
         full_path = self.project_dir / relative_path
         self.safe_make(full_path)
         return full_path
 
+    def make(self, new_directory_path: Path) -> Path:
+        """
+        Makes a new directory iff it does not already exist, returns the given
+         path.
+        :param new_directory_path: Path to the directory to be created.
+        :return: Path to the directory to be created.
+        """
+        self.safe_make(new_directory_path)
+        return new_directory_path
+
     def configure_required_dirs(self) -> None:
         """Configure the directories required for pipeline utility functionality."""
-        self.cache_filepath = self.project_dir / '.pipeline_cache'
-        self.safe_make(self.cache_filepath)
+        self.cache_dir = self.project_dir / '.pipeline_cache'
+        self.safe_make(self.cache_dir)
 
         self.logging_directory = self.project_dir / 'logs'
         self.safe_make(self.logging_directory)
 
-        self.puregable_files_dir = self.project_dir / '.purgeable'
-        self.safe_make(self.puregable_files_dir)
+        self.purgeable_files_dir = self.project_dir / '.purgeable'
+        self.safe_make(self.purgeable_files_dir)
 
         self.home_dir = Path(os.path.expanduser(""))
 
@@ -146,6 +238,15 @@ class PathManager:
 
         self.general_archive = self.logging_directory / '.general_archive'
         self.safe_make(self.general_archive)
+
+        self.sequencing_dir = self.project_dir / 'sequencing'
+        self.safe_make(self.sequencing_dir)
+
+        self.fastqs_dir = self.sequencing_dir / 'fastqs'
+        self.safe_make(self.fastqs_dir)
+
+        self.sample_sheets_dir = self.project_dir / 'sample_sheets'
+        self.safe_make(self.sample_sheets_dir)
 
         self.move_logs_to_archive()
         self.pipeline_backup()

@@ -56,7 +56,7 @@ class CacheManager:
         self._strict = strict
         self._pipline_integrity_maintained = True
 
-        self._cache_path = path_manager.cache_filepath / name
+        self._cache_path = path_manager.cache_dir / name
         self._cache_path.touch()
         self._read_cache()
         self._cur_exec_cmds = []

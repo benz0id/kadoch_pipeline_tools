@@ -2,14 +2,15 @@
 Benjamin Tudor Price
 10-02-2023
 
-See fix_sample_sheet for detailed description of functionality.
+Command line access for <fix_sample_sheet>.
+
+See <fix_sample_sheet> for detailed description of functionality.
 """
 import argparse
 from pathlib import Path
 from components.sample_sheets import fix_sample_sheet
 import logging
 logging.root.disabled = True
-
 
 parser = argparse.ArgumentParser("Correct Sample Sheet Formatting and get "
                                  "Index2 Reverse Complements")

@@ -1,7 +1,9 @@
+import io
 import os
 import sys
+from contextlib import redirect_stdout
 from datetime import timedelta, datetime
-from io import TextIOWrapper
+from io import TextIOWrapper, StringIO, BufferedIOBase, BytesIO, BufferedRWPair
 from pathlib import Path
 
 import logging
@@ -13,6 +15,7 @@ from patterns.observer import Observer
 from utils.job_formatter import Runtime, JobBuilder, Job, ExecParams
 from utils.path_manager import PathManager, quotes
 from constants.program_paths import o2_paths, requirements
+
 global paths_manager
 
 # Core charge rate in dollars per hour.
@@ -160,6 +163,58 @@ class FileToConsole:
         self._stop_event.set()
 
 
+class StdOutInterceptor:
+    """
+    Intercept data written to stdout, store it then re-output to stdout.
+
+    If a line output to stdout is a sbatch job request, store the job ID.
+    """
+    intercepted_jobs: List[int]
+    snoopy_mode_active: bool
+    pos: int
+
+    def __init__(self):
+        self._stringio = StringIO()
+        self._original_stdout = sys.stdout
+        self._stop_event = Event()
+        self._interceptor_thread = Thread(target=self.intercept)
+        self.snoopy_mode_active = False
+        self.pos = 0
+
+    def intercept(self) -> None:
+        while True:
+            self._stringio.seek(self.pos)
+            line = self._stringio.readline()
+            if line:
+                self.pos += len(line)
+                line = line.strip()
+                print(line, 'aaaaa', file=self._original_stdout)
+            if line and "Submitted batch job " in line \
+                    and self.snoopy_mode_active:
+                job_id = line.strip().split(' ')[-1]
+                self.intercepted_jobs.append(int(job_id))
+            elif self._stop_event.is_set():
+                return
+            else:
+                sleep(READER_SLEEP_INTERVAL)
+
+    def start(self) -> None:
+        """
+        Start redirecting output.
+        """
+        redirect_stdout(self._stringio)
+        self._interceptor_thread.start()
+
+    def stop(self) -> None:
+        """
+        Stop redirecting output.
+        """
+        self._stop_event.set()
+        redirect_stdout(self._original_stdout)
+        self._stop_event = Event()
+        self._interceptor_thread = Thread(target=self.intercept)
+
+
 class Slurmifier(JobBuilder, Observer):
     """
     === Description ===
@@ -205,6 +260,10 @@ class Slurmifier(JobBuilder, Observer):
     _active_threads: List[Thread]
     _array_mode_active: bool
 
+    _job_snooper: StdOutInterceptor
+    _intercepted_jobs: List[int]
+    _snoopy_mode_active: bool
+
     sbatch_out_path: Path
     sbatch_err_path: Path
 
@@ -214,8 +273,10 @@ class Slurmifier(JobBuilder, Observer):
     _max_cost: float
     _max_current_expenditure: float
 
-    def __init__(self, path_manager: PathManager, mailtype: List[str] = None, email_address: str = '',
-                 priority: bool = False, redirect_to_console: bool = True, max_cost: float = 20) -> None:
+    def __init__(self, path_manager: PathManager, mailtype: List[str] = None,
+                 email_address: str = '', priority: bool = False,
+                 redirect_to_console: bool = True, max_cost: float = 20,
+                 intercept_slurm_jobs: bool = True) -> None:
         if mailtype is None:
             self.mailtype = ['NONE']
         else:
@@ -227,10 +288,22 @@ class Slurmifier(JobBuilder, Observer):
         self._email = email_address
         self._priority = priority
         self._path_manager = path_manager
-        self._slurm_scripts_dir = self._path_manager.make_dir(Path('.slurm_scripts'))
+        self._slurm_scripts_dir = self._path_manager.rel_make(
+            Path('.slurm_scripts'))
 
         self._active_threads = []
         self._array_mode_active = False
+
+        self._job_snooper = StdOutInterceptor()
+        self._intercepted_jobs = self._job_snooper.intercepted_jobs
+
+        if intercept_slurm_jobs:
+            self._snoopy_mode_active = True
+            self._job_snooper.snoopy_mode_active = \
+                self._array_mode_active and self._snoopy_mode_active
+            self._job_snooper.start()
+        else:
+            self._snoopy_mode_active = False
 
         self._max_cost = max_cost
         self._max_current_expenditure = 0
@@ -256,7 +329,8 @@ class Slurmifier(JobBuilder, Observer):
         if self._priority:
             queue = 'priority'
         else:
-            rt = timedelta(days=runtime.days, hours=runtime.hours, minutes=runtime.minutes)
+            rt = timedelta(days=runtime.days, hours=runtime.hours,
+                           minutes=runtime.minutes)
 
             if rt < timedelta(hours=12):
                 queue = 'short'
@@ -276,7 +350,8 @@ class Slurmifier(JobBuilder, Observer):
             self.sbatch_out_path.touch()
             self.sbatch_err_path.touch()
 
-            with open(self.sbatch_out_path, 'w') as out, open(self.sbatch_out_path, 'w') as err:
+            with open(self.sbatch_out_path, 'w') as out, open(
+                    self.sbatch_out_path, 'w') as err:
                 out.write('\n')
                 err.write('\n')
 
@@ -311,7 +386,8 @@ class Slurmifier(JobBuilder, Observer):
 
         # Add lines to install the given modules.
         for requirement in params.get_requirements():
-            slurm_script.append(f'module load {requirement}/{params.get_requirements()[requirement]}')
+            slurm_script.append(
+                f'module load {requirement}/{params.get_requirements()[requirement]}')
 
         slurm_script.append(command)
 
@@ -321,7 +397,8 @@ class Slurmifier(JobBuilder, Observer):
         slurm_script_name = datetime.now().strftime("%m-%d-%Y|%H-%M-%S.%f.sh")
         with open(self._slurm_scripts_dir / slurm_script_name, 'w') as file:
             file.write(slurm_script)
-        slurm_command = 'sbatch ' + quotes(self._slurm_scripts_dir / slurm_script_name)
+        slurm_command = 'sbatch ' + quotes(
+            self._slurm_scripts_dir / slurm_script_name)
 
         logger.info("Slurm Script Successfully Created")
         logger.info(command + ' -> ' + slurm_command)
@@ -356,6 +433,8 @@ class Slurmifier(JobBuilder, Observer):
         of these jobs to complete.
         """
         self._array_mode_active = True
+        self._job_snooper.snoopy_mode_active = \
+            self._array_mode_active and self._snoopy_mode_active
 
     def wait_for_all_jobs(self) -> None:
         """
@@ -383,6 +462,14 @@ class Slurmifier(JobBuilder, Observer):
         print('All threads complete.')
 
         self._array_mode_active = False
+        self._job_snooper.snoopy_mode_active = \
+            self._array_mode_active and self._snoopy_mode_active
+
+    def drop_array(self) -> None:
+        """
+        Disable array mode, and archive all active jobs.
+        :return:
+        """
 
     def prepare_job(self, cmd: str, exec_params: ExecParams) -> O2Job:
         """
@@ -413,14 +500,16 @@ class Slurmifier(JobBuilder, Observer):
 
         if self._max_current_expenditure + est_max_cost > self._max_cost:
             overage = -1 * self._max_cost - self._max_current_expenditure - est_max_cost
-            logger.error("Executing job would exceed allocated spending amount for this scheduler.")
-            print('Received request for job that would exceed allocated O2 spending.' +
-                  f"\n\n\t Command: {cmd}\n\n"
-                  f"\t\t                Max Cost of Job: {est_max_cost:6.2f}\n"
-                  f"\t\t                 Allotted Funds: {self._max_cost:6.2f}\n"
-                  f"\t\t            Current Expenditure: {self._max_current_expenditure:6.2f}\n"
-                  f"\t\t Overage that Would be Incurred: {overage:6.2f}"
-                  , file=sys.stderr)
+            logger.error(
+                "Executing job would exceed allocated spending amount for this scheduler.")
+            print(
+                'Received request for job that would exceed allocated O2 spending.' +
+                f"\n\n\t Command: {cmd}\n\n"
+                f"\t\t                Max Cost of Job: {est_max_cost:6.2f}\n"
+                f"\t\t                 Allotted Funds: {self._max_cost:6.2f}\n"
+                f"\t\t            Current Expenditure: {self._max_current_expenditure:6.2f}\n"
+                f"\t\t Overage that Would be Incurred: {overage:6.2f}"
+                , file=sys.stderr)
             exit(1)
 
     def expenditure_report(self) -> None:
