@@ -96,6 +96,7 @@ class PathManager:
     |---- sample_sheets     (self.sample_sheets_dir)
     |---- sequencing_dir    (self.sequencing_dir)
     |     |---- <your sequencing results>
+    |     |---- demult_stats(self.demult_stats)
     |     |---- fastqs      (self.fastqs_dir)
     |     |---- fastqc      (self.fastqc_dir)
     |---- cache_dir (self.cache_dir)
@@ -123,6 +124,8 @@ class PathManager:
         Directory containing raw sequencing data.
     <your sequencing results>
         Raw Illumina sequencing data.
+    demult_stats
+        Results produced by demultiplexing.
     fastqs
         Raw fastqs generated after running basecalling.
     fastqc
@@ -165,6 +168,7 @@ class PathManager:
     sample_sheet_path: Path
     sequencing_results: Path
     fastqc_dir: Path
+    demult_stats: Path
 
     def __init__(self, working_dir: Path, verbose: bool = False) -> None:
         self.verbose = verbose
@@ -251,6 +255,9 @@ class PathManager:
 
         self.sample_sheets_dir = self.project_dir / 'sample_sheets'
         self.safe_make(self.sample_sheets_dir)
+
+        self.demult_stats = self.sequencing_dir / 'demult_stats'
+        self.safe_make(self.demult_stats)
 
         self.move_logs_to_archive()
         self.pipeline_backup()

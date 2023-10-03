@@ -14,7 +14,6 @@ from typing import List, Tuple, TextIO, Any
 from patterns.observer import Observer
 from utils.job_formatter import Runtime, JobBuilder, Job, ExecParams
 from utils.path_manager import PathManager, quotes
-from constants.program_paths import o2_paths, requirements
 
 global paths_manager
 
