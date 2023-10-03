@@ -260,10 +260,6 @@ class Slurmifier(JobBuilder, Observer):
     _active_threads: List[Thread]
     _array_mode_active: bool
 
-    _job_snooper: StdOutInterceptor
-    _intercepted_jobs: List[int]
-    _snoopy_mode_active: bool
-
     sbatch_out_path: Path
     sbatch_err_path: Path
 
@@ -293,17 +289,6 @@ class Slurmifier(JobBuilder, Observer):
 
         self._active_threads = []
         self._array_mode_active = False
-
-        self._job_snooper = StdOutInterceptor()
-        self._intercepted_jobs = self._job_snooper.intercepted_jobs
-
-        if intercept_slurm_jobs:
-            self._snoopy_mode_active = True
-            self._job_snooper.snoopy_mode_active = \
-                self._array_mode_active and self._snoopy_mode_active
-            self._job_snooper.start()
-        else:
-            self._snoopy_mode_active = False
 
         self._max_cost = max_cost
         self._max_current_expenditure = 0
@@ -433,8 +418,6 @@ class Slurmifier(JobBuilder, Observer):
         of these jobs to complete.
         """
         self._array_mode_active = True
-        self._job_snooper.snoopy_mode_active = \
-            self._array_mode_active and self._snoopy_mode_active
 
     def wait_for_all_jobs(self) -> None:
         """
@@ -462,14 +445,14 @@ class Slurmifier(JobBuilder, Observer):
         print('All threads complete.')
 
         self._array_mode_active = False
-        self._job_snooper.snoopy_mode_active = \
-            self._array_mode_active and self._snoopy_mode_active
 
     def drop_array(self) -> None:
         """
-        Disable array mode, and archive all active jobs.
+        Disable array mode, and delete all active jobs.
         :return:
         """
+        self._array_mode_active = False
+        self._active_threads = []
 
     def prepare_job(self, cmd: str, exec_params: ExecParams) -> O2Job:
         """
