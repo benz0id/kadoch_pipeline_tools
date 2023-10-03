@@ -141,8 +141,9 @@ def reverse_compliment(sample_sheet_path: Path, directory: Union[str, Path],
     return new_path
 
 
-def fix_sample_sheet(sample_sheet_path: Path, directory: Path = None,
-                     rev_comp: bool = True,
+def fix_sample_sheet(sample_sheet_path: Path,
+                     rev_i5: bool = False, rev_i7: bool = False,
+                     directory: Path = None,
                      verbose: bool = False) -> Path:
     """
     Performs several changes to the given sample sheet to prepare it for 
@@ -156,9 +157,10 @@ def fix_sample_sheet(sample_sheet_path: Path, directory: Path = None,
         Excel will often insert unnecessary a spacer line every other line.
         
     3. [iff paired end] Convert to rev comp.
-        Converts all i5 primers in the <sample_sheet> to their reverse 
-        compliment
+        Converts i7 or i5 primer to their reverse compliment.
     
+    :param rev_i7: Whether to convert i7 indices to their reverse compliments.
+    :param rev_i5: Whether to convert i5 indices to their reverse compliments.
     :param sample_sheet_path: Path to the sample sheet to be modified.
     :param directory: Path to the output directory. Parent of
         <sample_sheet_path> by default.
@@ -169,11 +171,16 @@ def fix_sample_sheet(sample_sheet_path: Path, directory: Path = None,
     """
     pruned_sample_sheet = apply_basic_formatting(sample_sheet_path, directory, 
                                                  verbose)
-    if SampleSheet(pruned_sample_sheet).is_paired_end and rev_comp:
-        pruned_sample_sheet = reverse_compliment(pruned_sample_sheet,
-                                                 rev_i5=True, rev_i7=False,
-                                                 directory=directory,
-                                                 verbose=verbose)
+
+    if rev_i5 and not SampleSheet(pruned_sample_sheet).is_paired_end:
+        raise ValueError("Cannot reverse i5 indexes on single ended "
+                         "sample sheet.")
+    if rev_i5 or rev_i7:
+        pruned_sample_sheet = \
+            reverse_compliment(pruned_sample_sheet,
+                               rev_i5=rev_i5, rev_i7=rev_i7,
+                               directory=directory,
+                               verbose=verbose)
     return pruned_sample_sheet
 
 

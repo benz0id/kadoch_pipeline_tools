@@ -76,18 +76,25 @@ class Demultiplexer(ProgramWrapper):
     def get_demultiplex_cmd(self, sequencing_dir: Path,
                             sample_sheet_path: Path, output_dir: Path,
                             num_cores, reports_dir: Path = None,
-                            stats_dir: Path = None, io_cores: int = 2
+                            stats_dir: Path = None, io_cores: int = 4
                             ) -> str:
         """
         Demultiplexes the sequencing data at <sequencing_dir>, outputting fastqs, stats, and reports to
         <output_dir>.
 
+        :param io_cores: The number of cores to use for reading and writing.
+            cannot (and most certaintly should not) be more than # of
+            processing cores. Adding too many of these can lead to segmentation
+            faults.
         :param stats_dir: Directory into which the stats should be placed
         :param reports_dir: Directory into which the reports should be placed.
-        :param sequencing_dir: Directory containing results of Illumina sequencing run.
-        :param sample_sheet_path: The path to the sample sheet describing the indexing regions used in the given run.
-        :param output_dir: The directory into which raw fastqs will be placed, alongside run reports and stats.
-        :param num_cores: The number of cores required to run the job.
+        :param sequencing_dir: Directory containing results of Illumina
+            sequencing run.
+        :param sample_sheet_path: The path to the sample sheet describing the
+            indexing regions used in the given run.
+        :param output_dir: The directory into which raw fastqs will be placed,
+            alongside run reports and stats.
+        :param num_cores: The number of cores to use for processing bcl data.
         :return: A job that will execute the demultiplexing procedure as described.
         """
 

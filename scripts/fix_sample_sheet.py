@@ -12,16 +12,18 @@ from components.sample_sheets import fix_sample_sheet
 import logging
 logging.root.disabled = True
 
-parser = argparse.ArgumentParser("Correct Sample Sheet Formatting and get "
-                                 "Index2 Reverse Complements")
+parser = argparse.ArgumentParser("Correct Sample Sheet Formatting and "
+                                 "get reverse compliemnts.")
 
 parser.add_argument('sample_sheet', type=str,
                     help='Path to the sample sheet to be reformatted.')
 parser.add_argument('-o', '--output-dir', type=str,
                     help='Path to the output output_dir. Parent of '
                          '<sample_sheet> by default.', default=None)
-parser.add_argument('-n', '--no-rev', action='store_true',
-                    help="Do not apply reverse compliment to i5 indexes.")
+parser.add_argument('-f', '--rev-ifive', action='store_true',
+                    help="Reverse the i5 indices.")
+parser.add_argument('-s', '--rev-iseven', action='store_true',
+                    help="Reverse the i7 indices.")
 parser.add_argument('-v', '--verbose', action='store_true',
                     help='Display additional information about progress.')
 
@@ -31,7 +33,8 @@ if isinstance(args.output_dir, str):
 
 sheet = fix_sample_sheet(sample_sheet_path=Path(args.sample_sheet),
                          directory=args.output_dir,
-                         rev_comp=not args.no_rev,
+                         rev_i5=args.rev_ifive,
+                         rev_i7=args.rev_iseven,
                          verbose=args.verbose)
 
 print(str(sheet))
