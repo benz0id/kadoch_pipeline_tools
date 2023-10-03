@@ -9,9 +9,10 @@ from wrappers.bcl2fastq import Demultiplexer
 from wrappers.fastqc import FastQC
 
 
-def demult_and_fastqc(sample_sheet: Path, builder: JobBuilder,
-                      path_manager: PathManager,  jobs_manager: JobManager,
-                      start_array: Callable, drop_array: Callable) -> List[Path]:
+def demult_and_fastqc(sample_sheet: Path, sequencing_results: Path,
+                      builder: JobBuilder, path_manager: PathManager,
+                      jobs_manager: JobManager, start_array: Callable,
+                      drop_array: Callable) -> List[Path]:
     """
     Run generic demultiplexing and fastqc pipeline. Return paths to the
     resultant fastqs.
@@ -22,6 +23,7 @@ def demult_and_fastqc(sample_sheet: Path, builder: JobBuilder,
 
 
     :param sample_sheet: Path to the sample sheet to use for demultiplexing.
+    :param sequencing_results: Path to sequencing results directory.
     :param builder: The builder to use to build this component's jobs.
     :param path_manager: Path manager for accessing project directories.
     :param jobs_manager: Job manager to use when queueing jobs.
@@ -32,13 +34,13 @@ def demult_and_fastqc(sample_sheet: Path, builder: JobBuilder,
     :return: A list of fastqfiles produces by demultiplexing.
     """
     demult = Demultiplexer(path_manager)
-    heavy_job = ExecParams(max_runtime=(0, 1, 0), num_cores=8,
-                           ram_per_core=1024 * 4, builder=builder, wait=True)
+    heavy_job = ExecParams(max_runtime=(0, 1, 0), num_cores=16,
+                           ram_per_core=1024 * 2, builder=builder, wait=True)
     qc_job = ExecParams(max_runtime=(0, 1, 0), num_cores=4, ram_per_core=300,
                         builder=builder, wait=False)
 
     # === Demultiplex ===
-    cmd = demult.get_demultiplex_cmd(path_manager.sequencing_dir,
+    cmd = demult.get_demultiplex_cmd(sequencing_results,
                                      sample_sheet,
                                      path_manager.fastqs_dir,
                                      heavy_job.num_cores)
