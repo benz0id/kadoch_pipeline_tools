@@ -21,9 +21,9 @@ parser.add_argument('-o', '--output-dir', type=str,
                     help='Path to the output output_dir. Parent of '
                          '<sample_sheet> by default.', default=None)
 parser.add_argument('-f', '--rev-ifive', action='store_true',
-                    help="Reverse the i5 indices.")
+                    help="Convert i5 indices to their reverse compliments.")
 parser.add_argument('-s', '--rev-iseven', action='store_true',
-                    help="Reverse the i7 indices.")
+                    help="Convert i7 indices to their reverse compliments.")
 parser.add_argument('-v', '--verbose', action='store_true',
                     help='Display additional information about progress.')
 
@@ -38,3 +38,4 @@ sheet = fix_sample_sheet(sample_sheet_path=Path(args.sample_sheet),
                          verbose=args.verbose)
 
 print(str(sheet))
+exit(0)
