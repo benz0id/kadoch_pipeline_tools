@@ -34,7 +34,7 @@ def demult_and_fastqc(sample_sheet: Path, sequencing_results: Path,
     :return: A list of fastqfiles produces by demultiplexing.
     """
     demult = Demultiplexer(path_manager)
-    heavy_job = ExecParams(max_runtime=(0, 1, 0), num_cores=8,
+    heavy_job = ExecParams(max_runtime=(0, 1, 0), num_cores=16,
                            ram_per_core=1024 * 4, builder=builder, wait=True)
     qc_job = ExecParams(max_runtime=(0, 1, 0), num_cores=4, ram_per_core=300,
                         builder=builder, wait=False)
