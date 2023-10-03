@@ -154,6 +154,3 @@ class DistanceToTSS:
 
         return figure_out_path
 
-
-
-
