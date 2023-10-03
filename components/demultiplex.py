@@ -4,7 +4,7 @@ from typing import List, Callable
 from utils.fetch_files import get_matching_files
 from utils.job_formatter import ExecParams, JobBuilder
 from utils.job_manager import JobManager
-from utils.path_manager import PathManager
+from utils.path_manager import PathManager, cmdify
 from wrappers.bcl2fastq import Demultiplexer
 from wrappers.fastqc import FastQC
 
@@ -35,17 +35,20 @@ def demult_and_fastqc(sample_sheet: Path, sequencing_results: Path,
     """
     demult = Demultiplexer(path_manager)
     heavy_job = ExecParams(max_runtime=(0, 1, 0), num_cores=16,
-                           ram_per_core=1024 * 2, builder=builder, wait=True)
+                           ram_per_core=1024 * 4, builder=builder, wait=True)
     qc_job = ExecParams(max_runtime=(0, 1, 0), num_cores=4, ram_per_core=300,
                         builder=builder, wait=False)
 
     # === Demultiplex ===
     cmd = demult.get_demultiplex_cmd(
         sequencing_results, sample_sheet,
-        path_manager.fastqs_dir, heavy_job.num_cores,
-        reports_dir=path_manager.demult_stats / 'Reports',
-        stats_dir=path_manager.demult_stats / 'Stats')
+        path_manager.fastqs_dir, heavy_job.num_cores)
+    cmd += cmdify('\n mv',
+                  path_manager.fastqs_dir / 'Reports',
+                  path_manager.fastqs_dir / 'Stats',
+                  path_manager.demult_stats)
     jobs_manager.execute_lazy(cmd, heavy_job)
+
 
     # === FastQC ===
     fastqs = get_matching_files(path_manager.fastqs_dir, ['fastq'],
