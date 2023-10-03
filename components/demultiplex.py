@@ -1,44 +1,60 @@
 from pathlib import Path
 from typing import List, Callable
 
+from utils.fetch_files import get_matching_files
 from utils.job_formatter import ExecParams
 from utils.job_manager import JobManager
 from utils.path_manager import PathManager
 from wrappers.bcl2fastq import Demultiplexer
+from wrappers.fastqc import FastQC
 
 
-def demult_and_fastqc(path_manager: PathManager,
-                      jobs_manager: JobManager,
-                      heavy_job: ExecParams, parallel_jobs: ExecParams,
+def demult_and_fastqc(sample_sheet: Path,
+                      path_manager: PathManager,  jobs_manager: JobManager,
+                      heavy_job: ExecParams, parallel_job: ExecParams,
                       start_array: Callable, drop_array: Callable) -> List[Path]:
+    """
+    Run generic demultiplexing and fastqc pipeline. Return paths to the
+    resultant fastqs.
+
+    === Project Structure Assumptions ===
+
+    Fastqs in the fastqs directory are produce by this sequencing run.
+
+
+    :param sample_sheet: Path to the sample sheet to use for demultiplexing.
+    :param path_manager: Path manager for accessing project directories.
+    :param jobs_manager: Job manager to use when queueing jobs.
+    :param heavy_job: Execution parameters to use when executing heavy jobs.
+        (demultiplexing)
+    :param parallel_job: Execution paramers for mid-size job to be used in
+        parallel.
+    :param start_array: Command to call to signify that a job array is
+        starting.
+    :param drop_array: Command to call to signify that the program can continue
+        without completing the jobs currently in the array.
+    :return: A list of fastqfiles produces by demultiplexing.
+    """
     demult = Demultiplexer(path_manager)
 
     # === Demultiplex ===
     cmd = demult.get_demultiplex_cmd(path_manager.sequencing_dir,
-                                     sample_sheet, path_manager.fastqs_dir,
-                                     heavy_job.num_cores), \
-        heavy_job
-    lazy(demult.get_demultiplex_cmd(seq_res_dir, sample_sheet, fastqs_dir, arrayable_heavy_o2.num_cores), arrayable_heavy_o2)
-
+                                     sample_sheet,
+                                     path_manager.fastqs_dir,
+                                     heavy_job.num_cores)
+    jobs_manager.execute_lazy(cmd, heavy_job)
 
     # === FastQC ===
-
-    fastqc_dir = pm.sequencing_dir / 'fastqc'
-    lazy(c('mkdir', fastqc_dir))
-
-    fastqs = get_matching_files(fastqs_dir, ['fastq'], ['Undetermined'], containing=True, paths=True)
-
-    qc_job = ExecParams(max_runtime=(0, 1, 0), num_cores=4, ram_per_core=300, builder=slurm, wait=False)
+    fastqs = get_matching_files(path_manager.fastqs_dir, ['fastq'],
+                                ['Undetermined'], containing=True, paths=True)
     qc = FastQC()
-
-
     jobs = qc.fast_qc_arrayed(fastqs,
-                              fastqc_dir,
-                              qc_job)
+                              path_manager.fastqs_dir,
+                              parallel_job)
 
-    slurm.begin_array()
+    start_array()
     for job in jobs:
-        lazy(job, qc_job)
-    slurm.wait_for_all_jobs()
+        jobs_manager.execute_lazy(job, parallel_job)
+    drop_array()
 
-    exit(0)
+    return fastqs
