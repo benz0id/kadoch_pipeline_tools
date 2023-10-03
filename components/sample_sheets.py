@@ -120,11 +120,6 @@ def reverse_compliment(sample_sheet_path: Path, directory: Union[str, Path],
                 print(msg)
             logger.debug(msg)
 
-        if not directory:
-            directory = sample_sheet_path.parent
-        new_path = directory / (sample_sheet_path.name[:-4] +
-                                '_rev_comp.csv')
-
     if rev_i7:
         for sample in sample_sheet.samples:
             index_1 = sample.index1
@@ -136,9 +131,9 @@ def reverse_compliment(sample_sheet_path: Path, directory: Union[str, Path],
                 print(msg)
             logger.debug(msg)
 
-        if not directory:
-            directory = sample_sheet_path.parent
-        new_path = directory / (sample_sheet_path.name[:-4] +
+    if not directory:
+        directory = sample_sheet_path.parent
+    new_path = directory / (sample_sheet_path.name[:-4] +
                                 '_rev_comp.csv')
 
     sample_sheet.write(open(new_path, 'w'))
@@ -175,8 +170,10 @@ def fix_sample_sheet(sample_sheet_path: Path, directory: Path = None,
     pruned_sample_sheet = apply_basic_formatting(sample_sheet_path, directory, 
                                                  verbose)
     if SampleSheet(pruned_sample_sheet).is_paired_end and rev_comp:
-        pruned_sample_sheet = reverse_compliment_i5(pruned_sample_sheet, 
-                                                    directory, verbose)
+        pruned_sample_sheet = reverse_compliment(pruned_sample_sheet,
+                                                 rev_i5=True, rev_i7=False,
+                                                 directory=directory,
+                                                 verbose=verbose)
     return pruned_sample_sheet
 
 
