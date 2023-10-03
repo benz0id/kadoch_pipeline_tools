@@ -72,7 +72,6 @@ class PythonJob(Job):
         self.notify_observers()
 
 
-
 class JobBuilder:
     """
     === Description ===
