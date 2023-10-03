@@ -2,16 +2,15 @@ from pathlib import Path
 from typing import List, Callable
 
 from utils.fetch_files import get_matching_files
-from utils.job_formatter import ExecParams
+from utils.job_formatter import ExecParams, JobBuilder
 from utils.job_manager import JobManager
 from utils.path_manager import PathManager
 from wrappers.bcl2fastq import Demultiplexer
 from wrappers.fastqc import FastQC
 
 
-def demult_and_fastqc(sample_sheet: Path,
+def demult_and_fastqc(sample_sheet: Path, builder: JobBuilder,
                       path_manager: PathManager,  jobs_manager: JobManager,
-                      heavy_job: ExecParams, parallel_job: ExecParams,
                       start_array: Callable, drop_array: Callable) -> List[Path]:
     """
     Run generic demultiplexing and fastqc pipeline. Return paths to the
@@ -23,12 +22,9 @@ def demult_and_fastqc(sample_sheet: Path,
 
 
     :param sample_sheet: Path to the sample sheet to use for demultiplexing.
+    :param builder: The builder to use to build this component's jobs.
     :param path_manager: Path manager for accessing project directories.
     :param jobs_manager: Job manager to use when queueing jobs.
-    :param heavy_job: Execution parameters to use when executing heavy jobs.
-        (demultiplexing)
-    :param parallel_job: Execution paramers for mid-size job to be used in
-        parallel.
     :param start_array: Command to call to signify that a job array is
         starting.
     :param drop_array: Command to call to signify that the program can continue
@@ -36,6 +32,10 @@ def demult_and_fastqc(sample_sheet: Path,
     :return: A list of fastqfiles produces by demultiplexing.
     """
     demult = Demultiplexer(path_manager)
+    heavy_job = ExecParams(max_runtime=(0, 1, 0), num_cores=8,
+                           ram_per_core=1024 * 4, builder=builder, wait=True)
+    qc_job = ExecParams(max_runtime=(0, 1, 0), num_cores=4, ram_per_core=300,
+                        builder=builder, wait=False)
 
     # === Demultiplex ===
     cmd = demult.get_demultiplex_cmd(path_manager.sequencing_dir,
@@ -47,14 +47,15 @@ def demult_and_fastqc(sample_sheet: Path,
     # === FastQC ===
     fastqs = get_matching_files(path_manager.fastqs_dir, ['fastq'],
                                 ['Undetermined'], containing=True, paths=True)
+
     qc = FastQC()
     jobs = qc.fast_qc_arrayed(fastqs,
                               path_manager.fastqs_dir,
-                              parallel_job)
+                              qc_job)
 
     start_array()
     for job in jobs:
-        jobs_manager.execute_lazy(job, parallel_job)
+        jobs_manager.execute_lazy(job, qc_job)
     drop_array()
 
     return fastqs
