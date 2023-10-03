@@ -40,12 +40,11 @@ def demult_and_fastqc(sample_sheet: Path, sequencing_results: Path,
                         builder=builder, wait=False)
 
     # === Demultiplex ===
-    cmd = demult.get_demultiplex_cmd(sequencing_results,
-                                     sample_sheet,
-                                     path_manager.fastqs_dir,
-                                     heavy_job.num_cores,
-                                     reports_dir=path_manager.demult_stats,
-                                     stats_dir=path_manager.demult_stats)
+    cmd = demult.get_demultiplex_cmd(
+        sequencing_results, sample_sheet,
+        path_manager.fastqs_dir, heavy_job.num_cores,
+        reports_dir=path_manager.demult_stats / 'Reports',
+        stats_dir=path_manager.demult_stats / 'Stats')
     jobs_manager.execute_lazy(cmd, heavy_job)
 
     # === FastQC ===

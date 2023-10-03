@@ -270,8 +270,8 @@ class Slurmifier(JobBuilder, Observer):
 
     def __init__(self, path_manager: PathManager, mailtype: List[str] = None,
                  email_address: str = '', priority: bool = False,
-                 redirect_to_console: bool = True, max_cost: float = 20,
-                 intercept_slurm_jobs: bool = True) -> None:
+                 redirect_to_console: bool = True, max_cost: float = 20
+                 ) -> None:
         if mailtype is None:
             self.mailtype = ['NONE']
         else:
