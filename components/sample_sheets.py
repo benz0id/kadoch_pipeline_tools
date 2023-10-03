@@ -88,12 +88,15 @@ def apply_basic_formatting(sample_sheet_path: Path, directory: Path = None,
     return new_path
 
 
-def reverse_compliment_i5(sample_sheet_path: Path, directory: Union[str, Path],
-                          verbose: bool = False) -> Path:
+def reverse_compliment(sample_sheet_path: Path, directory: Union[str, Path],
+                       rev_i5: bool, rev_i7: bool, verbose: bool = False) \
+        -> Path:
     """
     Converts all i5 primers in the <sample_sheet> to their reverse compliment
     and saves the new sample sheet.
 
+    :param rev_i7: Whether to reverse the i7 index.
+    :param rev_i5: Whether to reverse the i5 index.
     :param sample_sheet_path: Path to sample sheet. Must be paired end.
     :param directory: Path to the output directory. Parent of
         <sample_sheet_path> by default.
@@ -106,23 +109,40 @@ def reverse_compliment_i5(sample_sheet_path: Path, directory: Union[str, Path],
     if not sample_sheet.is_paired_end:
         raise ValueError("Received a single end sample sheet.")
 
-    for sample in sample_sheet.samples:
-        index_2 = sample.index2
-        rc_index_2 = get_rev_comp(index_2)
-        sample.index2 = rc_index_2
+    if rev_i5:
+        for sample in sample_sheet.samples:
+            index_2 = sample.index2
+            rc_index_2 = get_rev_comp(index_2)
+            sample.index2 = rc_index_2
 
-        msg = f"{sample.Sample_ID}\t{index_2}\t->\t{rc_index_2}"
-        if verbose:
-            print(msg)
-        logger.debug(msg)
+            msg = f"{sample.Sample_ID}\t{index_2}\t->\t{rc_index_2}"
+            if verbose:
+                print(msg)
+            logger.debug(msg)
 
-    if not directory:
-        directory = sample_sheet_path.parent
-    new_path = directory / (sample_sheet_path.name[:-4] +
-                            '_rev_comp.csv')
-    
+        if not directory:
+            directory = sample_sheet_path.parent
+        new_path = directory / (sample_sheet_path.name[:-4] +
+                                '_rev_comp.csv')
+
+    if rev_i7:
+        for sample in sample_sheet.samples:
+            index_1 = sample.index1
+            rc_index_1 = get_rev_comp(index_1)
+            sample.index1 = rc_index_1
+
+            msg = f"{sample.Sample_ID}\t{index_1}\t->\t{rc_index_1}"
+            if verbose:
+                print(msg)
+            logger.debug(msg)
+
+        if not directory:
+            directory = sample_sheet_path.parent
+        new_path = directory / (sample_sheet_path.name[:-4] +
+                                '_rev_comp.csv')
+
     sample_sheet.write(open(new_path, 'w'))
-    
+
     return new_path
 
 

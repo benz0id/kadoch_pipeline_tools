@@ -76,7 +76,7 @@ class Demultiplexer(ProgramWrapper):
     def get_demultiplex_cmd(self, sequencing_dir: Path,
                             sample_sheet_path: Path, output_dir: Path,
                             num_cores, reports_dir: Path = None,
-                            stats_dir: Path = None
+                            stats_dir: Path = None, io_cores: int = 2
                             ) -> str:
         """
         Demultiplexes the sequencing data at <sequencing_dir>, outputting fastqs, stats, and reports to
@@ -90,6 +90,9 @@ class Demultiplexer(ProgramWrapper):
         :param num_cores: The number of cores required to run the job.
         :return: A job that will execute the demultiplexing procedure as described.
         """
+
+        io_cores = min([io_cores, num_cores])
+
         optionals = []
         if reports_dir:
             optionals.extend(['--reports-dir', reports_dir])
@@ -98,9 +101,9 @@ class Demultiplexer(ProgramWrapper):
 
         cmd = cmdify(
             progs.bcl2fastq,
-            '-r', num_cores,
+            '-r', io_cores,
             '-p', num_cores,
-            '-w', num_cores,
+            '-w', io_cores,
             '--runfolder-dir', sequencing_dir,
             '--output-dir', output_dir,
             '--sample-sheet', sample_sheet_path,
