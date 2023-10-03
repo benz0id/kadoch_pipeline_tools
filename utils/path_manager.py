@@ -97,7 +97,7 @@ class PathManager:
     |---- sequencing_dir    (self.sequencing_dir)
     |     |---- <your sequencing results>
     |     |---- fastqs      (self.fastqs_dir)
-    |     |---- fastqc
+    |     |---- fastqc      (self.fastqc_dir)
     |---- cache_dir (self.cache_dir)
     |     |---- <any caches you create with cache manager>
     |---- logs              (self.logging_directory)
@@ -164,6 +164,7 @@ class PathManager:
     fastqs_dir: Path
     sample_sheet_path: Path
     sequencing_results: Path
+    fastqc_dir: Path
 
     def __init__(self, working_dir: Path, verbose: bool = False) -> None:
         self.verbose = verbose
@@ -244,6 +245,9 @@ class PathManager:
 
         self.fastqs_dir = self.sequencing_dir / 'fastqs'
         self.safe_make(self.fastqs_dir)
+
+        self.fastqc_dir = self.sequencing_dir / 'fastqc'
+        self.safe_make(self.fastqc_dir)
 
         self.sample_sheets_dir = self.project_dir / 'sample_sheets'
         self.safe_make(self.sample_sheets_dir)
