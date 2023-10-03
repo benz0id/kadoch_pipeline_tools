@@ -251,6 +251,9 @@ def fix_sample_sheet(sample_sheet_path: Path,
                                rev_i5=rev_i5, rev_i7=rev_i7,
                                directory=directory,
                                verbose=verbose)
+
+    find_collisions(pruned_sample_sheet)
+
     return pruned_sample_sheet
 
 
