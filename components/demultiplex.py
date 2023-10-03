@@ -52,7 +52,7 @@ def demult_and_fastqc(sample_sheet: Path, sequencing_results: Path,
 
     qc = FastQC()
     jobs = qc.fast_qc_arrayed(fastqs,
-                              path_manager.fastqs_dir,
+                              path_manager.fastqc_dir,
                               qc_job)
 
     start_array()
