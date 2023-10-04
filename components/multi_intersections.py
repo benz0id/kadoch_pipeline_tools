@@ -11,6 +11,8 @@ from utils.path_manager import cmdify
 
 logger = logging.getLogger(__name__)
 
+DO_LONG_NAME = True
+
 
 class MultiIntersector:
     """
@@ -78,7 +80,7 @@ class MultiIntersector:
         :return: Path to sorted bedfile.
         """
         inters = []
-        set_name = '_'.join([b.name.split('_')[1] for b in beds])
+        set_name = get_unique_filename()
 
         # Do not need to intersect beds if we only have one.
         if len(beds) == 1:
@@ -101,7 +103,12 @@ class MultiIntersector:
             cmd += cmdify('>', inter)
             self._run(cmd)
 
-        final_name = set_name + '_sorted_intersection.bed'
+        if DO_LONG_NAME:
+            name_str = '_' + '_'.join([bed.name[:-4] for bed in beds])
+        else:
+            name_str = ''
+
+        final_name = set_name + name_str + '_sorted_intersection.bed'
         final_file = self._temp_directory / final_name
         cmd = cmdify(
             'cat', *inters,
@@ -118,7 +125,13 @@ class MultiIntersector:
         :return: Path to sorted and merged bedfile.
         """
         set_name = get_unique_filename()
-        out_path = self._temp_directory / (set_name + '_merged_and_sorted.bed')
+
+        if DO_LONG_NAME:
+            name_str = '_' + '_'.join([bed.name[:-4] for bed in beds])
+        else:
+            name_str = ''
+        out_path = self._temp_directory / (set_name + name_str +
+                                           '_merged_and_sorted.bed')
 
         cmd = cmdify(
             'cat', *beds,
