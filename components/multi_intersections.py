@@ -130,7 +130,7 @@ class MultiIntersector:
         a venn section from the current state of <self._binary_counter>
         :return: Name of a bedfile.
         """
-        pass
+        return '_'.join(self.get_identifiers())
 
     def get_identifiers(self) -> List[str]:
         """
