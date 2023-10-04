@@ -88,7 +88,7 @@ class MultiIntersector:
             inter_name = bed.name[:-4] + '-inter-' + set_name + '.bed'
 
             inter = self._temp_directory / inter_name
-            inters.append(inters)
+            inters.append(inter)
 
             others = copy(beds)
             others.remove(bed)
