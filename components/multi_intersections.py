@@ -245,16 +245,26 @@ class MultiIntersector:
             excluded = self.get_excluded_bedfiles()
 
             common_included = self.get_sorted_intersection(included)
-            merged_excluded = self.get_all_merged_and_sorted(excluded)
 
-            cmd = cmdify(
-                'bedtools intersect',
-                '-a', common_included,
-                '-b', merged_excluded,
-                '-wa',
-                '| bedtools sort' + merge_str,
-                '>', out_path
-            )
+            # If there are no excluded groups (centre group), just used common
+            # peaks.
+            if not excluded:
+                cmd = cmdify(
+                    'cat', common_included,
+                    '| bedtools sort' + merge_str,
+                    '>', out_path
+                )
+            else:
+                merged_excluded = self.get_all_merged_and_sorted(excluded)
+                cmd = cmdify(
+                    'bedtools intersect',
+                    '-a', common_included,
+                    '-b', merged_excluded,
+                    '-wa',
+                    '| bedtools sort' + merge_str,
+                    '>', out_path
+                )
+
             self._run(cmd)
 
             self.update_counts_dict(out_path, counts_dict)
