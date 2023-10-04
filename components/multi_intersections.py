@@ -267,6 +267,31 @@ class MultiIntersector:
 
             self._run(cmd)
 
+            # Generate lof for this interseciton.
+            inc_str = '\n\t' + '\n\t'.join([inc.name
+                                            for inc in included])
+            with open(common_included, 'r') as inf:
+                num_incl = len(inf.readlines())
+            excl_str = '\n\t' + '\n\t'.join([excl.name
+                                            for excl in excluded])
+            if excluded:
+                with open(merged_excluded, 'r') as inf:
+                    num_excl = len(inf.readlines())
+            else:
+                num_excl = 0
+
+            with open(out_path, 'r') as inf:
+                final_num = len(inf.readlines())
+
+            logger.debug(
+                f' ===Generating Intersection ==='
+                f'Included: {inc_str}'
+                f'Excluded: {excl_str}'
+                f'Num unmerged included: {num_incl}'
+                f'Num merged excluded: {num_excl}'
+                f'Number in intersection: {final_num}'
+            )
+
             self.update_counts_dict(out_path, counts_dict)
 
         return counts_dict
