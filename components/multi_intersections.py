@@ -262,14 +262,14 @@ class MultiIntersector:
                     'bedtools intersect',
                     '-a', common_included,
                     '-b', merged_excluded,
-                    '-wa',
+                    '-wa', '-v',
                     '| bedtools sort' + merge_str,
                     '>', out_path
                 )
 
             self._run(cmd)
 
-            # Generate lof for this interseciton.
+            # Generate log for this intersection.
             inc_str = '\n\t' + '\n\t'.join([inc.name
                                             for inc in included])
             with open(common_included, 'r') as inf:
@@ -286,12 +286,12 @@ class MultiIntersector:
                 final_num = len(inf.readlines())
 
             s = (
-                f' ===Generating Intersection ==='
-                f'Included: {inc_str}'
-                f'Excluded: {excl_str}'
-                f'Num unmerged included: {num_incl}'
-                f'Num merged excluded: {num_excl}'
-                f'Number in intersection: {final_num}'
+                f'\n\t === Generating Intersection ===\n'
+                f'Included:\n {inc_str}\n'
+                f'Excluded:\n {excl_str}\n'
+                f'Num unmerged included: {num_incl}\n'
+                f'Num merged excluded: {num_excl}\n'
+                f'Number in intersection: {final_num}\n'
             )
             logger.debug(s)
             if verbose:
