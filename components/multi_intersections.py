@@ -93,12 +93,13 @@ class MultiIntersector:
             others = copy(beds)
             others.remove(bed)
             print(beds)
-
-            cmd = cmdify(
-                'bedtools intersect -a', bed,
-                '-b', *others,
-                '-wa > ', inter
-            )
+            cmd = cmdify('cat', bed)
+            for other_bed in others:
+                cmd += cmdify('|',
+                              'bedtools intersect -a -'
+                              '-b', other_bed, '-wa'
+                              )
+            cmd += cmdify('>', inter)
             self._run(cmd)
 
         final_name = set_name + '_sorted_intersection.bed'
@@ -287,8 +288,8 @@ class MultiIntersector:
 
             s = (
                 f'\n\t === Generating Intersection ===\n'
-                f'Included:\n {inc_str}\n'
-                f'Excluded:\n {excl_str}\n'
+                f'Included:{inc_str}\n'
+                f'Excluded:{excl_str}\n'
                 f'Num unmerged included: {num_incl}\n'
                 f'Num merged excluded: {num_excl}\n'
                 f'Number in intersection: {final_num}\n'
