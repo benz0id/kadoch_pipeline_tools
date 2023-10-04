@@ -94,6 +94,78 @@ class ExperimentalDesign:
     def get_conditions(self) -> List[str]:
         return copy(self._conditions)
 
+    def get_sample_descs(self) -> List[str]:
+        """
+        :return:  a list of sample descriptors, formatted
+            <condition>_Rep<rep_num>.
+        For sample in samples. Is in the same order as samples.
+        """
+        descs = []
+
+        # If there are no replicates, just return to which group each sample
+        # belongs.
+        if len(set(self._sample_to_rep_number.values())) == 1:
+            for sample in self._samples:
+                descs.append(self._sample_to_condition[sample])
+            return descs
+        # Append replicate number to end of description.
+        else:
+            for sample in self._samples:
+                cond = self._sample_to_condition[sample]
+                rep = self.get_rep_num(sample)
+                descs.append(cond + '_Rep' + str(rep))
+            return descs
+
+    def align_files_to_samples(self, files: List[Path]) -> List[Path]:
+        """
+        Given that each filename contains a sample name, allowing for a 1 to 1
+        mapping between each of files and samples, returns files ordered by
+        sample.
+        :param files: A list of filepaths each containing sample names.
+        :return: The same list, ordered in the same way as samples.
+        """
+        rtrn = []
+
+        for sample in self._samples:
+            match_found = False
+
+            for file in files:
+                if sample in file.name and match_found:
+                    raise ValueError(f"Multiple matches found for {sample}")
+                elif sample in file.name:
+                    match_found = True
+                    rtrn.append(file)
+
+            if not match_found:
+                raise ValueError(f"Could not find match for {sample}")
+
+        return rtrn
+
+    def merge_reps(self):
+        """
+        Returns the design of the experiment after merging replicates.
+        :return:
+        """
+
+        sample_to_condition = {}
+        sample_to_rep_number = {}
+        sample_to_sample_id = {}
+
+        for condition in self._conditions:
+            samples = sorted(self.get_samples(condition))
+            merged_sample_name = '-'.join(samples)
+
+            date_string = self._sample_to_sample_id[samples[0]][:8]
+            merged_id = f'{date_string}_{merged_sample_name}_{condition}'
+            sample_to_condition[merged_sample_name] = condition
+            sample_to_rep_number[merged_sample_name] = 1
+            sample_to_sample_id[merged_sample_name] = merged_id
+
+        return ExperimentalDesign(sample_to_condition,
+                                  sample_to_rep_number,
+                                  sample_to_sample_id)
+
+
     def get_rep_num(self, sample: str) -> int:
         return self._sample_to_rep_number[sample]
 
