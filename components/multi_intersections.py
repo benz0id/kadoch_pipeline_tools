@@ -1,4 +1,4 @@
-import subprocess
+import logging
 from copy import copy
 from pathlib import Path
 from typing import List, Dict, Callable
@@ -6,6 +6,9 @@ from typing import List, Dict, Callable
 from utils.job_formatter import ExecParams
 from utils.job_manager import JobManager
 from utils.path_manager import cmdify
+
+
+logger = logging.getLogger(__name__)
 
 
 class MultiIntersector:
@@ -53,6 +56,8 @@ class MultiIntersector:
         Iterates the binary counter.
         :return: Whether the counter is complete.
         """
+        old_counter = copy(self._binary_counter)
+
         i = 0
         while self._binary_counter[i]:
             self._binary_counter[i] = False
@@ -62,6 +67,7 @@ class MultiIntersector:
             return False
         else:
             self._binary_counter[i] = True
+            return True
 
     def get_sorted_intersection(self, beds: List[Path]) -> Path:
         """

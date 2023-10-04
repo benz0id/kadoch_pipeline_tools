@@ -28,6 +28,7 @@ def combine_cmds(cmds: List[str], num_per: int) -> List[str]:
         combined_cmds.append('\n'.join(to_exec))
     return combined_cmds
 
+
 class ExperimentalDesign:
     """
     === Description ===
