@@ -59,7 +59,7 @@ class MultiIntersector:
         """
 
         i = 0
-        while self._binary_counter[i] and i < len(self._binary_counter):
+        while i < len(self._binary_counter) and self._binary_counter[i]:
             self._binary_counter[i] = False
             i += 1
 
