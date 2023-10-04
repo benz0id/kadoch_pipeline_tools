@@ -56,7 +56,6 @@ class MultiIntersector:
         Iterates the binary counter.
         :return: Whether the counter is complete.
         """
-        old_counter = copy(self._binary_counter)
 
         i = 0
         while self._binary_counter[i]:
@@ -78,7 +77,7 @@ class MultiIntersector:
         :return: Path to sorted bedfile.
         """
         inters = []
-        set_name = '_'.join([b.name[:-4] for b in beds])
+        set_name = '_'.join([b.name.split('_')[1] for b in beds])
 
         # Do not need to intersect beds if we only have one.
         if len(beds) == 1:
