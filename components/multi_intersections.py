@@ -191,7 +191,8 @@ class MultiIntersector:
     def get_all_venn_intersections(self, bedfiles: List[Path],
                                    identifiers: List[str],
                                    output_dir: Path,
-                                   merge: bool = True) -> Dict[str, int]:
+                                   merge: bool = True,
+                                   verbose = False) -> Dict[str, int]:
         """
         Gets the possible exclusive set combinations of the given
         bedfiles, essentially giving all section of a venn diagram as peaks
@@ -214,6 +215,7 @@ class MultiIntersector:
         to produce the final bedfile. This is repeated for each combination
         of {A, B, C, D, E}
 
+        :param verbose: Print additional progress information to console.
         :param bedfiles: A list of sorted bedfiles.
         :param identifiers: A list of strings, where each string is an
             identifier for the bedfile at the corresponding position
@@ -283,7 +285,7 @@ class MultiIntersector:
             with open(out_path, 'r') as inf:
                 final_num = len(inf.readlines())
 
-            logger.debug(
+            s = (
                 f' ===Generating Intersection ==='
                 f'Included: {inc_str}'
                 f'Excluded: {excl_str}'
@@ -291,6 +293,9 @@ class MultiIntersector:
                 f'Num merged excluded: {num_excl}'
                 f'Number in intersection: {final_num}'
             )
+            logger.debug(s)
+            if verbose:
+                print(s)
 
             self.update_counts_dict(out_path, counts_dict)
 
