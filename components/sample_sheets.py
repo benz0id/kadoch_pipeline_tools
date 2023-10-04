@@ -50,9 +50,12 @@ def find_collisions(sample_sheet_path: Path) -> None:
                 sample_1 = sample_names[i]
                 sample_2 = sample_names[j]
 
-                if test_for_collision(index1, index2, MINIMUM_DIFF):
-                    if not verbose:
-                        return True
+                collision = test_for_collision(index1, index2, MINIMUM_DIFF)
+
+                if collision and not verbose:
+                    return True
+                if not collision:
+                    continue
 
                 bars = ''
                 for k, bp in enumerate(index1):
