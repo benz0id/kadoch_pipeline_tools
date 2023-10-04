@@ -87,6 +87,7 @@ class MultiIntersector:
 
             others = copy(beds)
             others.remove(bed)
+            print(beds)
 
             cmd = cmdify(
                 'bedtools intersect -a', bed,
