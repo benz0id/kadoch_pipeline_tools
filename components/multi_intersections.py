@@ -116,7 +116,7 @@ class MultiIntersector:
         :param beds: A list of bedfiles.
         :return: Path to sorted and merged bedfile.
         """
-        set_name = '_'.join([b.name[:-4] for b in beds])
+        set_name = '_'.join([b.name.split('_')[1] for b in beds])
         out_path = self._temp_directory / (set_name + '_merged_and_sorted.bed')
 
         cmd = cmdify(
