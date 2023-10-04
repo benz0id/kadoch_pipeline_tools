@@ -171,8 +171,8 @@ class MultiIntersector:
         :param counts_dict: A dictionary mapping the name of an intersection to
             the number of counts in that interseciton.
         """
-        result = subprocess.run(['wc', '-l', str(bedfile)])
-        num_lines = int(result.stdout.decode('utf-8').strip().split(' ')[0])
+        with open(bedfile, 'r') as inf:
+            num_lines = len(inf.readlines())
         s = ' '.join(self.get_identifiers()) + '.bed'
         counts_dict[s] = num_lines
 

@@ -35,7 +35,7 @@ class PeakCaller:
             self.run = job_manager.execute
 
     def run_peak_calling(self, bams: List[Path],
-                         peaks_dir_name: str,
+                         peaks_dir: Path,
                          cutoff_q_val: float,
                          control_bam: Path = None,
                          *args, **kwargs) -> List[Path]:
@@ -50,9 +50,8 @@ class PeakCaller:
         function.
         :return: Paths to the created peak files.
         """
-        out_dir = self.pm.project_dir / peaks_dir_name
 
-        self.run(cmdify('mkdir', self.pm.project_dir / out_dir),
+        self.run(cmdify('mkdir', self.pm.project_dir / peaks_dir),
                  self.light_job)
 
         peakfiles = []
@@ -65,12 +64,12 @@ class PeakCaller:
 
             self.run(self.macs2.call_peaks(bam,
                                            cutoff_q_val,
-                                           out_dir,
+                                           peaks_dir,
                                            params,
                                            control_bam,
                                            outfile_name=peaksfile_name,
                                            *args, **kwargs), params)
-            peakfiles.append(out_dir / (peaksfile_name +
+            peakfiles.append(peaks_dir / (peaksfile_name +
                                         '_peaks.narrowPeak'))
 
         return peakfiles
