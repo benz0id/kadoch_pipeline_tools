@@ -95,8 +95,7 @@ class MultiIntersector:
             print(beds)
             cmd = cmdify('cat', bed)
             for other_bed in others:
-                cmd += cmdify('|',
-                              'bedtools intersect -a -'
+                cmd += cmdify('|', 'bedtools intersect -a -',
                               '-b', other_bed, '-wa'
                               )
             cmd += cmdify('>', inter)
