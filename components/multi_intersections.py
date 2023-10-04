@@ -3,6 +3,7 @@ from copy import copy
 from pathlib import Path
 from typing import List, Dict, Callable
 
+from utils.fetch_files import get_unique_filename
 from utils.job_formatter import ExecParams
 from utils.job_manager import JobManager
 from utils.path_manager import cmdify
@@ -116,7 +117,7 @@ class MultiIntersector:
         :param beds: A list of bedfiles.
         :return: Path to sorted and merged bedfile.
         """
-        set_name = '_'.join([b.name.split('_')[1] for b in beds])
+        set_name = get_unique_filename()
         out_path = self._temp_directory / (set_name + '_merged_and_sorted.bed')
 
         cmd = cmdify(
