@@ -79,6 +79,11 @@ class MultiIntersector:
         """
         inters = []
         set_name = '_'.join([b.name[:-4] for b in beds])
+
+        # Do not need to intersect beds if we only have one.
+        if len(beds) == 1:
+            return beds[0]
+
         for bed in beds:
             inter_name = bed.name[:-4] + '-inter-' + set_name + '.bed'
 
