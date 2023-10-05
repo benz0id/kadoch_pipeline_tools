@@ -270,7 +270,7 @@ class ExperimentalDesign:
         """
 
         sample_groups = [sample.split('-') for sample in self._samples]
-        groups = [[] * len(sample_groups)]
+        groups = [[] for _ in range(len(sample_groups))]
 
         for file in files:
             found = False
