@@ -173,7 +173,7 @@ class ExperimentalDesign:
         def pretty_dict(dic: Dict[str, Any]) -> str:
             s = ''
             for sample in self._samples:
-                s += '\t' + sample + ': ' + dic[sample] + '\n'
+                s += '\t' + sample + ': ' + str(dic[sample]) + '\n'
             return s
 
         return \
