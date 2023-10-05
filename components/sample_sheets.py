@@ -123,7 +123,8 @@ def apply_basic_formatting(sample_sheet_path: Path, directory: Path = None,
 
     # === Remove Purposeless Comma Rows ===
     def is_commas(s: str) -> bool:
-        return all([c == "," for c in s.strip()])
+        return all([c == "," or not c.strip()
+                    for c in s.strip()])
 
     num_spacer_rows = 0
     for row in lines:
