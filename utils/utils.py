@@ -407,9 +407,9 @@ def get_model_from_sample_sheet(sample_sheet: Path,
         sample_to_rep_number = None
 
     if verbose:
-        print(len(sample_to_condition), sample_to_condition)
-        print(len(sample_to_rep_number), sample_to_rep_number)
-        print(len(sample_to_sample_id), sample_to_sample_id)
+        print(len(sample_to_condition), sample_to_condition, '\n')
+        print(len(sample_to_rep_number), sample_to_rep_number, '\n')
+        print(len(sample_to_sample_id), sample_to_sample_id, '\n')
 
     return ExperimentalDesign(sample_to_condition,
                               sample_to_rep_number,
