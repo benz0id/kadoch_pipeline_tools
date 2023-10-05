@@ -171,7 +171,7 @@ class ExperimentalDesign:
         return self._sample_to_rep_number[sample]
 
     def __str__(self) -> str:
-        def pretty_dict(dic: Dict[str: Any]) -> str:
+        def pretty_dict(dic: Dict[str, Any]) -> str:
             s = ''
             for sample in self._samples:
                 s += '\t' + sample + ': ' + dic[sample] + '\n'
