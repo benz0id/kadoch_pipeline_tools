@@ -182,7 +182,7 @@ class ExperimentalDesign:
         f'{pretty_dict(self._sample_to_sample_id)}\n' \
         f'=== Sample: Condition ===\n' \
         f'{pretty_dict(self._condition_to_samples)}\n' \
-        f'=== Sample: Replicate\n' \
+        f'=== Sample: Replicate ===\n' \
         f'{pretty_dict(self._sample_to_rep_number)}\n'
 
     def get_invalid_sample_inds(self, strs: List[str],
@@ -217,6 +217,128 @@ class ExperimentalDesign:
                 invalid_samples.append(i)
 
         return invalid_samples
+
+    def get_fastq_groupings(self, fastqs: List[Path]) -> List[List[Path]]:
+        """
+        Groups the fastqs according to which merged sample they belong to.
+        :return:
+        """
+        pe_found = False
+        se_found = False
+        for file in fastqs:
+            tail = file.name.split('.')[0].split('_')[-2]
+            if "R1" in tail or "R2" in tail:
+                pe_found = True
+            else:
+                se_found = True
+
+        if pe_found and se_found:
+            raise ValueError("A mixture of paired end and single end reads"
+                             "were found.")
+
+        if pe_found:
+            r1s = []
+            r2s = []
+            for file in fastqs:
+                tail = file.name.split('.')[0].split('_')[-2]
+                if "R1" in tail:
+                    r1s.append(file)
+                elif "R2" in tail:
+                    r2s.append(file)
+                else:
+                    raise ValueError("I have no idea how this is even remotely "
+                                     "possible")
+
+            r1_groups = self.get_groupings(r1s)
+            r2_groups = self.get_groupings(r2s)
+
+            return r1_groups + r2_groups
+        else:
+            return self.get_groupings(fastqs)
+
+
+
+
+
+
+
+
+
+    def get_groupings(self, files: List[Path]) -> List[List[Path]]:
+        """
+        For experimental designs that have been merged with others. Returns the
+        groups of samples that have been merged.
+
+        Useful for merging fastqs and bam files.
+
+        :param files: A list of files. For each sample contained in this
+            design, <files> must contain exactly one file with the sample's
+            name in it.
+        :return: Files grouped by the merged sample they belong to.
+        """
+
+        sample_groups = [sample.split('-') for sample in self._samples]
+        groups = [[] * len(sample_groups)]
+
+        for file in files:
+            found = False
+            for i, sample_group in sample_groups:
+                for sample in sample_group:
+                    match = sample in file.name
+                    if match and found:
+                        raise ValueError("Multiple matches found for" +
+                                         str(file))
+                    elif match:
+                        found = True
+                        groups[i].append(sample)
+            if not found:
+                raise ValueError("Could not find match for" + str(file))
+
+        return groups
+
+
+
+
+
+def combine_runs(runs: List[ExperimentalDesign]) -> ExperimentalDesign:
+    """
+    Combines the give experimental designs into a single experimental design.
+    All samples with matching condition and replicate number are merged into
+    a single sample.
+
+    :param runs: A list of experiments.
+    :return: The merged experiment.
+    """
+
+    cond_rep_to_samples = {}
+
+    def add(key, val):
+        if key in cond_rep_to_samples:
+            cond_rep_to_samples[key].append(val)
+        else:
+            cond_rep_to_samples[key] = [val]
+
+    for run in runs:
+        for sample in run.get_samples():
+            cond = run.get_condition(sample)
+            rep = run.get_rep_num(sample)
+            add((cond, rep), sample)
+
+    sample_to_condition = {}
+    sample_to_rep_number = {}
+    sample_to_sample_id = {}
+
+    for cond, rep in cond_rep_to_samples:
+        samples = cond_rep_to_samples[(cond, rep)]
+        sample = '-'.join(samples)
+        sample_id = '_'.join(['0MERGED0', sample, cond, 'Rep' + str(rep)])
+
+        sample_to_condition[sample] = cond
+        sample_to_rep_number[sample] = rep
+        sample_to_sample_id[sample] = sample_id
+
+
+
 
 
 def write_samples_file(filenames: List[Union[Path, str]],

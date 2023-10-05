@@ -1,6 +1,7 @@
 import logging
 import os
 import re
+from copy import copy
 from datetime import datetime
 from pathlib import Path
 from typing import List, Union
@@ -15,7 +16,8 @@ def get_matching_strs(strs: List[str],
                       matching: Regexes,
                       not_matching: Regexes = None,
                       containing: bool = False,
-                      verbose: bool = False) -> List[str]:
+                      verbose: bool = False,
+                      inds: bool = False) -> Union[List[str], List[int]]:
     """
     Gets all strings in <strs> that match any of <matching> and none of
     <not_matching>.
@@ -26,6 +28,8 @@ def get_matching_strs(strs: List[str],
      of each of <strs>, rather than an exact match.
     :param verbose: Whether to print information regarding the process to the
      console.
+    :param inds: Whether to return the indecies of the matches rather than the
+        actual matches themselves.
     :return: All strings in <strs> matching <matching> and not matching
     <not_matching>.
     """
@@ -64,6 +68,15 @@ def get_matching_strs(strs: List[str],
 
     if verbose:
         print(s)
+
+    if inds:
+        vald_inds = []
+        strs_copy = copy(strs)
+        for v in valid:
+            ind = strs_copy.index(v)
+            strs_copy[ind] = ''
+            vald_inds.append(ind)
+        valid = vald_inds
 
     return valid
 

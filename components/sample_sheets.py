@@ -255,9 +255,10 @@ def fix_sample_sheet(sample_sheet_path: Path,
 
     2. Remove alternating spacer lines.
         Excel will often insert unnecessary a spacer line every other line.
-        
-    3. [iff paired end] Convert to rev comp.
-        Converts i7 or i5 primer to their reverse compliment.
+
+    3. Remove empty rows at the end of the file.
+
+    4. Remove empty columns to the right of the data.
     
     :param rev_i7: Whether to convert i7 indices to their reverse compliments.
     :param rev_i5: Whether to convert i5 indices to their reverse compliments.

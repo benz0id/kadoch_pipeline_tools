@@ -4,17 +4,17 @@ import sys
 from pathlib import Path
 from typing import Dict, List, Tuple
 
-from utils.fetch_files import get_matching_files
+from utils.fetch_files import get_matching_files, get_matching_strs
 from utils.job_formatter import ExecParams
 from utils.path_manager import cmdify
 
 logger = logging.getLogger(__name__)
 
 
-def merge_fastqs(fastq1_dir: Path, fastq2_dir: Path, mapping: Dict[str, str],
-                 out_dir: Path, paired_end: bool = False,
-                 verbose: bool = False) \
-        -> Tuple[List[str], List[Path]]:
+def merge_fastqs(fastqs1: List[Path], fastqs2: List[Path],
+                 mapping: Dict[str, str], out_dir: Path,
+                 paired_end: bool = False,  verbose: bool = False) \
+                 -> Tuple[List[str], List[Path]]:
     """
         Merges the fastqs in <fastq1_dir> with the fastqs in <fastq2_dir>. Uses the
     <mapping> to search for files to merge.
@@ -24,8 +24,8 @@ def merge_fastqs(fastq1_dir: Path, fastq2_dir: Path, mapping: Dict[str, str],
 
         Does *not* create out directory.
 
-    :param fastq1_dir: The directory containing the first set of fastq files.
-    :param fastq2_dir: The directory contianing hte second set of fastq files.
+    :param fastqs1: A list of fastq files.
+    :param fastqs2: A seperate list of fastq files.
     :param mapping: A dictionary that maps some identifiable substring of each
         fastq1 name to an identifiable substring of a fastq2 name.
     :param out_dir: The directory into which merged fastqs will be placed.
@@ -34,26 +34,6 @@ def merge_fastqs(fastq1_dir: Path, fastq2_dir: Path, mapping: Dict[str, str],
     :param exec_params: Parameters with which to construct the merge job.
     :return: A list of commands that will create the merged fastqs once
         executed, and the paths to those resultant fastqs.
-
-
-    Example:
-
-        fastqs1
-            1234_CG123_22_R1_001.fastq.gz
-            1234_CG123_22_R2_001.fastq.gz
-        fastqs2
-            1234_CG500_22_R1_001.fastq.gz
-            1234_CG500_22_R2_001.fastq.gz
-
-    $ mkdir out_dir
-    >>> cmds = merge_fastqs(Path("fastqs1"), Path("fastqs2"),
-    >>>         {"CG123": "CG500"}, Path("out_dir"), paired_end=True)[0]
-    >>> os.system(cmds[0])
-    >>> os.system(cmds[1])
-
-        out_dir
-            1234_CG123&CG500_22_R1_001.fastq.gz
-            1234_CG123&CG500_22_R2_001.fastq.gz
 
     """
     to_combine = []
@@ -66,10 +46,12 @@ def merge_fastqs(fastq1_dir: Path, fastq2_dir: Path, mapping: Dict[str, str],
         """
 
         # Get matching fastqs
-        matching1 = get_matching_files(fastq1_dir, [f1_patt], f1_avoid,
-                                       containing=True)
-        matching2 = get_matching_files(fastq2_dir, [f2_patt], f2_avoid,
-                                       containing=True)
+        matching1 = get_matching_strs([f.name for f in fastqs1], [f1_patt],
+                                      f1_avoid, containing=True, inds=True)
+        matching1 = [fastqs1[ind] for ind in matching1]
+        matching2 = get_matching_strs([f.name for f in fastqs2], [f2_patt],
+                                      f2_avoid, containing=True, inds=True)
+        matching2 = [fastqs1[ind] for ind in matching2]
 
         # Check that each identifier successfully found a single fastq.
         s = ''
@@ -81,16 +63,16 @@ def merge_fastqs(fastq1_dir: Path, fastq2_dir: Path, mapping: Dict[str, str],
             a2 = ' and avoiding ' + str(f2_avoid)
 
         if len(matching1) == 0:
-            s += f"Failed to find pattern matching \"{f1_patt}\"{a1} in {fastq1_dir}"
+            s += f"Failed to find pattern matching \"{f1_patt}\"{a1}"
         if len(matching2) == 0:
-            s += f"Failed to find pattern matching \"{f2_patt}\"{a2} in {fastq2_dir}"
+            s += f"Failed to find pattern matching \"{f2_patt}\"{a2}"
         if len(matching1) > 1:
-            mult = '\n\t'.join(matching1)
-            s += f"Found multiple matches for \"{f1_patt}\"{a1} in {fastq1_dir}" \
+            mult = '\n\t'.join([str(p) for p in matching1])
+            s += f"Found multiple matches for \"{f1_patt}\"{a1}" \
                  f"\n{mult}"
         if len(matching2) > 1:
-            mult = '\n\t'.join(matching2)
-            s += f"Found multiple matches for \"{f2_patt}\"{a2} in {fastq2_dir}" \
+            mult = '\n\t'.join([str(p) for p in matching2])
+            s += f"Found multiple matches for \"{f2_patt}\"{a2}" \
                  f"\n{mult}"
         if s:
             print(s, sys.stderr)
@@ -99,14 +81,15 @@ def merge_fastqs(fastq1_dir: Path, fastq2_dir: Path, mapping: Dict[str, str],
 
 
         # Create the name for the new fastq file.
-        fastq1_name = matching1[0]
-        fastq2_name = matching2[0]
+        f1 = matching1[0]
+        f2 = matching2[0]
+
+        fastq1_name = f1.name
+
         name_comps = fastq1_name.split(f1_patt)
 
-        new_name = name_comps[0] + f1_patt + '-' + f2_patt + name_comps[1]
-        to_combine.append((out_dir / new_name,
-                           fastq1_dir / fastq1_name,
-                           fastq2_dir / fastq2_name))
+        new_name = '0MERGED0' + f1_patt + '-' + f2_patt + name_comps[1]
+        to_combine.append((out_dir / new_name, f1, f2))
 
     # Get all fastq pairs, with slightly different PE behaviour.
     if not paired_end:
