@@ -151,9 +151,6 @@ def apply_basic_formatting(sample_sheet_path: Path, directory: Path = None,
     while not lines[-1].strip():
         lines.pop()
 
-    for line in lines:
-        print(line)
-
     while is_commas(lines[-1]):
         lines.pop()
 
