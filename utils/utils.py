@@ -159,7 +159,7 @@ class ExperimentalDesign:
             date_string = self._sample_to_sample_id[samples[0]][:8]
             merged_id = f'{date_string}_{merged_sample_name}_{condition}'
             sample_to_condition[merged_sample_name] = condition
-            sample_to_rep_number[merged_sample_name] = 1
+            sample_to_rep_number[merged_sample_name] = 0
             sample_to_sample_id[merged_sample_name] = merged_id
 
         return ExperimentalDesign(sample_to_condition,
