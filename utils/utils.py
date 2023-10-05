@@ -170,6 +170,21 @@ class ExperimentalDesign:
     def get_rep_num(self, sample: str) -> int:
         return self._sample_to_rep_number[sample]
 
+    def __str__(self) -> str:
+        def pretty_dict(dic: Dict[str: any]) -> str:
+            s = ''
+            for sample in self._samples:
+                s += '\t' + sample + ': ' + dic[sample] + '\n'
+            return s
+
+        return \
+        f'=== Sample: Sample ID ===\n' \
+        f'{pretty_dict(self._sample_to_sample_id)}\n' \
+        f'=== Sample: Condition ===\n' \
+        f'{pretty_dict(self._condition_to_samples)}\n' \
+        f'=== Sample: Replicate\n' \
+        f'{pretty_dict(self._sample_to_rep_number)}\n'
+
     def get_invalid_sample_inds(self, strs: List[str],
                                 fail_on_duplication: bool = True) -> List[int]:
         """
