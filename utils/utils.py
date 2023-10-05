@@ -279,6 +279,11 @@ def get_model_from_sample_sheet(sample_sheet: Path,
             for val in sample_to_rep_number.values()]):
         sample_to_rep_number = None
 
+    if verbose:
+        print(sample_to_condition)
+        print(sample_to_rep_number)
+        print(sample_to_sample_id)
+
     return ExperimentalDesign(sample_to_condition,
                               sample_to_rep_number,
                               sample_to_sample_id)

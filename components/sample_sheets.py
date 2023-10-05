@@ -110,6 +110,8 @@ def apply_basic_formatting(sample_sheet_path: Path, directory: Path = None,
 
     with open(sample_sheet_path, 'r') as sample_sheet:
         lines = sample_sheet.readlines()
+    for i, line in enumerate(lines):
+        lines[i] = line.strip()
 
     # === Remove header line ===
     while lines[0][:8] != "[Header]":
@@ -119,7 +121,7 @@ def apply_basic_formatting(sample_sheet_path: Path, directory: Path = None,
         logger.info(msg)
         lines.pop(0)
 
-    # === Remove purposeless comma rows ===
+    # === Remove Purposeless Comma Rows ===
     def is_commas(s: str) -> bool:
         return all([c == "," for c in s.strip()])
 
@@ -144,6 +146,23 @@ def apply_basic_formatting(sample_sheet_path: Path, directory: Path = None,
         lines.pop(i)
         i += 1
     i -= first_spacer_ind
+
+    while is_commas(lines[-1]):
+        lines.pop()
+
+
+    # === Remove Purposeless Comma Columns ===
+
+    def additional_cols() -> bool:
+        # Are there tailing columns that are all commas
+        for line in lines:
+            if line[-1] != ',':
+                return False
+        return True
+
+    while additional_cols():
+        for i, line in enumerate(lines):
+            lines[i] = line[:-1]
 
     # === Create new csv ==
 
