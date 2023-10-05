@@ -252,17 +252,19 @@ class MultiIntersector:
 
         counts_dict = {}
 
-        # Generate exclusive intersections.
+        # Generate exclusive intersections, using binary counter to get
+        # combinations.
         while self.iter_counter():
             out_path = output_dir / (self.get_name() + '.bed')
 
             included = self.get_included_bedfiles()
             excluded = self.get_excluded_bedfiles()
 
+            # Get peaks that are common among all included beds. (unmerged)
             common_included = self.get_sorted_intersection(included)
 
-            # If there are no excluded groups (centre group), just used common
-            # peaks.
+            # If there are no excluded groups (centre group), just return
+            # common peaks.
             if not excluded:
                 cmd = cmdify(
                     'cat', common_included,
@@ -270,7 +272,11 @@ class MultiIntersector:
                     '>', out_path
                 )
             else:
+                # Get peaks that are found in all excluded groups.
                 merged_excluded = self.get_all_merged_and_sorted(excluded)
+
+                # Return all peaks found in included peaks that do not have
+                # any overlap with excluded peaks.
                 cmd = cmdify(
                     'bedtools intersect',
                     '-a', common_included,
