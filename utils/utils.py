@@ -265,6 +265,8 @@ def get_model_from_sample_sheet(sample_sheet: Path,
         sample_name = sample_id.split('_')[1]
 
         if 'rep' in sample_id.lower():
+            print(sample_name)
+            print(sample_name.lower().split('rep'))
             replicate_num = int(sample_name.lower().split('rep')[1])
         else:
             replicate_num = None
