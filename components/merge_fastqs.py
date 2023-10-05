@@ -11,6 +11,49 @@ from utils.path_manager import cmdify
 logger = logging.getLogger(__name__)
 
 
+def merge_fastqs_grouped(grouped_fastqs: List[List[Path]],
+                         out_dir: Path) -> Tuple[List[str], List[Path]]:
+    """
+    For each group of fastq files in <grouped_fastqs>, combine all fastqs in
+    that group into a single fastq file.
+
+
+    :param grouped_fastqs: A list of grouped paths to fastq files. The fastqs
+        in these groups will be combined into a single fastq.
+    :param out_dir: The directory into which the combined fastqs will be
+        placed.
+    :return: A list of commands that would result in the creation of fastqs in
+        the <out_dir> and a list of the resultant filepaths.
+    """
+
+    cmds = []
+    paths = []
+
+    for group in grouped_fastqs:
+        samples = []
+        for fastq in group:
+            samples.append(fastq.name.split('_')[1])
+        samples.sort()
+
+        out_filename = '0MERGED0_' + '-'.join(samples) + '_' + \
+                       '_'.join(group[0].name.split('_')[3:])
+        out_fastq = out_dir / out_filename
+
+        cmds.append(cmdify('cat', *group, '>', out_dir / out_filename))
+        paths.append(out_fastq)
+
+    return cmds, paths
+
+
+
+
+
+
+
+
+
+
+
 def merge_fastqs(fastqs1: List[Path], fastqs2: List[Path],
                  mapping: Dict[str, str], out_dir: Path,
                  paired_end: bool = False,  verbose: bool = False) \
