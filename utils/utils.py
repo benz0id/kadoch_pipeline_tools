@@ -367,7 +367,7 @@ def write_samples_file(filenames: List[Union[Path, str]],
 
 
 def get_model_from_sample_sheet(sample_sheet: Path,
-                                condition_slice: slice = slice(3, -1),
+                                condition_slice: slice = slice(2, -1),
                                 verbose: bool = False) -> ExperimentalDesign:
     """
     Infer the experimental model from the sample sheet.
@@ -407,9 +407,9 @@ def get_model_from_sample_sheet(sample_sheet: Path,
         sample_to_rep_number = None
 
     if verbose:
-        print(sample_to_condition)
-        print(sample_to_rep_number)
-        print(sample_to_sample_id)
+        print(len(sample_to_condition), sample_to_condition)
+        print(len(sample_to_rep_number), sample_to_rep_number)
+        print(len(sample_to_sample_id), sample_to_sample_id)
 
     return ExperimentalDesign(sample_to_condition,
                               sample_to_rep_number,
