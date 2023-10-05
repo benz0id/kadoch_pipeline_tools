@@ -180,7 +180,7 @@ class ExperimentalDesign:
             f'=== Sample: Sample ID ===\n' \
             f'{pretty_dict(self._sample_to_sample_id)}\n' \
             f'=== Sample: Condition ===\n' \
-            f'{pretty_dict(self._condition_to_samples)}\n' \
+            f'{pretty_dict(self._sample_to_condition)}\n' \
             f'=== Sample: Replicate ===\n' \
             f'{pretty_dict(self._sample_to_rep_number)}\n'
 
