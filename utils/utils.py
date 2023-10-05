@@ -274,7 +274,7 @@ class ExperimentalDesign:
 
         for file in files:
             found = False
-            for i, sample_group in sample_groups:
+            for i, sample_group in enumerate(sample_groups):
                 for sample in sample_group:
                     match = sample in file.name
                     if match and found:
