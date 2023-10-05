@@ -177,6 +177,8 @@ def apply_basic_formatting(sample_sheet_path: Path, directory: Path = None,
         print(msg)
     logger.info(msg)
 
+    lines = [line + '\n' for line in lines]
+
     with open(new_path, 'w') as out_file:
         out_file.writelines(lines)
 
