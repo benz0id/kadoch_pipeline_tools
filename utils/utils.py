@@ -2,7 +2,7 @@ from copy import copy
 from pathlib import Path
 from typing import List, Dict, Union, Any
 
-from sample_sheet import SampleSheet
+from sample_sheets import SampleSheet
 
 
 class DesignError(Exception):
@@ -166,7 +166,6 @@ class ExperimentalDesign:
                                   sample_to_rep_number,
                                   sample_to_sample_id)
 
-
     def get_rep_num(self, sample: str) -> int:
         return self._sample_to_rep_number[sample]
 
@@ -178,12 +177,12 @@ class ExperimentalDesign:
             return s
 
         return \
-        f'=== Sample: Sample ID ===\n' \
-        f'{pretty_dict(self._sample_to_sample_id)}\n' \
-        f'=== Sample: Condition ===\n' \
-        f'{pretty_dict(self._condition_to_samples)}\n' \
-        f'=== Sample: Replicate ===\n' \
-        f'{pretty_dict(self._sample_to_rep_number)}\n'
+            f'=== Sample: Sample ID ===\n' \
+            f'{pretty_dict(self._sample_to_sample_id)}\n' \
+            f'=== Sample: Condition ===\n' \
+            f'{pretty_dict(self._condition_to_samples)}\n' \
+            f'=== Sample: Replicate ===\n' \
+            f'{pretty_dict(self._sample_to_rep_number)}\n'
 
     def get_invalid_sample_inds(self, strs: List[str],
                                 fail_on_duplication: bool = True) -> List[int]:
@@ -246,8 +245,9 @@ class ExperimentalDesign:
                 elif "R2" in tail:
                     r2s.append(file)
                 else:
-                    raise ValueError("I have no idea how this is even remotely "
-                                     "possible")
+                    raise ValueError(
+                        "I have no idea how this is even remotely "
+                        "possible")
 
             r1_groups = self.get_groupings(r1s)
             r2_groups = self.get_groupings(r2s)
@@ -255,14 +255,6 @@ class ExperimentalDesign:
             return r1_groups + r2_groups
         else:
             return self.get_groupings(fastqs)
-
-
-
-
-
-
-
-
 
     def get_groupings(self, files: List[Path]) -> List[List[Path]]:
         """
@@ -295,9 +287,6 @@ class ExperimentalDesign:
                 raise ValueError("Could not find match for" + str(file))
 
         return groups
-
-
-
 
 
 def combine_runs(*runs: ExperimentalDesign) -> ExperimentalDesign:
@@ -337,8 +326,9 @@ def combine_runs(*runs: ExperimentalDesign) -> ExperimentalDesign:
         sample_to_rep_number[sample] = rep
         sample_to_sample_id[sample] = sample_id
 
-
-
+    return ExperimentalDesign(sample_to_condition,
+                              sample_to_rep_number,
+                              sample_to_sample_id)
 
 
 def write_samples_file(filenames: List[Union[Path, str]],
@@ -424,20 +414,3 @@ def get_model_from_sample_sheet(sample_sheet: Path,
     return ExperimentalDesign(sample_to_condition,
                               sample_to_rep_number,
                               sample_to_sample_id)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
