@@ -300,7 +300,7 @@ class ExperimentalDesign:
 
 
 
-def combine_runs(runs: List[ExperimentalDesign]) -> ExperimentalDesign:
+def combine_runs(*runs: ExperimentalDesign) -> ExperimentalDesign:
     """
     Combines the give experimental designs into a single experimental design.
     All samples with matching condition and replicate number are merged into
