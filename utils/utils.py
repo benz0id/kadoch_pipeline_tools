@@ -282,7 +282,7 @@ class ExperimentalDesign:
                                          str(file))
                     elif match:
                         found = True
-                        groups[i].append(sample)
+                        groups[i].append(file)
             if not found:
                 raise ValueError("Could not find match for" + str(file))
 
