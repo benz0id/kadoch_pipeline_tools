@@ -33,7 +33,6 @@ def merge_fastqs_grouped(grouped_fastqs: List[List[Path]],
         samples = []
         for fastq in group:
             samples.append(fastq.name.split('_')[1])
-        samples.sort()
 
         out_filename = '0MERGED0_' + '-'.join(samples) + '_' + \
                        '_'.join(group[0].name.split('_')[3:])
