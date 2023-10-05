@@ -150,7 +150,6 @@ def apply_basic_formatting(sample_sheet_path: Path, directory: Path = None,
     while is_commas(lines[-1]):
         lines.pop()
 
-
     # === Remove Purposeless Comma Columns ===
 
     def additional_cols() -> bool:
@@ -162,7 +161,7 @@ def apply_basic_formatting(sample_sheet_path: Path, directory: Path = None,
 
     while additional_cols():
         for i, line in enumerate(lines):
-            lines[i] = line[:-1]
+            lines[i] = line[:-1].strip()
 
     # === Create new csv ==
 
