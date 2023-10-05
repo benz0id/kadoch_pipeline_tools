@@ -2,7 +2,7 @@ from copy import copy
 from pathlib import Path
 from typing import List, Dict, Union, Any
 
-from sample_sheets import SampleSheet
+from sample_sheet import SampleSheet
 
 
 class DesignError(Exception):
