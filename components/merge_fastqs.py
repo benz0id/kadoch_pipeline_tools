@@ -56,6 +56,7 @@ def merge_fastqs_grouped(grouped_fastqs: List[List[Path]],
         pe_identifier = get_pe_identifier[(condition, rep)]
 
         samples = []
+        print(samples)
         for fastq in group:
             samples.append(fastq.name.split('_')[1])
 
@@ -79,7 +80,8 @@ def merge_fastqs_grouped(grouped_fastqs: List[List[Path]],
                        condition + rep_str + read_str + \
                        '.fastq.gz'
         if verbose:
-            print(samples, read_dirs, str(condition), str(rep), '\t->\t', out_filename)
+            print(samples, read_dirs, str(condition), str(rep), '\t->\t',
+                  out_filename)
         out_fastq = out_dir / out_filename
 
         cmds.append(cmdify('cat', *group, '>', out_dir / out_filename))

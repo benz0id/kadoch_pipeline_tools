@@ -172,7 +172,7 @@ def apply_basic_formatting(sample_sheet_path: Path, directory: Path = None,
     if not directory:
         directory = sample_sheet_path.parent
     new_path = directory / (sample_sheet_path.name[:-4] +
-                                           '_trimmed.csv')
+                            '_trimmed.csv')
 
     msg = f"Sample sheet contained extra lines, removed {i} extra lines and " \
           f"created new sample sheet at {new_path.name} in the same directory."
@@ -234,7 +234,7 @@ def reverse_compliment(sample_sheet_path: Path, directory: Union[str, Path],
     if not directory:
         directory = sample_sheet_path.parent
     new_path = directory / (sample_sheet_path.name[:-4] +
-                                '_rev_comp.csv')
+                            '_rev_comp.csv')
 
     sample_sheet.write(open(new_path, 'w'))
 
@@ -270,7 +270,7 @@ def fix_sample_sheet(sample_sheet_path: Path,
     :param verbose: Whether to display progress.
     :return: Path to modified sample sheet.
     """
-    pruned_sample_sheet = apply_basic_formatting(sample_sheet_path, directory, 
+    pruned_sample_sheet = apply_basic_formatting(sample_sheet_path, directory,
                                                  verbose)
 
     if rev_i5 and not SampleSheet(pruned_sample_sheet).is_paired_end:
@@ -286,5 +286,3 @@ def fix_sample_sheet(sample_sheet_path: Path,
     # find_collisions(pruned_sample_sheet)
 
     return pruned_sample_sheet
-
-
