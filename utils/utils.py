@@ -94,8 +94,10 @@ class ExperimentalDesign:
 
     def get_conditions(self) -> List[str]:
         return copy(self._conditions)
+    def get_ordered_conditions(self) -> List[str]:
+        return [self.get_condition(sample) for sample in self._samples]
 
-    def get_reps(self) -> List[int]:
+    def get_ordered_reps(self) -> List[int]:
         return [self.get_rep_num(sample) for sample in self._samples]
 
     def get_sample_descs(self) -> List[str]:
