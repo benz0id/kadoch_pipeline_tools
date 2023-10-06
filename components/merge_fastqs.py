@@ -59,6 +59,8 @@ def merge_fastqs_grouped(grouped_fastqs: List[List[Path]],
         for fastq in group:
             samples.append(fastq.name.split('_')[1])
 
+        print(samples)
+
         tail = group[0].name.split('.')[0].split('_')[-2]
         if 'R1' in tail:
             read_str = f'_S{pe_identifier}_R1'
