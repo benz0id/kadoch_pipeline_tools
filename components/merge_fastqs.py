@@ -58,8 +58,7 @@ def merge_fastqs_grouped(grouped_fastqs: List[List[Path]],
         samples = []
         for fastq in group:
             samples.append(fastq.name.split('_')[1])
-
-        print(samples)
+        samples.sort()
 
         tail = group[0].name.split('.')[0].split('_')[-2]
         if 'R1' in tail:

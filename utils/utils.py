@@ -159,6 +159,7 @@ class ExperimentalDesign:
 
         for condition in self._conditions:
             samples = sorted(self.get_samples(condition))
+            samples.sort()
             merged_sample_name = '-'.join(samples)
 
             date_string = self._sample_to_sample_id[samples[0]][:8]
@@ -330,6 +331,7 @@ def combine_runs(*runs: ExperimentalDesign) -> ExperimentalDesign:
 
     for cond, rep in cond_rep_to_samples:
         samples = cond_rep_to_samples[(cond, rep)]
+        samples.sort()
         sample = '-'.join(samples)
         sample_id = '_'.join(['0MERGED0', sample, cond, 'Rep' + str(rep)])
 
