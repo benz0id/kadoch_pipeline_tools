@@ -121,9 +121,9 @@ combined_merged_reps = combined.merge_reps()
 
 print(combined_merged_reps)
 
-a = combined.get_fastq_groupings(fastqs)
-b = combined.get_ordered_conditions() * 2
-c = combined.get_ordered_reps() * 2
+a = combined_merged_reps.get_fastq_groupings(fastqs)
+b = combined_merged_reps.get_ordered_conditions() * 2
+c = combined_merged_reps.get_ordered_reps() * 2
 
 for fastq, cond, rep in zip(a, b, c):
     samples = [str(f).split('_')[1] for f in fastq]
