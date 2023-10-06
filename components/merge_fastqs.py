@@ -79,7 +79,7 @@ def merge_fastqs_grouped(grouped_fastqs: List[List[Path]],
         else:
             rep_str = ''
 
-        samples_names = [str(f).split('_')[1] for f in group]
+        samples_names = [f.name.split('_')[1] for f in group]
         read_dirs = [str(f).split('.')[0].split('_')[-2] for f in group]
 
         out_filename = '0MERGED0_' + '-'.join(samples) + '_' + \
