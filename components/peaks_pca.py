@@ -175,7 +175,7 @@ class PeakPCAAnalyser:
         self._wait_job_array = wait_job_array_fxn
         self._verbose = verbose
 
-    def find_all_common_peaks(self, beds: list[Path], common_peak_out: Path,
+    def find_all_common_peaks(self, beds: List[Path], common_peak_out: Path,
                               genome_index: Path = HG19_GENOME) -> None:
         """
         Merges all the given beds into a single sorted bedfile.

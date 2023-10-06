@@ -89,6 +89,11 @@ id_to_condition <- function(sample_sheet_path, sample_id, names_start_row,
   # Find coresponding complete sample ID
   sample_ids <- unlist(RNA_SampleSheet[names_start_row:length(unlist(RNA_SampleSheet[1])), 1])
   pos <- grep(sample_id, sample_ids)
+  if (length(pos) == 0){
+    print('Sample id not found')
+  } else if (length(pos) > 1){
+    print('Multiple sample IDs found.')
+  }
   sample_name <- sample_ids[pos]
   sample_id_components <- unlist(strsplit(sample_name, split='_')) 
   condition_components <- sample_id_components[data_start:(length(sample_id_components) - data_end)]
@@ -201,7 +206,6 @@ fill, colours=NULL){
 }
 
 
-
 #' Reorder Columns Belonging to Groups
 #'
 #' @param dataframe A dataframe containing n columns.
@@ -270,11 +274,13 @@ reads_analysis <- function(raw_counts, groups, num_desc_columns=1, colours=NULL)
 #' @param raw_counts Raw counts data, formatted as a dataframe.
 #' @param groups The treatment groups, one for each sample in raw_counts.
 #' @param show_factos Display a tibble of normalisation factors.
+#' @param voom Whether to apply log2 cpm to normalised counts
 #' 
 #' @return Normalised counts, in units of log2 cpm.
 #'
 #' @examples
-tmm_normalize <- function(raw_counts, groups, num_desc_columns, show_factors=TRUE){
+tmm_normalize <- function(raw_counts, groups, num_desc_columns, show_factors=TRUE,
+                          voom=TRUE){
   # Convert to matrix & calculate normalization factors.
   filtered_data_matrix <- as.matrix(raw_counts[,(num_desc_columns + 1):ncol(raw_counts)])
   rownames(filtered_data_matrix) <- raw_counts$gene_name
@@ -287,11 +293,122 @@ tmm_normalize <- function(raw_counts, groups, num_desc_columns, show_factors=TRU
   }
   
   # Apply normalization factors and convert to log2 cpms.
-  normalized <- limma::voom(normalized)
-  norm <- cbind(raw_counts[1], normalized)
+  if (voom){
+    normalized <- limma::voom(normalized)
+  }
+    norm <- cbind(raw_counts[1], normalized)
   return(norm)
 }
 
+
+#' Visualise The Difference in LogFC Between two Conditions
+#' 
+#' @param expression_data A dataframe contianing gene expression data.
+#' 
+#' @param groups A character vector containing the treatment groups which each 
+#'  data column in expression_data belongs to.
+#'  
+#' @param reference_cond The string name of the reference condition. Genes 
+#'  marked as down regulated are enriched in this condition.
+#'    
+#' @param compare_cond The string name of the comparison condition. Genes marked
+#'  as up regulted are enriched in this condition.
+#'  
+#' @param logfc_threshold The log2 fold-change threshold at which genes will be 
+#'  highlighted as significantly up or down regulated.
+#'  
+#' @param genes_to_show The names of genes that should be specifically 
+#'  highlighted in the plot.
+#'  
+#' @param num_names Display the names of the <num_names> genes with the highest
+#'  absolute log fold change.
+#'  
+#' @param n_info_cols The number of leading descriptive columns prefixing 
+#'  expression data.
+#'  
+#' 
+#' @return a volcano plot.
+
+
+# expression_data <- cpms
+# reference_cond <- control
+# compare_cond <- treatment
+# logfc_threshold <- logfc_threshold
+# n_info_cols <- 1
+
+
+
+logfc_MA_plot <- function(expression_data, groups, reference_cond, compare_cond,
+                          logfc_threshold, genes_to_show = NULL, num_names=5,
+                          n_info_cols=1){
+  
+  # Extract average expression.
+  ref_cols <- which(groups == reference_cond) + n_info_cols
+  mean_ref_expr <- rowSums(expression_data[ref_cols]) / 
+    rep(length(ref_cols), nrow(expression_data))
+  
+  compare_cols <- which(groups == compare_cond) + n_info_cols
+  mean_compare_expr <- rowSums(expression_data[compare_cols]) / 
+    rep(length(compare_cols), nrow(expression_data))
+  
+  ave_expression <- data.frame(gene_name=expression_data$gene_name,
+                               ref_exp=mean_ref_expr, 
+                               comp_exp=mean_compare_expr)
+  
+  ave_expression$logfc <- log2(mean_compare_expr / mean_ref_expr)
+  
+  # Which genes are significantly differentially expressed and have high abs fold change?
+  ave_expression$diffexpressed <- "NO"
+  up <- ave_expression$logfc > logfc_threshold
+  down <- ave_expression$logfc < - logfc_threshold
+  ave_expression$diffexpressed[up] <- "UP"
+  ave_expression$diffexpressed[down] <- "DOWN"
+  
+  #  Include <num_names> most "outlying" genes names in the plot. Where outliers
+  # have the largest absolute fold change.
+  ave_expression$delabel <- NA
+  ave_expression$fac <- abs(as.numeric(ave_expression$logfc))
+  outlier_rank <- order(ave_expression$fac, decreasing = TRUE)
+  most_interesting <- outlier_rank[seq(len=num_names)]
+  ave_expression$delabel[most_interesting] <- ave_expression$gene_name[most_interesting]
+  
+  # Include requested genes in the plot.
+  if (! is.null(genes_to_show)){
+    if (! all(genes_to_show %in% ave_expression$gene_name)){
+      stop(paste0(c(genes_to_show[! (genes_to_show %in% ave_expression$gene_name)], 
+                    "not found in the list of DE genes."), 
+                  collapse =' '))
+    }
+    to_highlight <- ave_expression$gene_name %in% genes_to_show
+    ave_expression$delabel[to_highlight] <- ave_expression$gene_name[to_highlight]
+  }
+  
+  # Generate a caption. Ignore NA genes.
+  caption <- paste0(c('logFC Threshold = +/-', as.character(logfc_threshold), 
+                      ' | N Up = ', as.character(sum(up & ! is.na(up))),
+                      ' | N Down = ', as.character(sum(down& ! is.na(down)))), 
+                    collapse='')
+  
+  # Convert counts to log2 cpms.
+  ave_expression$ref_exp <- log2(ave_expression$ref_exp)
+  ave_expression$comp_exp <- log2(ave_expression$comp_exp)
+  
+  # Plot the data.
+  plt <- ggplot(data=ave_expression, aes(x=ref_exp, y=comp_exp, col=diffexpressed, label = delabel)) + 
+    geom_point() + 
+    geom_abline(slope=1, intercept=logfc_threshold, col="red") +
+    geom_abline(slope=1, intercept=-logfc_threshold, col="red") +
+    scale_color_manual(values=c('blue','grey', 'red')) +
+    geom_label(na.rm=TRUE) +
+    labs(caption=caption,
+         title=paste0(c(reference_cond, ' vs ', compare_cond), collapse=''),
+         x=paste0(c(reference_cond, ' log2CPMs'), collapse=''),
+         y=paste0(c(compare_cond, ' log2CPMs'), collapse='')) + 
+    theme_bw() +
+    theme(legend.position = 'none')
+  
+  return(plt)
+}
 
 
 
@@ -733,7 +850,7 @@ volcano <- function(de_gene_list, logfc_threshold, sig_threshold, reference_cond
   de_gene_data$delabel <- NA
   de_gene_data$fac <- abs(as.numeric(de_gene_data$logFC)) * - log2(as.numeric(de_gene_data$adj.P.Val))
   outlier_rank <- order(de_gene_data$fac, decreasing = TRUE)
-  most_interesting <- outlier_rank[1:num_names]
+  most_interesting <- outlier_rank[seq(1, num_names)]
   de_gene_data$delabel[most_interesting] <- de_gene_data$gene_name[most_interesting]
   
   # Include requested genes in the plot.

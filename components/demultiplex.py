@@ -7,6 +7,7 @@ from utils.job_manager import JobManager
 from utils.path_manager import PathManager
 from wrappers.bcl2fastq import Demultiplexer
 from wrappers.fastqc import FastQC
+from utils.utils import ExperimentalDesign, get_model_from_sample_sheet, combine_runs 
 
 
 def demult_and_fastqc(sample_sheet: Path, sequencing_results: Path,
@@ -31,8 +32,12 @@ def demult_and_fastqc(sample_sheet: Path, sequencing_results: Path,
         starting.
     :param drop_array: Command to call to signify that the program can continue
         without completing the jobs currently in the array.
-    :return: A list of fastqfiles produces by demultiplexing.
+    :return: A list of fastqfiles produces by demultiplexing. Directory must 
+        only contain raw output fastqs if this return is to be valid.
     """
+
+    model = get_model_from_sample_sheet(sample_sheet)
+
     demult = Demultiplexer(path_manager)
     heavy_job = ExecParams(max_runtime=(0, 1, 0), num_cores=16,
                            ram_per_core=1024 * 4, builder=builder, wait=True)
@@ -48,7 +53,7 @@ def demult_and_fastqc(sample_sheet: Path, sequencing_results: Path,
     jobs_manager.execute_lazy(cmd, heavy_job)
 
     # === FastQC ===
-    fastqs = get_matching_files(path_manager.fastqs_dir, ['fastq'],
+    fastqs = get_matching_files(path_manager.fastqs_dir, model.get_samples(),
                                 ['Undetermined'], containing=True, paths=True)
 
     qc = FastQC()
