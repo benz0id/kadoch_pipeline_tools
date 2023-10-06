@@ -240,20 +240,16 @@ class ExperimentalDesign:
 
         :return:
         """
-        pe_found = False
-        se_found = False
+        f_found = False
+        r_found = False
         for file in fastqs:
             tail = file.name.split('.')[0].split('_')[-2]
-            if "R1" in tail or "R2" in tail:
-                pe_found = True
-            else:
-                se_found = True
+            if "R1" in tail:
+                f_found = True
+            elif "R2" in tail:
+                r_found = True
 
-        if pe_found and se_found:
-            raise ValueError("A mixture of paired end and single end reads"
-                             "were found.")
-
-        if pe_found:
+        if f_found and r_found:
             if verbose:
                 print('Paired end mode')
             r1s = []
@@ -275,8 +271,8 @@ class ExperimentalDesign:
             if verbose:
                 for i, group in enumerate(r1_groups):
                     s = str([f.name.split('_')[1] for f in group])
-                    print(s, ' - ',
-                          self.get_ordered_conditions()[i], ' - ',
+                    print(s, '-',
+                          self.get_ordered_conditions()[i], '-',
                           self.get_ordered_reps()[i])
 
             return r1_groups + r2_groups
