@@ -229,7 +229,7 @@ class ExperimentalDesign:
 
         return invalid_samples
 
-    def get_fastq_groupings(self, fastqs: List[Path]) -> List[List[Path]]:
+    def get_fastq_groupings(self, fastqs: List[Path], verbose=False) -> List[List[Path]]:
         """
         Groups the fastqs according to which merged sample they belong to.
 
@@ -254,6 +254,8 @@ class ExperimentalDesign:
                              "were found.")
 
         if pe_found:
+            if verbose:
+                print('Paired end mode')
             r1s = []
             r2s = []
             for file in fastqs:
@@ -270,7 +272,15 @@ class ExperimentalDesign:
             r1_groups = self.get_groupings(r1s)
             r2_groups = self.get_groupings(r2s)
 
+            if verbose:
+                for i, group in enumerate(r1_groups):
+                    s = str([f.name.split('_')[1] for f in group])
+                    print(s, ' - ',
+                          self.get_ordered_conditions()[i], ' - ',
+                          self.get_ordered_reps()[i])
+
             return r1_groups + r2_groups
+
         else:
             return self.get_groupings(fastqs)
 
