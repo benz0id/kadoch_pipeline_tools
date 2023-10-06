@@ -159,6 +159,13 @@ class ExperimentalDesign:
 
         for condition in self._conditions:
             samples = sorted(self.get_samples(condition))
+
+            # Split sample that have already been merged to maintain order.
+            s_split = []
+            for sample in samples:
+                s_split.extend(sample.split('-'))
+            samples = s_split
+
             samples.sort()
             merged_sample_name = '-'.join(samples)
 
@@ -331,6 +338,13 @@ def combine_runs(*runs: ExperimentalDesign) -> ExperimentalDesign:
 
     for cond, rep in cond_rep_to_samples:
         samples = cond_rep_to_samples[(cond, rep)]
+
+        # Split sample that have already been merged to maintain order.
+        s_split = []
+        for sample in samples:
+            s_split.extend(sample.split('-'))
+        samples = s_split
+
         samples.sort()
         sample = '-'.join(samples)
         sample_id = '_'.join(['0MERGED0', sample, cond, 'Rep' + str(rep)])
