@@ -51,7 +51,7 @@ def merge_fastqs_grouped(grouped_fastqs: List[List[Path]],
             read_str = ''
 
         out_filename = '0MERGED0_' + '-'.join(samples) + '_' + \
-                       '_' + condition + 'Rep' + str(rep) + read_str
+                       condition + '_' + 'Rep' + str(rep) + read_str
         out_fastq = out_dir / out_filename
 
         cmds.append(cmdify('cat', *group, '>', out_dir / out_filename))
