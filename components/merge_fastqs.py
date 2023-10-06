@@ -66,11 +66,11 @@ def merge_fastqs_grouped(grouped_fastqs: List[List[Path]],
         elif 'R2' in tail:
             read_str = f'_R2'
         else:
-            read_str = ''
+            read_str = f'_R1'
 
         tail = group[0].name.split('.')[0].split('_')[-3]
         if 'S' in tail:
-            id_str = '_S{pe_identifier}'
+            id_str = f'_S{pe_identifier}'
         else:
             id_str = ''
 
