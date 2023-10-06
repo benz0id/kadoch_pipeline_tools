@@ -14,7 +14,8 @@ logger = logging.getLogger(__name__)
 
 def merge_fastqs_grouped(grouped_fastqs: List[List[Path]],
                          group_conditions: List[str], group_reps: List[str],
-                         out_dir: Path) -> Tuple[List[str], List[Path]]:
+                         out_dir: Path,
+                         verbose: bool = False) -> Tuple[List[str], List[Path]]:
     """
     For each group of fastq files in <grouped_fastqs>, combine all fastqs in
     that group into a single fastq file.
@@ -44,7 +45,15 @@ def merge_fastqs_grouped(grouped_fastqs: List[List[Path]],
 
     group_info = zip(grouped_fastqs, group_conditions, group_reps)
 
+    i = 1
+    get_pe_identifier = {}
+
     for group, condition, rep in group_info:
+        if (condition, rep) not in get_pe_identifier:
+            get_pe_identifier[(condition, rep)] = i
+            i += 1
+
+        pe_identifier = get_pe_identifier[(condition, rep)]
 
         samples = []
         for fastq in group:
@@ -52,15 +61,25 @@ def merge_fastqs_grouped(grouped_fastqs: List[List[Path]],
 
         tail = group[0].name.split('.')[0].split('_')[-2]
         if 'R1' in tail:
-            read_str = '_R1'
+            read_str = f'_S{pe_identifier}_R1'
         elif 'R2' in tail:
-            read_str = '_R2'
+            read_str = f'_S{pe_identifier}_R2'
         else:
             read_str = ''
 
+        if rep != 0:
+            rep_str = '_' + 'Rep' + str(rep)
+        else:
+            rep_str = ''
+
+        samples = [str(f).split('_')[1] for f in group]
+        read_dirs = [str(f).split('.')[0].split('_')[-2] for f in group]
+
         out_filename = '0MERGED0_' + '-'.join(samples) + '_' + \
-                       condition + '_' + 'Rep' + str(rep) + read_str + \
+                       condition + rep_str + read_str + \
                        '.fastq.gz'
+        if verbose:
+            print(samples, read_dirs, str(condition), str(rep), '\t->\t', out_filename)
         out_fastq = out_dir / out_filename
 
         cmds.append(cmdify('cat', *group, '>', out_dir / out_filename))

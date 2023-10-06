@@ -225,6 +225,12 @@ class ExperimentalDesign:
     def get_fastq_groupings(self, fastqs: List[Path]) -> List[List[Path]]:
         """
         Groups the fastqs according to which merged sample they belong to.
+
+        Each group at return[i] corresponds to the merged samples at
+        self.get_samples[i]
+
+        If paired end inputs are received, the returned list will
+
         :return:
         """
         pe_found = False
