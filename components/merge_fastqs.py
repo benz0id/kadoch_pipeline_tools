@@ -62,11 +62,17 @@ def merge_fastqs_grouped(grouped_fastqs: List[List[Path]],
 
         tail = group[0].name.split('.')[0].split('_')[-2]
         if 'R1' in tail:
-            read_str = f'_S{pe_identifier}_R1'
+            read_str = f'_R1'
         elif 'R2' in tail:
-            read_str = f'_S{pe_identifier}_R2'
+            read_str = f'_R2'
         else:
             read_str = ''
+
+        tail = group[0].name.split('.')[0].split('_')[-3]
+        if 'S' in tail:
+            id_str = '_S{pe_identifier}'
+        else:
+            id_str = ''
 
         if rep != 0:
             rep_str = '_' + 'Rep' + str(rep)
@@ -77,7 +83,7 @@ def merge_fastqs_grouped(grouped_fastqs: List[List[Path]],
         read_dirs = [str(f).split('.')[0].split('_')[-2] for f in group]
 
         out_filename = '0MERGED0_' + '-'.join(samples) + '_' + \
-                       condition + rep_str + read_str + \
+                       condition + id_str + rep_str + read_str + \
                        '.fastq.gz'
         if verbose:
             print(samples_names, read_dirs, str(condition), str(rep), '\t->\t',

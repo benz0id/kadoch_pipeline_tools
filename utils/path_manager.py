@@ -206,8 +206,10 @@ class PathManager:
             os.makedirs(dir)
         return not exists
 
-    def rel_make(self, relative_path: Path) -> Path:
+    def rel_make(self, relative_path: Union[Path, str]) -> Path:
         """Creates the given directory in the working directory."""
+        if isinstance(relative_path, str):
+            relative_path = Path(relative_path)
         full_path = self.project_dir / relative_path
         self.safe_make(full_path)
         return full_path
