@@ -34,6 +34,10 @@ def merge_fastqs_grouped(grouped_fastqs: List[List[Path]],
     cmds = []
     paths = []
 
+    if not len(grouped_fastqs) == len(group_conditions) == len(group_reps):
+        raise ValueError("grouped_fastqs, group_conditions, and group_reps "
+                         "must be the same length.")
+
     group_info = zip(grouped_fastqs, group_conditions, group_reps)
 
     for group, condition, rep in group_info:
