@@ -1,5 +1,6 @@
+import collections
 from pathlib import Path
-from random import random
+import random
 from typing import List, Callable
 
 from utils.fetch_files import copy_to_cmds, get_matching_files
@@ -8,19 +9,29 @@ from utils.job_manager import JobManager
 from utils.path_manager import cmdify
 from utils.utils import combine_cmds
 
+AlignmentResults = collections.namedtuple('AlignmentResults', ['bam', 'bed',
+                                                               'bw', 'stats'])
 
-def retro_align(fastqs: List[Path], alignment_dir: Path, cmd: str,
-                aligments_results_dir: Path, jobs: JobManager,
-                start_array: Callable, wait_array: Callable,
-                job_builder: JobBuilder):
+
+def retro_fetch_align(fastqs: List[Path], alignment_dir: Path,
+                      aligments_results_dir: Path, jobs: JobManager,
+                      start_array: Callable, wait_array: Callable,
+                      job_builder: JobBuilder) -> AlignmentResults:
 
     bams_path = aligments_results_dir / 'bams'
     beds_path = aligments_results_dir / 'beds'
     bigwigs_path = aligments_results_dir / 'bigwigs'
     align_stats_path = aligments_results_dir / 'stats'
 
-    jobs.execute_lazy(cmdify('mkdir', aligments_results_dir, bams_path, bigwigs_path, beds_path,
-           align_stats_path))
+    jobs.execute_lazy(
+        cmdify('mkdir', aligments_results_dir, bams_path, bigwigs_path,
+               beds_path,
+               align_stats_path))
+
+    res = AlignmentResults(bam=bams_path,
+                           bed=beds_path,
+                           bw=bigwigs_path,
+                           stats=align_stats_path)
 
     # Extract sample names from fastqs.
     sample_names = []
@@ -29,6 +40,7 @@ def retro_align(fastqs: List[Path], alignment_dir: Path, cmd: str,
         sample_name = name.split('_')[1]
         sample_names.append(sample_name)
     sample_names = sorted(sample_names)
+
 
     # Copy all matching sequencing result folders over.
     cmds = []
@@ -48,9 +60,10 @@ def retro_align(fastqs: List[Path], alignment_dir: Path, cmd: str,
                                                 containing=True, paths=True),
                              avoid_recopy=True))
     cmds.extend(copy_to_cmds(align_stats_path,
-                             get_matching_files(alignment_dir / 'stats_storage*',
-                                                sample_names,
-                                                containing=True, paths=True),
+                             get_matching_files(
+                                 alignment_dir / 'stats_storage*',
+                                 sample_names,
+                                 containing=True, paths=True),
                              avoid_recopy=True))
 
     random.shuffle(cmds)
@@ -61,3 +74,4 @@ def retro_align(fastqs: List[Path], alignment_dir: Path, cmd: str,
     for cmd in combined_cmds:
         jobs.execute_lazy(cmd, light_o2)
     wait_array()
+    return res
