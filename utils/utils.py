@@ -159,6 +159,7 @@ class ExperimentalDesign:
 
         for condition in self._conditions:
             samples = sorted(self.get_samples(condition))
+            date_string = self._sample_to_sample_id[samples[0]][:8]
 
             # Split sample that have already been merged to maintain order.
             s_split = []
@@ -168,8 +169,6 @@ class ExperimentalDesign:
 
             samples.sort()
             merged_sample_name = '-'.join(samples)
-
-            date_string = self._sample_to_sample_id[samples[0]][:8]
             merged_id = f'{date_string}_{merged_sample_name}_{condition}'
             sample_to_condition[merged_sample_name] = condition
             sample_to_rep_number[merged_sample_name] = 0
