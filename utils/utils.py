@@ -247,7 +247,7 @@ class ExperimentalDesign:
                 else:
                     raise ValueError(
                         "I have no idea how this is even remotely "
-                        "possible")
+                        "possible. Sorry :)")
 
             r1_groups = self.get_groupings(r1s)
             r2_groups = self.get_groupings(r2s)

@@ -7,19 +7,24 @@ from typing import Dict, List, Tuple
 from utils.fetch_files import get_matching_files, get_matching_strs
 from utils.job_formatter import ExecParams
 from utils.path_manager import cmdify
+from utils.utils import ExperimentalDesign
 
 logger = logging.getLogger(__name__)
 
 
 def merge_fastqs_grouped(grouped_fastqs: List[List[Path]],
+                         group_conditions: List[str], group_reps: List[str],
                          out_dir: Path) -> Tuple[List[str], List[Path]]:
     """
     For each group of fastq files in <grouped_fastqs>, combine all fastqs in
     that group into a single fastq file.
 
-
     :param grouped_fastqs: A list of grouped paths to fastq files. The fastqs
         in these groups will be combined into a single fastq.
+    :param group_conditions: For each of <grouped_fastqs>, the condition under
+        which all the given fastqs were conducted.
+    :param group_reps: For each of the given <grouped_fastqs>, the replicate of
+        that group.
     :param out_dir: The directory into which the combined fastqs will be
         placed.
     :return: A list of commands that would result in the creation of fastqs in
@@ -29,13 +34,24 @@ def merge_fastqs_grouped(grouped_fastqs: List[List[Path]],
     cmds = []
     paths = []
 
-    for group in grouped_fastqs:
+    group_info = zip(grouped_fastqs, group_conditions, group_reps)
+
+    for group, condition, rep in group_info:
+
         samples = []
         for fastq in group:
             samples.append(fastq.name.split('_')[1])
 
+        tail = group[0].name.split('.')[0].split('_')[-2]
+        if 'R1' in tail:
+            read_str = '_R1'
+        elif 'R2' in tail:
+            read_str = '_R2'
+        else:
+            read_str = ''
+
         out_filename = '0MERGED0_' + '-'.join(samples) + '_' + \
-                       '_'.join(group[0].name.split('_')[3:])
+                       '_' + condition + 'Rep' + str(rep) + read_str
         out_fastq = out_dir / out_filename
 
         cmds.append(cmdify('cat', *group, '>', out_dir / out_filename))
@@ -44,19 +60,10 @@ def merge_fastqs_grouped(grouped_fastqs: List[List[Path]],
     return cmds, paths
 
 
-
-
-
-
-
-
-
-
-
 def merge_fastqs(fastqs1: List[Path], fastqs2: List[Path],
                  mapping: Dict[str, str], out_dir: Path,
-                 paired_end: bool = False,  verbose: bool = False) \
-                 -> Tuple[List[str], List[Path]]:
+                 paired_end: bool = False, verbose: bool = False) \
+        -> Tuple[List[str], List[Path]]:
     """
         Merges the fastqs in <fastq1_dir> with the fastqs in <fastq2_dir>. Uses the
     <mapping> to search for files to merge.
@@ -121,7 +128,6 @@ def merge_fastqs(fastqs1: List[Path], fastqs2: List[Path],
             logger.fatal(s)
             raise ValueError(s)
 
-
         # Create the name for the new fastq file.
         f1 = matching1[0]
         f2 = matching2[0]
@@ -161,5 +167,3 @@ def merge_fastqs(fastqs1: List[Path], fastqs2: List[Path],
         print(s)
 
     return cmds, new_fastqs
-
-
