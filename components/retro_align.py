@@ -11,7 +11,7 @@ from utils.job_manager import JobManager
 from utils.path_manager import cmdify
 from utils.utils import combine_cmds
 
-AlignmentResults = collections.namedtuple('AlignmentResults', ['bam', 'bed',
+AlignmentResults = collections.namedtuple('AlignmentResults', ['bam', 'beds',
                                                                'bw', 'stats'])
 
 
