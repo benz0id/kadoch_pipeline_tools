@@ -332,7 +332,7 @@ class ExperimentalDesign:
                 for sample in sample_group:
                     match = sample in file.name
 
-                    if verbose and match:
+                    if verbose and match and not found:
                         print(file.name, '->', sample_group)
 
                     if match and found:
