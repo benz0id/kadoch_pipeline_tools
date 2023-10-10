@@ -289,8 +289,8 @@ class ExperimentalDesign:
                         "I have no idea how this is even remotely "
                         "possible. Sorry :)")
 
-            r1_groups = self.get_groupings(r1s)
-            r2_groups = self.get_groupings(r2s)
+            r1_groups = self.get_groupings(r1s, verbose=verbose)
+            r2_groups = self.get_groupings(r2s, verbose=verbose)
 
             if verbose:
                 for i, group in enumerate(r1_groups):
@@ -337,7 +337,7 @@ class ExperimentalDesign:
                     elif match:
                         found = True
                         groups[i].append(file)
-                print('\n')
+            print('\n')
             if not found:
                 raise ValueError("Could not find match for" + str(file))
 
