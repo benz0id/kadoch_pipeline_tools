@@ -70,7 +70,7 @@ class PeakCaller:
                                            outfile_name=peaksfile_name,
                                            *args, **kwargs), params)
 
-            if "peak_type" in kwargs and kwargs['peak_type'] == 'broad':
+            if "peak_type" not in kwargs or kwargs['peak_type'] == 'broad':
                 peakfiles.append(peaks_dir / (peaksfile_name +
                                               '_peaks.broadPeak'))
             else:

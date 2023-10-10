@@ -48,17 +48,17 @@ def retro_fetch_align_results(fastqs: List[Path], alignment_dir: Path,
                              get_matching_files(alignment_dir / 'bam',
                                                 sample_ids,
                                                 containing=True, paths=True),
-                             avoid_recopy=True))
+                                                avoid_recopy=True))
     cmds.extend(copy_to_cmds(beds_path,
                              get_matching_files(alignment_dir / 'beds',
                                                 sample_ids,
                                                 containing=True, paths=True),
-                             avoid_recopy=True))
+                                                avoid_recopy=True))
     cmds.extend(copy_to_cmds(bigwigs_path,
                              get_matching_files(alignment_dir / 'bw',
                                                 sample_ids,
                                                 containing=True, paths=True),
-                             avoid_recopy=True))
+                                                avoid_recopy=True))
 
     if 'atac' in alignment_dir.name:
         cmds.extend(copy_to_cmds(align_stats_path,
