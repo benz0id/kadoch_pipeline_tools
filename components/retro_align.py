@@ -11,7 +11,7 @@ from utils.job_manager import JobManager
 from utils.path_manager import cmdify
 from utils.utils import combine_cmds
 
-AlignmentResults = collections.namedtuple('AlignmentResults', ['bam', 'beds',
+AlignmentResults = collections.namedtuple('AlignmentResults', ['bam', 'bed',
                                                                'bw', 'stats'])
 
 
@@ -52,7 +52,7 @@ def retro_fetch_align_results(fastqs: List[Path], alignment_dir: Path,
                                                 containing=True, paths=True),
                              avoid_recopy=True))
     cmds.extend(copy_to_cmds(beds_path,
-                             get_matching_files(alignment_dir / 'bed',
+                             get_matching_files(alignment_dir / 'beds',
                                                 sample_names,
                                                 containing=True, paths=True),
                              avoid_recopy=True))
