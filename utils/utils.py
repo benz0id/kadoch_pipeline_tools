@@ -304,13 +304,15 @@ class ExperimentalDesign:
         else:
             return self.get_groupings(fastqs)
 
-    def get_groupings(self, files: List[Path]) -> List[List[Path]]:
+    def get_groupings(self, files: List[Path], verbose: bool = False) \
+            -> List[List[Path]]:
         """
         For experimental designs that have been merged with others. Returns the
         groups of samples that have been merged.
 
         Useful for merging fastqs and bam files.
 
+        :param verbose:
         :param files: A list of files. For each sample contained in this
             design, <files> must contain exactly one file with the sample's
             name in it.
@@ -325,12 +327,17 @@ class ExperimentalDesign:
             for i, sample_group in enumerate(sample_groups):
                 for sample in sample_group:
                     match = sample in file.name
+
+                    if verbose and match:
+                        print(file.name, '->', sample_group)
+
                     if match and found:
                         raise ValueError("Multiple matches found for" +
                                          str(file))
                     elif match:
                         found = True
                         groups[i].append(file)
+                print('\n')
             if not found:
                 raise ValueError("Could not find match for" + str(file))
 

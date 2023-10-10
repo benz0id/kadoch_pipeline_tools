@@ -121,7 +121,6 @@ class DistanceToTSS:
                              figure_out_path: Path = None) -> Path:
         """
         Generates stacked TSS bargraphs for the given bedfiles.
-        :param beds: Bed files to include in the barplot.
         :param storage_dir: Directory in which to store intermediary files.
         :param bed_to_bar_name: The name for each bedfile to be displayed in
             the barplot.
