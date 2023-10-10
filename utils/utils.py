@@ -341,7 +341,6 @@ class ExperimentalDesign:
                     elif match and not added:
                         groups[i].append(file)
                         added = True
-                        found = True
 
                 if match:
                     found = True
