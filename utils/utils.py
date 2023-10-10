@@ -327,7 +327,6 @@ class ExperimentalDesign:
 
             for i, sample_group in enumerate(sample_groups):
                 added = False
-                match = False
 
                 for sample in sample_group:
                     match = sample in file.name
@@ -342,7 +341,7 @@ class ExperimentalDesign:
                         groups[i].append(file)
                         added = True
 
-                if match:
+                if added:
                     found = True
             if verbose:
                 print('\n')
