@@ -36,7 +36,8 @@ def retro_fetch_align_results(fastqs: List[Path], alignment_dir: Path,
     sample_ids = []
     for fastq in fastqs:
         name = fastq.name
-        sample_name = '_'.join(name.split('_')[1:3])
+        sample_name = '_'.join(name.split('_')[0:3])
+        print(sample_name)
         sample_ids.append(sample_name)
     sample_ids = sorted(sample_ids)
 
