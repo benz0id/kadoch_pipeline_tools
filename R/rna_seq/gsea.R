@@ -289,6 +289,56 @@ get_rank_list <- function(de_list, ref_condition, treat_condition, out_dir='outp
 }
 
 
+# === Functional GSEA Analysis Code ===
+
+#' Generate a .rnk File Using The Given DE List
+#'
+#' @param de_list List of DE genes with columns $gene_name, $logFC, and
+#'  $adj.P.Val or $P.Val.
+#' @param ref_condition The name of the reference (often control) condition.
+#' @param treat_codition The name of the treatment condition.
+#' @param out_dir The directory in which to place the ranked list.
+#' @param return_dataframe If the specified rank file exists, return it, else
+#' create a new one and return it without saving.
+#' @param mult_hyp_testing Whether to extract multiple hypothesis testing P values,
+#' as opposed to regular p values.
+#'
+#' @return A path to the rank file.
+#' @export
+#'
+#' @examples
+get_rank_list <- function(de_list, ref_condition, treat_condition, out_dir='output',
+                          mult_hyp_testing=TRUE){
+
+  rankfile_path <- paste0(c(out_dir, '/', ref_condition, '-', treat_condition, '.rnk'), collapse='')
+
+  rnk <- data.frame(gene_name=de_list$gene_name)
+
+  dir_pvals <- numeric()
+  for (i in seq_along(de_list$adj.P.Val)){
+    logfc <- de_list$logFC[i]
+
+    if (mult_hyp_testing){
+      pval <- de_list$adj.P.Val[i]
+    } else {
+      pval <- de_list$P.Value[i]
+    }
+
+    dir_pvals[i] <- -log10(pval) * sign(logfc)
+  }
+
+  de_list$rank <- dir_pvals
+
+  rnk$dir.adj.P.Val <- dir_pvals
+
+  rnk <- rnk[order(rnk$dir.adj.P.Val, decreasing=TRUE),]
+
+  write.table(rnk, rankfile_path, sep='\t', row.names=FALSE, col.names = FALSE)
+
+  return(rankfile_path)
+}
+
+
 
 # Some useful formatting formatting functions.
 s <- function(x){return(as.character(x))}

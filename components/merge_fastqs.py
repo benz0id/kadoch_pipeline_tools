@@ -83,7 +83,7 @@ def merge_fastqs_grouped(grouped_fastqs: List[List[Path]],
         read_dirs = [str(f).split('.')[0].split('_')[-2] for f in group]
 
         out_filename = '0MERGED0_' + '-'.join(samples) + '_' + \
-                       condition + id_str + rep_str + read_str + \
+                       condition + rep_str + id_str + read_str + \
                        '.fastq.gz'
         if verbose:
             print(samples_names, read_dirs, str(condition), str(rep), '\t->\t',
