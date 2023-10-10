@@ -328,6 +328,7 @@ class ExperimentalDesign:
             for i, sample_group in enumerate(sample_groups):
                 added = False
                 match = False
+
                 for sample in sample_group:
                     match = sample in file.name
 
@@ -340,9 +341,10 @@ class ExperimentalDesign:
                     elif match and not added:
                         groups[i].append(file)
                         added = True
+                        found = True
+
                 if match:
                     found = True
-                    match = False
             if verbose:
                 print('\n')
             if not found:
