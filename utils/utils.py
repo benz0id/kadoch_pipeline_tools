@@ -324,7 +324,10 @@ class ExperimentalDesign:
 
         for file in files:
             found = False
+
             for i, sample_group in enumerate(sample_groups):
+                added = False
+                match = False
                 for sample in sample_group:
                     match = sample in file.name
 
@@ -334,10 +337,14 @@ class ExperimentalDesign:
                     if match and found:
                         raise ValueError("Multiple matches found for" +
                                          str(file))
-                    elif match:
-                        found = True
+                    elif match and not added:
                         groups[i].append(file)
-            print('\n')
+                        added = True
+                if match:
+                    found = True
+                    match = False
+            if verbose:
+                print('\n')
             if not found:
                 raise ValueError("Could not find match for" + str(file))
 
