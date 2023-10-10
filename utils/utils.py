@@ -193,16 +193,14 @@ class ExperimentalDesign:
 
         for condition in conditions:
             samples = self.get_samples(condition)
-            for sample in self._samples:
-                self._samples.remove(sample)
-                del self._sample_to_condition[sample]
-                del self._sample_to_rep_number[sample]
-                del self._sample_to_sample_id[sample]
+            for sample in samples:
+                self.remove_sample(sample)
 
             del self._condition_to_samples[condition]
             self._conditions.remove(condition)
 
     def remove_sample(self, sample: str) -> None:
+        self._samples.remove(sample)
         del self._sample_to_condition[sample]
         del self._sample_to_rep_number[sample]
         del self._sample_to_sample_id[sample]
