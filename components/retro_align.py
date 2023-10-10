@@ -62,7 +62,7 @@ def retro_fetch_align_results(fastqs: List[Path], alignment_dir: Path,
     if 'atac' in alignment_dir.name:
         cmds.extend(copy_to_cmds(align_stats_path,
                                  get_matching_files(
-                                     alignment_dir / 'atac_stats_storage',
+                                     alignment_dir / 'stats_storage_atac',
                                      sample_names,
                                      containing=True, paths=True),
                                  avoid_recopy=True))
