@@ -133,7 +133,7 @@ def quick_clustering_analysis(expression_data: Union[Path, pd.DataFrame],
                                     n_clusters=n_clusters)
 
     if save_out:
-        clustered_data.to_csv(out_path)
+        clustered_data.to_csv(out_path, sep ='\t')
 
     vis_clustered_data(clustered_data, out_path)
 
