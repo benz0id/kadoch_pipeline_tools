@@ -104,8 +104,8 @@ def quick_clustering_analysis(expression_data: Union[Path, pd.DataFrame],
     :param transform: How to transform each row/value before running
         clustering. One of ["log", "zscore", "none"].
 
-    :param save_out: Whether to save the clustered data as a matrix to
-        <out_path>.
+    :param save_out: Whether to save the clustered data as a matrix
+        (clustered_rpkms.tsv) to <out_path>.
 
     :return: Dataframe with clustered reads.
     """
@@ -133,7 +133,7 @@ def quick_clustering_analysis(expression_data: Union[Path, pd.DataFrame],
                                     n_clusters=n_clusters)
 
     if save_out:
-        clustered_data.to_csv(out_path, sep ='\t')
+        clustered_data.to_csv(out_path / 'clustered_rpkms.tsv', sep='\t')
 
     vis_clustered_data(clustered_data, out_path)
 

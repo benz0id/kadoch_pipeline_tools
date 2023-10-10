@@ -69,8 +69,13 @@ class PeakCaller:
                                            control_bam,
                                            outfile_name=peaksfile_name,
                                            *args, **kwargs), params)
-            peakfiles.append(peaks_dir / (peaksfile_name +
-                                        '_peaks.narrowPeak'))
+
+            if "peak_type" in kwargs and kwargs['peak_type'] == 'broad':
+                peakfiles.append(peaks_dir / (peaksfile_name +
+                                              '_peaks.broadPeak'))
+            else:
+                peakfiles.append(peaks_dir / (peaksfile_name +
+                                              '_peaks.narrowPeak'))
 
         return peakfiles
 
