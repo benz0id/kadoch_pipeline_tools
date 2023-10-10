@@ -3,7 +3,7 @@
 ### cluster labels
 from copy import copy
 from pathlib import Path
-from typing import Union
+from typing import Union, List
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -133,19 +133,53 @@ def quick_clustering_analysis(expression_data: Union[Path, pd.DataFrame],
     return clustered_data
 
 
-def write_out_bed(df: pd.DataFrame, out_path: Path) -> None:
+def get_clusters(clustered_counts: pd.DataFrame,
+                 cluster_nums: Union[int, List[int]],
+                 out_dir: Path) -> Union[List[Path], Path]:
     """
-    Writes out a dataframe as a bedfile.
-    :param df: A dataframe, with the row names as bedfiles.
-    :param out_path: Path to the output bedfile.
-    :return: None
+    Extract all of <cluster_nums> from <clustered_counts>, format them as
+    bedfiles and place them in <out_dir>.
+
+    :param clustered_counts: A dataframe with an index formatted as a list of
+        bed sites formatted <chr>:<start>-<stop> and a column named "clusters",
+        containing the integer assignment to which each row belongs.
+
+    :param cluster_nums: The numbers of the clusters to be extracted.
+    :param out_dir: The directory into which the extracted bedfiles should be
+        placed.
+
+    
     """
-    # TODO something like this
-    with open('atac.clusters.bed', 'w') as outfile:
-        for i in df_k_reordered.index:
-            coordinate = i.strip().replace(':', '\t').replace('-', '\t')
-            # we want to change chr1:500-1000 to chr1\t500\t1000
-            outfile.write(coordinate + '\n')
+    if isinstance(cluster_nums, int):
+        cluster_nums = [cluster_nums]
+        unpack = True
+    else:
+        unpack = False
+
+
+    out_peak_files = []
+    for cluster_num in cluster_nums:
+        out_file = out_dir / f'peak_number_{cluster_num}.bed'
+        out_peak_files.append(out_file)
+        out = open(out_file, 'w')
+
+        for index in clustered_counts.index:
+            cluster = clustered_counts[index, 'clusters']
+            if cluster == cluster_num:
+                coordinate = index.\
+                    strip().\
+                    replace(':', '\t').\
+                    replace('-', '\t')
+
+                out.write(coordinate + '\n')
+
+        out.close()
+
+    if unpack:
+        return out_peak_files[0]
+    return out_peak_files
+
+
 
 
 

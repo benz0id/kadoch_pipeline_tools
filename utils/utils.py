@@ -181,6 +181,32 @@ class ExperimentalDesign:
     def get_rep_num(self, sample: str) -> int:
         return self._sample_to_rep_number[sample]
 
+    def remove_condition(self, conditions: Union[str, List[str]]) -> None:
+        """
+        Remove all sample corresponding to the given conditions. All
+        <conditions> must be contained within this design.
+        :return: None
+        """
+
+        if isinstance(conditions, str):
+            conditions = [conditions]
+
+        for condition in conditions:
+            samples = self.get_samples(condition)
+            for sample in self._samples:
+                self._samples.remove(sample)
+                del self._sample_to_condition[sample]
+                del self._sample_to_rep_number[sample]
+                del self._sample_to_sample_id[sample]
+
+            del self._condition_to_samples[condition]
+            self._conditions.remove(condition)
+
+    def remove_sample(self, sample: str) -> None:
+        del self._sample_to_condition[sample]
+        del self._sample_to_rep_number[sample]
+        del self._sample_to_sample_id[sample]
+
     def __str__(self) -> str:
         def pretty_dict(dic: Dict[str, Any]) -> str:
             s = ''

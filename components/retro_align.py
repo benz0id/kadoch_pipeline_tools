@@ -68,7 +68,7 @@ def retro_fetch_align_results(fastqs: List[Path], alignment_dir: Path,
                                  avoid_recopy=True))
 
     random.shuffle(cmds)
-    combined_cmds = combine_cmds(cmds, 4)
+    combined_cmds = combine_cmds(cmds, 5)
     light_o2 = ExecParams(max_runtime=(0, 0, 10), num_cores=1,
                           ram_per_core=128, builder=job_builder)
     start_array()
