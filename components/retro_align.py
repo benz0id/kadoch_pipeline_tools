@@ -16,9 +16,9 @@ AlignmentResults = collections.namedtuple('AlignmentResults', ['bam', 'bed',
 
 
 def retro_fetch_align_results(fastqs: List[Path], alignment_dir: Path,
-                      aligments_results_dir: Path, jobs: JobManager,
-                      start_array: Callable, wait_array: Callable,
-                      job_builder: JobBuilder) -> AlignmentResults:
+                              aligments_results_dir: Path, jobs: JobManager,
+                              start_array: Callable, wait_array: Callable,
+                              job_builder: JobBuilder) -> AlignmentResults:
 
     bams_path = aligments_results_dir / 'bams'
     beds_path = aligments_results_dir / 'beds'
@@ -33,29 +33,29 @@ def retro_fetch_align_results(fastqs: List[Path], alignment_dir: Path,
     jobs.execute_lazy(cmdify('mkdir', *res))
 
     # Extract sample names from fastqs.
-    sample_names = []
+    sample_ids = []
     for fastq in fastqs:
         name = fastq.name
-        sample_name = name.split('_')[1]
-        sample_names.append(sample_name)
-    sample_names = sorted(sample_names)
+        sample_name = name.split('.')[0]
+        sample_ids.append(sample_name)
+    sample_ids = sorted(sample_ids)
 
 
     # Copy all matching sequencing result folders over.
     cmds = []
     cmds.extend(copy_to_cmds(bams_path,
                              get_matching_files(alignment_dir / 'bam',
-                                                sample_names,
+                                                sample_ids,
                                                 containing=True, paths=True),
                              avoid_recopy=True))
     cmds.extend(copy_to_cmds(beds_path,
                              get_matching_files(alignment_dir / 'beds',
-                                                sample_names,
+                                                sample_ids,
                                                 containing=True, paths=True),
                              avoid_recopy=True))
     cmds.extend(copy_to_cmds(bigwigs_path,
                              get_matching_files(alignment_dir / 'bw',
-                                                sample_names,
+                                                sample_ids,
                                                 containing=True, paths=True),
                              avoid_recopy=True))
 
@@ -63,7 +63,7 @@ def retro_fetch_align_results(fastqs: List[Path], alignment_dir: Path,
         cmds.extend(copy_to_cmds(align_stats_path,
                                  get_matching_files(
                                      alignment_dir / 'stats_storage_atac',
-                                     sample_names,
+                                     sample_ids,
                                      containing=True, paths=True),
                                  avoid_recopy=True))
 
