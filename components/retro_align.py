@@ -25,15 +25,12 @@ def retro_fetch_align_results(fastqs: List[Path], alignment_dir: Path,
     bigwigs_path = aligments_results_dir / 'bigwigs'
     align_stats_path = aligments_results_dir / 'stats'
 
-    jobs.execute_lazy(
-        cmdify('mkdir', aligments_results_dir, bams_path, bigwigs_path,
-               beds_path,
-               align_stats_path))
-
     res = AlignmentResults(bam=bams_path,
                            bed=beds_path,
                            bw=bigwigs_path,
                            stats=align_stats_path)
+
+    jobs.execute_lazy(cmdify('mkdir', *res))
 
     # Extract sample names from fastqs.
     sample_names = []
@@ -61,12 +58,14 @@ def retro_fetch_align_results(fastqs: List[Path], alignment_dir: Path,
                                                 sample_names,
                                                 containing=True, paths=True),
                              avoid_recopy=True))
-    cmds.extend(copy_to_cmds(align_stats_path,
-                             get_matching_files(
-                                 alignment_dir / 'stats_storage*',
-                                 sample_names,
-                                 containing=True, paths=True),
-                             avoid_recopy=True))
+
+    if 'atac' in alignment_dir.name:
+        cmds.extend(copy_to_cmds(align_stats_path,
+                                 get_matching_files(
+                                     alignment_dir / 'stats_storage*',
+                                     sample_names,
+                                     containing=True, paths=True),
+                                 avoid_recopy=True))
 
     random.shuffle(cmds)
     combined_cmds = combine_cmds(cmds, 4)
