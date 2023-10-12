@@ -37,7 +37,7 @@ def load_counts_matrix(path: Path, sep: str = '\t',
         df = df.drop(columns=to_remove)
 
         reordered_columns = design.align_to_samples(df.columns)
-        df = df[[reordered_columns]]
+        df = df[reordered_columns]
         df.columns = design.get_sample_descs()
 
     return df
