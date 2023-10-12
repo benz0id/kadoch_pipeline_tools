@@ -122,6 +122,31 @@ class ExperimentalDesign:
                 descs.append(cond + '_Rep' + str(rep))
             return descs
 
+    def align_to_samples(self, sample_strs: List[str]) -> List[Path]:
+        """
+        Given that each sample_str contains a sample name, allowing for a 1 to 1
+        mapping between each of sample_strs and samples, returns files ordered by
+        sample.
+        :param sample_strs: A list of sample_strs each containing sample names.
+        :return: The same list, ordered in the same way as samples.
+        """
+        rtrn = []
+
+        for sample in self._samples:
+            match_found = False
+
+            for sample_str in sample_strs:
+                if sample in sample_str and match_found:
+                    raise ValueError(f"Multiple matches found for {sample}")
+                elif sample in sample_str:
+                    match_found = True
+                    rtrn.append(sample_str)
+
+            if not match_found:
+                raise ValueError(f"Could not find match for {sample}")
+
+        return rtrn
+
     def align_files_to_samples(self, files: List[Path]) -> List[Path]:
         """
         Given that each filename contains a sample name, allowing for a 1 to 1
@@ -204,6 +229,7 @@ class ExperimentalDesign:
         del self._sample_to_condition[sample]
         del self._sample_to_rep_number[sample]
         del self._sample_to_sample_id[sample]
+
 
     def __str__(self) -> str:
         def pretty_dict(dic: Dict[str, Any]) -> str:

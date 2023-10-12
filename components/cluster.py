@@ -16,7 +16,8 @@ import numpy as np
 from utils.utils import ExperimentalDesign
 
 
-def load_counts_matrix(path: Path, sep: str = '\t') -> pd.DataFrame:
+def load_counts_matrix(path: Path, sep: str = '\t',
+                       design: ExperimentalDesign = None) -> pd.DataFrame:
     """
     For some counts-like matrix, with a leading column consisting of
     identifiers such as gene names or peaks, load that matrix as a pandas
@@ -27,6 +28,18 @@ def load_counts_matrix(path: Path, sep: str = '\t') -> pd.DataFrame:
     """
     df = pd.read_csv(path, sep=sep)
     df = df.set_index(df.columns[0])
+
+    if design:
+        # Run a bit of filtering and checking on expression data.
+        invalid_columns = design.get_invalid_sample_inds(
+            df.columns)
+        to_remove = [df.columns[i] for i in invalid_columns]
+        df = df.drop(columns=to_remove)
+
+        reordered_columns = design.align_to_samples(df.columns)
+        df = df[[reordered_columns]]
+        df.columns = design.get_sample_descs()
+
     return df
 
 
@@ -111,14 +124,9 @@ def quick_clustering_analysis(expression_data: Union[Path, pd.DataFrame],
     """
 
     if isinstance(expression_data, Path):
-        expression_data = load_counts_matrix(expression_data)
+        expression_data = load_counts_matrix(expression_data, design=design)
     else:
         expression_data = copy(expression_data)
-
-    # Run a bit of filtering and checking on expression data.
-    invalid_columns = design.get_invalid_sample_inds(expression_data.columns)
-    to_remove = [expression_data.columns[i] for i in invalid_columns]
-    expression_data = expression_data.drop(columns=to_remove)
 
     if transform == 'zscore':
         expression_data = stats.zscore(expression_data, axis=1)
@@ -177,9 +185,7 @@ def get_clusters(clustered_counts: pd.DataFrame,
                     strip().\
                     replace(':', '\t').\
                     replace('-', '\t')
-
                 out.write(coordinate + '\n')
-
         out.close()
 
     if unpack:
