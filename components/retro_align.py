@@ -15,20 +15,33 @@ AlignmentResults = collections.namedtuple('AlignmentResults', ['bam', 'bed',
                                                                'bw', 'stats'])
 
 
-def retro_fetch_align_results(fastqs: List[Path], alignment_dir: Path,
-                              aligments_results_dir: Path, jobs: JobManager,
-                              start_array: Callable, wait_array: Callable,
-                              job_builder: JobBuilder) -> AlignmentResults:
+def make_alignment_results_directory(results_dir: Path) -> AlignmentResults:
+    """
+    Make a direcotry for storing alignment results.
+    :param results_dir: Path to the alignment results dir.
+    :return:
+    """
+    if not results_dir.exists():
+        os.mkdir(results_dir)
 
-    bams_path = aligments_results_dir / 'bams'
-    beds_path = aligments_results_dir / 'beds'
-    bigwigs_path = aligments_results_dir / 'bigwigs'
-    align_stats_path = aligments_results_dir / 'stats'
+    bams_path = results_dir / 'bams'
+    beds_path = results_dir / 'beds'
+    bigwigs_path = results_dir / 'bigwigs'
+    align_stats_path = results_dir / 'stats'
 
     res = AlignmentResults(bam=bams_path,
                            bed=beds_path,
                            bw=bigwigs_path,
                            stats=align_stats_path)
+
+    return res
+
+
+def retro_fetch_align_results(fastqs: List[Path], alignment_dir: Path,
+                              aligments_results_dir: Path, jobs: JobManager,
+                              start_array: Callable, wait_array: Callable,
+                              job_builder: JobBuilder) -> AlignmentResults:
+    res = make_alignment_results_direcoty(results_dir=aligments_results_dir)
 
     jobs.execute_lazy(cmdify('mkdir', *res))
 
@@ -41,27 +54,26 @@ def retro_fetch_align_results(fastqs: List[Path], alignment_dir: Path,
         sample_ids.append(sample_name)
     sample_ids = sorted(sample_ids)
 
-
     # Copy all matching sequencing result folders over.
     cmds = []
-    cmds.extend(copy_to_cmds(bams_path,
+    cmds.extend(copy_to_cmds(res.bam,
                              get_matching_files(alignment_dir / 'bam',
                                                 sample_ids,
                                                 containing=True, paths=True),
-                                                avoid_recopy=True))
-    cmds.extend(copy_to_cmds(beds_path,
+                             avoid_recopy=True))
+    cmds.extend(copy_to_cmds(res.bed,
                              get_matching_files(alignment_dir / 'beds',
                                                 sample_ids,
                                                 containing=True, paths=True),
-                                                avoid_recopy=True))
-    cmds.extend(copy_to_cmds(bigwigs_path,
+                             avoid_recopy=True))
+    cmds.extend(copy_to_cmds(res.bw,
                              get_matching_files(alignment_dir / 'bw',
                                                 sample_ids,
                                                 containing=True, paths=True),
-                                                avoid_recopy=True))
+                             avoid_recopy=True))
 
     if 'atac' in alignment_dir.name:
-        cmds.extend(copy_to_cmds(align_stats_path,
+        cmds.extend(copy_to_cmds(res.stats,
                                  get_matching_files(
                                      alignment_dir / 'stats_storage_atac',
                                      sample_ids,

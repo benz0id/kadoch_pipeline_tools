@@ -302,6 +302,7 @@ class ExperimentalDesign:
         if f_found and r_found:
             if verbose:
                 print('Paired end mode')
+
             r1s = []
             r2s = []
             for file in fastqs:
