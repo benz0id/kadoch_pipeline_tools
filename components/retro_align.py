@@ -2,14 +2,14 @@ import collections
 import os
 from pathlib import Path
 import random
-from typing import List, Callable
+from typing import List, Callable, Tuple
 
 from components.get_alignment_stats import get_alignment_stats
 from utils.fetch_files import copy_to_cmds, get_matching_files
 from utils.job_formatter import JobBuilder, ExecParams
 from utils.job_manager import JobManager
 from utils.path_manager import cmdify
-from utils.utils import combine_cmds
+from utils.utils import combine_cmds, ExperimentalDesign
 
 AlignmentResults = collections.namedtuple('AlignmentResults', ['bam', 'bed',
                                                                'bw', 'stats'])
@@ -24,10 +24,10 @@ def make_alignment_results_directory(results_dir: Path) -> AlignmentResults:
     if not results_dir.exists():
         os.mkdir(results_dir)
 
-    bams_path = results_dir / 'bams'
-    beds_path = results_dir / 'beds'
-    bigwigs_path = results_dir / 'bigwigs'
-    align_stats_path = results_dir / 'stats'
+    bams_path = results_dir / 'bam'
+    beds_path = results_dir / 'bed'
+    bigwigs_path = results_dir / 'bigwig'
+    align_stats_path = results_dir / 'stat'
 
     res = AlignmentResults(bam=bams_path,
                            bed=beds_path,
@@ -37,11 +37,48 @@ def make_alignment_results_directory(results_dir: Path) -> AlignmentResults:
     return res
 
 
+def retro_fetch_manual(design: ExperimentalDesign, out_dir: Path,
+                       bam_dir: Path = None,
+                       bai_dir: Path = None,
+                       bed_dir: Path = None,
+                       bigwig_dir: Path = None,
+                       stats_dir: Path = None
+                       ) -> Tuple[AlignmentResults, List[str]]:
+
+    alignment_results = make_alignment_results_directory(out_dir)
+
+    cmds = []
+
+    def add_move_file_cmds(directory: Path, filetype: str, out_path: Path):
+        end_regex = '.*' + filetype + '$'
+        regexes = [sample + end_regex for sample in design.get_samples()]
+
+        matching_files = get_matching_files(directory, regexes, paths=True)
+        matching_files = design.align_files_to_samples(matching_files)
+
+        for file in matching_files:
+            cmds.append(cmdify('cp', file, out_path))
+
+    if bam_dir:
+        add_move_file_cmds(bam_dir, 'bam', alignment_results.bam)
+    if bai_dir:
+        add_move_file_cmds(bai_dir, 'bai', alignment_results.bam)
+    if bed_dir:
+        add_move_file_cmds(bed_dir, 'bed', alignment_results.bed)
+    if bigwig_dir:
+        add_move_file_cmds(bigwig_dir, 'bed', alignment_results.bw)
+    if stats_dir:
+        add_move_file_cmds(bed_dir, 'txt', alignment_results.stats)
+
+    return alignment_results, cmds
+
+
 def retro_fetch_align_results(fastqs: List[Path], alignment_dir: Path,
                               aligments_results_dir: Path, jobs: JobManager,
                               start_array: Callable, wait_array: Callable,
                               job_builder: JobBuilder) -> AlignmentResults:
-    res = make_alignment_results_direcoty(results_dir=aligments_results_dir)
+
+    res = make_alignment_results_directory(results_dir=aligments_results_dir)
 
     jobs.execute_lazy(cmdify('mkdir', *res))
 
