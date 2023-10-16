@@ -122,12 +122,13 @@ class ExperimentalDesign:
                 descs.append(cond + '_Rep' + str(rep))
             return descs
 
-    def align_to_samples(self, sample_strs: List[str]) -> List[Path]:
+    def align_to_samples(self, to_align: Union[List[str], List[Path]]) \
+            -> Union[List[Path], List[str]]:
         """
         Given that each sample_str contains a sample name, allowing for a 1 to 1
         mapping between each of sample_strs and samples, returns files ordered by
         sample.
-        :param sample_strs: A list of sample_strs each containing sample names.
+        :param to_align: A list of sample_strs each containing sample names.
         :return: The same list, ordered in the same way as samples.
         """
         rtrn = []
@@ -135,10 +136,18 @@ class ExperimentalDesign:
         for sample in self._samples:
             match_found = False
 
-            for sample_str in sample_strs:
+            for sample_str in to_align:
+
+                if isinstance(sample_str, Path):
+                    p_dir = sample_str.parent
+                    sample_str = sample_str.name
+
                 if sample in sample_str and match_found:
                     raise ValueError(f"Multiple matches found for {sample}")
-                elif sample in sample_str:
+                elif sample in sample_str and isinstance(sample_str, Path):
+                    match_found = True
+                    rtrn.append(p_dir / sample_str)
+                elif sample in sample_str and not isinstance(sample_str, Path):
                     match_found = True
                     rtrn.append(sample_str)
 

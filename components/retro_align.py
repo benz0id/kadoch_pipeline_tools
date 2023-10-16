@@ -11,8 +11,8 @@ from utils.job_manager import JobManager
 from utils.path_manager import cmdify
 from utils.utils import combine_cmds, ExperimentalDesign
 
-AlignmentResults = collections.namedtuple('AlignmentResults', ['bam', 'bed',
-                                                               'bw', 'stats'])
+AlignmentResults = collections.namedtuple('AlignmentResults',
+                                          ['path', 'bam', 'bed', 'bw', 'stats'])
 
 
 def make_alignment_results_directory(results_dir: Path) -> AlignmentResults:
@@ -29,7 +29,8 @@ def make_alignment_results_directory(results_dir: Path) -> AlignmentResults:
     bigwigs_path = results_dir / 'bigwig'
     align_stats_path = results_dir / 'stat'
 
-    res = AlignmentResults(bam=bams_path,
+    res = AlignmentResults(path=results_dir,
+                           bam=bams_path,
                            bed=beds_path,
                            bw=bigwigs_path,
                            stats=align_stats_path)
@@ -126,8 +127,8 @@ def retro_fetch_align_results(fastqs: List[Path], alignment_dir: Path,
         jobs.execute_lazy(cmd, light_o2)
     wait_array()
 
-    get_alignment_stats([align_stats_path / align_stat for align_stat in
-                         os.listdir(align_stats_path)],
+    get_alignment_stats([res.stats / align_stat for align_stat in
+                         os.listdir(res.stats)],
                         out_filepath=aligments_results_dir / 'stats.txt')
 
     return res
