@@ -94,6 +94,7 @@ class ExperimentalDesign:
 
     def get_conditions(self) -> List[str]:
         return copy(self._conditions)
+
     def get_ordered_conditions(self) -> List[str]:
         return [self.get_condition(sample) for sample in self._samples]
 
@@ -131,62 +132,7 @@ class ExperimentalDesign:
         :param to_align: A list of sample_strs each containing sample names.
         :return: The same list, ordered in the same way as samples.
         """
-        rtrn = []
-
-        sample_to_matches = {}
-
-        for sample in self._samples:
-            match_found = False
-            sample_to_matches[sample] = []
-
-            for sample_str in to_align:
-
-                if isinstance(sample_str, Path):
-                    p_dir = sample_str.parent
-                    sample_str = sample_str.name
-
-                if sample in sample_str:
-                    sample_to_matches[sample].append(sample_str)
-
-                if sample in sample_str and match_found:
-                    raise ValueError(f"Multiple matches found for {sample}: "
-                                     f"{str(sample_to_matches[sample])}")
-                elif sample in sample_str and isinstance(sample_str, Path):
-                    match_found = True
-                    rtrn.append(p_dir / sample_str)
-                elif sample in sample_str and not isinstance(sample_str, Path):
-                    match_found = True
-                    rtrn.append(sample_str)
-
-            if not match_found:
-                raise ValueError(f"Could not find match for {sample}")
-
-        return rtrn
-
-    def align_files_to_samples(self, files: List[Path]) -> List[Path]:
-        """
-        Given that each filename contains a sample name, allowing for a 1 to 1
-        mapping between each of files and samples, returns files ordered by
-        sample.
-        :param files: A list of filepaths each containing sample names.
-        :return: The same list, ordered in the same way as samples.
-        """
-        rtrn = []
-
-        for sample in self._samples:
-            match_found = False
-
-            for file in files:
-                if sample in file.name and match_found:
-                    raise ValueError(f"Multiple matches found for {sample}")
-                elif sample in file.name:
-                    match_found = True
-                    rtrn.append(file)
-
-            if not match_found:
-                raise ValueError(f"Could not find match for {sample}")
-
-        return rtrn
+        return align_to_strs(to_align, self._samples)
 
     def merge_reps(self):
         """
@@ -246,7 +192,6 @@ class ExperimentalDesign:
         del self._sample_to_rep_number[sample]
         del self._sample_to_sample_id[sample]
 
-
     def __str__(self) -> str:
         def pretty_dict(dic: Dict[str, Any]) -> str:
             s = ''
@@ -295,7 +240,8 @@ class ExperimentalDesign:
 
         return invalid_samples
 
-    def get_fastq_groupings(self, fastqs: List[Path], verbose=False) -> List[List[Path]]:
+    def get_fastq_groupings(self, fastqs: List[Path], verbose=False) -> List[
+        List[Path]]:
         """
         Groups the fastqs according to which merged sample they belong to.
 
@@ -527,3 +473,72 @@ def get_model_from_sample_sheet(sample_sheet: Path,
     return ExperimentalDesign(sample_to_condition,
                               sample_to_rep_number,
                               sample_to_sample_id)
+
+
+def align_to_strs(to_align: Union[List[str], List[Path]],
+                  strs: List[str]) \
+        -> Union[List[Path], List[str]]:
+    """
+    Given that each sample_str contains a sample name, allowing for a 1 to 1
+    mapping between each of to_align and strs, returns files ordered by
+    strs.
+
+    Note: There must be a one to one mapping between <strs> and <to_align>,
+        where each of <to_align> contains one of <strs> as a substring.
+
+    If to_align is a list of filepaths, the filenames will be considered for
+    ordering.
+
+    :param to_align: A list of strings or paths.
+    :param strs: A list of strings.
+    :return: The same list, ordered in the same way as samples.
+    """
+    rtrn = []
+
+    sample_to_matches = {}
+    matches_to_sample = {}
+    order = []
+
+    def add(d: Dict, key: Any, val: Any):
+        if key in d:
+            d[key].append(val)
+        else:
+            d[key] = val
+
+    # Find order and mappings.
+    for sample in strs:
+        for i, p_to_align in enumerate(to_align):
+            # Convert from path to string if necessary.
+            if isinstance(p_to_align, Path):
+                s_to_align = p_to_align.name
+            elif isinstance(p_to_align, str):
+                s_to_align = p_to_align
+            else:
+                ValueError("Unknown Input Type")
+
+            if sample in s_to_align:
+                order.append(i)
+                add(sample_to_matches, sample, p_to_align)
+                add(matches_to_sample, p_to_align, sample)
+
+    # Ensure one to one mappings.
+    for sample in strs:
+        if sample not in sample_to_matches:
+            raise ValueError(f"Failed to find match for {sample}.")
+
+        if len(sample_to_matches[sample]) > 1:
+            raise ValueError(f"Found multiple matches for {sample}: "
+                             f"{str(sample_to_matches[sample])}.")
+
+    for to_match in to_align:
+        if to_match not in matches_to_sample:
+            raise ValueError(f"Failed to find sample for {to_match}.")
+        if len(matches_to_sample[to_match]) > 1:
+            raise ValueError(f"Found multiple sample matches for "
+                             f"{to_match}: {str(matches_to_sample[to_match])}.")
+
+    ordered = []
+    for ind in order:
+        ordered.append(to_align[ind])
+
+    return ordered
