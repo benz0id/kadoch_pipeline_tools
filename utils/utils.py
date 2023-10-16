@@ -503,7 +503,7 @@ def align_to_strs(to_align: Union[List[str], List[Path]],
         if key in d:
             d[key].append(val)
         else:
-            d[key] = val
+            d[key] = [val]
 
     # Find order and mappings.
     for sample in strs:
