@@ -133,8 +133,11 @@ class ExperimentalDesign:
         """
         rtrn = []
 
+        sample_to_matches = {}
+
         for sample in self._samples:
             match_found = False
+            sample_to_matches[sample] = []
 
             for sample_str in to_align:
 
@@ -142,8 +145,12 @@ class ExperimentalDesign:
                     p_dir = sample_str.parent
                     sample_str = sample_str.name
 
+                if sample in sample_str:
+                    sample_to_matches[sample].append(sample_str)
+
                 if sample in sample_str and match_found:
-                    raise ValueError(f"Multiple matches found for {sample}")
+                    raise ValueError(f"Multiple matches found for {sample}: "
+                                     f"{str(sample_to_matches[sample])}")
                 elif sample in sample_str and isinstance(sample_str, Path):
                     match_found = True
                     rtrn.append(p_dir / sample_str)
