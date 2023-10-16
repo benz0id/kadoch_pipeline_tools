@@ -52,7 +52,8 @@ def retro_fetch_manual(design: ExperimentalDesign, out_dir: Path,
 
     def add_move_file_cmds(directory: Path, filetype: str, out_path: Path):
         end_regex = '.*' + filetype + '$'
-        regexes = [sample + end_regex for sample in design.get_samples()]
+        regexes = ['.*' + sample + end_regex
+                   for sample in design.get_samples()]
 
         matching_files = get_matching_files(directory, regexes, paths=True)
         try:
