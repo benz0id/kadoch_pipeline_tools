@@ -55,7 +55,7 @@ def retro_fetch_manual(design: ExperimentalDesign, out_dir: Path,
         regexes = [sample + end_regex for sample in design.get_samples()]
 
         matching_files = get_matching_files(directory, regexes, paths=True)
-        matching_files = design.align_files_to_samples(matching_files)
+        matching_files = design.align_to_samples(matching_files)
 
         for file in matching_files:
             cmds.append(cmdify('cp', file, out_path))
