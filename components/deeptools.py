@@ -92,7 +92,7 @@ def generate_bed_matrix(beds: List[Path], bigwigs: List[Path],
         cmd += '\n' + cmdify(
             "computeMatrixOperations relabel",
             '-m', tmp_col,
-            '--groupLabel', i,
+            '--groupLabel', "'" + column_names[i] + "'",
             '-o', tmp_col
         )
         jobs.execute(cmd)
