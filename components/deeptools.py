@@ -108,8 +108,10 @@ def generate_bed_matrix(beds: List[Path], bigwigs: List[Path],
         '#', get_unique_filename(), '\n'
         "computeMatrixOperations relabel",
         "-m", out_path,
-        '--groupLabels', *row_names,
-        '--sampleLabels', *column_names
+        '--groupLabels', *['"' + row_name + '"'
+                          for row_name in row_names],
+        '--sampleLabels', *['"' + col_name + '"'
+                          for col_name in column_names]
     )
     jobs.execute_lazy(cmd)
 
