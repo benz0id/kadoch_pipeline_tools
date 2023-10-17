@@ -55,8 +55,8 @@ def generate_bed_matrix(beds: List[Path], bigwigs: List[Path],
     for i, bedfile in enumerate(beds):
         matrix_files.append([])
         for bigwig in bigwigs:
-            tmp = path_manager.purgeable_files_dir / (
-                        get_unique_filename() + '.gz')
+            tmp = path_manager.purgeable_files_dir / (bedfile.name[:-4] + '_'
+                                                      + bigwig.name[:-3] + '.gz')
             to_remove.append(tmp)
 
             cmd = cmdify(
@@ -94,7 +94,7 @@ def generate_bed_matrix(beds: List[Path], bigwigs: List[Path],
         cmd += '\n' + cmdify(
             "computeMatrixOperations relabel",
             '-m', tmp2_col,
-            '--groupLabel', "'" + column_names[i] + "'",
+            '--sampleLabel', "'" + column_names[i] + "'",
             '-o', tmp_col
         )
         jobs.execute(cmd)
@@ -106,18 +106,6 @@ def generate_bed_matrix(beds: List[Path], bigwigs: List[Path],
     cmd = cmdify(
         "computeMatrixOperations cbind",
         '-m', *cols,
-        '-o', out_path
-    )
-    jobs.execute(cmd)
-
-    cmd = cmdify(
-        '#', get_unique_filename(), '\n'
-        "computeMatrixOperations relabel",
-        "-m", out_path,
-        '--groupLabels', *['"' + row_name + '"'
-                          for row_name in row_names],
-        '--sampleLabels', *['"' + col_name + '"'
-                          for col_name in column_names],
         '-o', out_path
     )
     jobs.execute(cmd)
