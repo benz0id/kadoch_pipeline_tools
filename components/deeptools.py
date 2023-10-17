@@ -54,7 +54,7 @@ def generate_bed_matrix(beds: List[Path], bigwigs: List[Path],
     start_array()
     for i, bedfile in enumerate(beds):
         matrix_files.append([])
-        for bigwig in bigwigs:
+        for j, bigwig in enumerate(bigwigs):
             tmp = path_manager.purgeable_files_dir / (bedfile.name[:-4] + '_'
                                                       + bigwig.name[:-3] + '.gz')
             to_remove.append(tmp)
@@ -72,6 +72,12 @@ def generate_bed_matrix(beds: List[Path], bigwigs: List[Path],
                 "--sortRegions", "keep",
                 "--missingDataAsZero",
                 "-o", tmp)
+            cmd += cmdify(
+                "computeMatrixOperations relabel"
+                '-m', tmp,
+                '--groupLabel', "'" + row_names[i] + "'",
+                '--sampleLabel' "'" + column_names[j] + "'"
+            )
             jobs.execute(cmd, four_core)
             matrix_files[i].append(tmp)
     stop_array()
@@ -83,18 +89,10 @@ def generate_bed_matrix(beds: List[Path], bigwigs: List[Path],
 
         tmp_col = path_manager.purgeable_files_dir / (
                     get_unique_filename() + '.gz')
-        tmp2_col = path_manager.purgeable_files_dir / (
-                get_unique_filename() + '.gz')
 
         cmd = cmdify(
             "computeMatrixOperations rbind",
             '-m', *col,
-            '-o', tmp2_col
-        )
-        cmd += '\n' + cmdify(
-            "computeMatrixOperations relabel",
-            '-m', tmp2_col,
-            '--sampleLabel', "'" + column_names[i] + "'",
             '-o', tmp_col
         )
         jobs.execute(cmd)
