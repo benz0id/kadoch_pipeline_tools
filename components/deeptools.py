@@ -89,6 +89,12 @@ def generate_bed_matrix(beds: List[Path], bigwigs: List[Path],
             '-m', *col,
             '-o', tmp_col
         )
+        cmd += '\n' + cmdify(
+            "computeMatrixOperations relabel",
+            '-m', tmp_col,
+            '--groupLabel', i,
+            '-o', tmp_col
+        )
         jobs.execute(cmd)
         cols.append(tmp_col)
 
