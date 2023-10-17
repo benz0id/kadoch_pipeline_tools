@@ -70,7 +70,7 @@ def generate_bed_matrix(beds: List[Path], bigwigs: List[Path],
                 "-S", bigwig,
                 "--binSize 50",
                 "--sortRegions", "keep",
-                "--missingDataAsZero"
+                "--missingDataAsZero",
                 "-o", tmp)
             jobs.execute(cmd, four_core)
             row.append(tmp)

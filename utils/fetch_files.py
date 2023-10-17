@@ -1,6 +1,7 @@
 import logging
 import os
 import re
+import uuid
 from copy import copy
 from datetime import datetime
 from pathlib import Path
@@ -169,6 +170,6 @@ def get_unique_filename() -> str:
     Gets a unique filename using the current time.
     :return: A unique filename.
     """
-    return datetime.now().strftime("%m-%d-%Y-%I-%M-%S-%p")
+    return str(uuid.uuid4())
 
 
