@@ -76,7 +76,8 @@ def generate_bed_matrix(beds: List[Path], bigwigs: List[Path],
                 "computeMatrixOperations relabel"
                 '-m', tmp,
                 '--groupLabel', "'" + row_names[i] + "'",
-                '--sampleLabel' "'" + column_names[j] + "'"
+                '--sampleLabel', "'" + column_names[j] + "'",
+                '-o', tmp
             )
             jobs.execute(cmd, four_core)
             matrix_files[i].append(tmp)
