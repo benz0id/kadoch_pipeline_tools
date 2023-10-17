@@ -83,15 +83,17 @@ def generate_bed_matrix(beds: List[Path], bigwigs: List[Path],
 
         tmp_col = path_manager.purgeable_files_dir / (
                     get_unique_filename() + '.gz')
+        tmp2_col = path_manager.purgeable_files_dir / (
+                get_unique_filename() + '.gz')
 
         cmd = cmdify(
             "computeMatrixOperations cbind",
             '-m', *col,
-            '-o', tmp_col
+            '-o', tmp2_col
         )
         cmd += '\n' + cmdify(
             "computeMatrixOperations relabel",
-            '-m', tmp_col,
+            '-m', tmp2_col,
             '--groupLabel', "'" + column_names[i] + "'",
             '-o', tmp_col
         )
