@@ -87,7 +87,7 @@ def generate_bed_matrix(beds: List[Path], bigwigs: List[Path],
                 get_unique_filename() + '.gz')
 
         cmd = cmdify(
-            "computeMatrixOperations cbind",
+            "computeMatrixOperations rbind",
             '-m', *col,
             '-o', tmp2_col
         )
@@ -104,7 +104,7 @@ def generate_bed_matrix(beds: List[Path], bigwigs: List[Path],
 
     # Combine rows.
     cmd = cmdify(
-        "computeMatrixOperations rbind",
+        "computeMatrixOperations cbind",
         '-m', *cols,
         '-o', out_path
     )
