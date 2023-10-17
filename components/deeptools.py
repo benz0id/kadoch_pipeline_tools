@@ -72,7 +72,7 @@ def generate_bed_matrix(beds: List[Path], bigwigs: List[Path],
                 "--sortRegions", "keep",
                 "--missingDataAsZero",
                 "-o", tmp)
-            cmd += cmdify(
+            cmd += '\n' + cmdify(
                 "computeMatrixOperations relabel",
                 '-m', tmp,
                 '--groupLabel', "'" + row_names[i] + "'",
