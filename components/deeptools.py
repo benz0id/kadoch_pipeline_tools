@@ -72,7 +72,7 @@ def generate_bed_matrix(beds: List[Path], bigwigs: List[Path],
                 "--sortRegions", "keep",
                 "--missingDataAsZero",
                 "-o", tmp)
-            jobs.execute(cmd, four_core)
+            jobs.execute_lazy(cmd, four_core)
             row.append(tmp)
     stop_array()
 
@@ -90,7 +90,7 @@ def generate_bed_matrix(beds: List[Path], bigwigs: List[Path],
             '-m', *col,
             '-o', tmp_col
         )
-        jobs.execute(cmd)
+        jobs.execute_lazy(cmd)
 
         labelled_col = path_manager.purgeable_files_dir / \
                        (get_unique_filename() + '.gz')
@@ -100,7 +100,7 @@ def generate_bed_matrix(beds: List[Path], bigwigs: List[Path],
             "-o", labelled_col,
             "--groupLabels", label
         )
-        jobs.execute(cmd)
+        jobs.execute_lazy(cmd)
         cols.append(labelled_col)
 
         to_remove.append(tmp_col)
@@ -112,4 +112,5 @@ def generate_bed_matrix(beds: List[Path], bigwigs: List[Path],
         '-m', *cols,
         '-o', out_path
     )
-    jobs.execute(cmd)
+    jobs.execute_lazy(cmd)
+
