@@ -52,9 +52,8 @@ def generate_bed_matrix(beds: List[Path], bigwigs: List[Path],
 
     # Calculate submatrices.
     start_array()
-    for bedfile in beds:
-        row = []
-        matrix_files.append(row)
+    for i, bedfile in enumerate(beds):
+        matrix_files.append([])
         for bigwig in bigwigs:
             tmp = path_manager.purgeable_files_dir / (
                         get_unique_filename() + '.gz')
@@ -74,14 +73,13 @@ def generate_bed_matrix(beds: List[Path], bigwigs: List[Path],
                 "--missingDataAsZero",
                 "-o", tmp)
             jobs.execute_lazy(cmd, four_core)
-            row.append(tmp)
+            matrix_files[i].append(tmp)
     stop_array()
 
     # Combine columns and rename.
     cols = []
-    for i in range(len(matrix_files)):
+    for i in range(len(matrix_files[0])):
         col = [row[i] for row in matrix_files]
-        label = column_names[i]
 
         tmp_col = path_manager.purgeable_files_dir / (
                     get_unique_filename() + '.gz')
