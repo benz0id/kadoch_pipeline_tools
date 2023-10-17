@@ -72,7 +72,7 @@ def generate_bed_matrix(beds: List[Path], bigwigs: List[Path],
                 "--sortRegions", "keep",
                 "--missingDataAsZero",
                 "-o", tmp)
-            jobs.execute_lazy(cmd, four_core)
+            jobs.execute(cmd, four_core)
             matrix_files[i].append(tmp)
     stop_array()
 
@@ -89,7 +89,7 @@ def generate_bed_matrix(beds: List[Path], bigwigs: List[Path],
             '-m', *col,
             '-o', tmp_col
         )
-        jobs.execute_lazy(cmd)
+        jobs.execute(cmd)
         cols.append(tmp_col)
 
         to_remove.append(tmp_col)
@@ -100,7 +100,7 @@ def generate_bed_matrix(beds: List[Path], bigwigs: List[Path],
         '-m', *cols,
         '-o', out_path
     )
-    jobs.execute_lazy(cmd)
+    jobs.execute(cmd)
 
     cmd = cmdify(
         '#', get_unique_filename(), '\n'
@@ -109,7 +109,8 @@ def generate_bed_matrix(beds: List[Path], bigwigs: List[Path],
         '--groupLabels', *['"' + row_name + '"'
                           for row_name in row_names],
         '--sampleLabels', *['"' + col_name + '"'
-                          for col_name in column_names]
+                          for col_name in column_names],
+        '-o', out_path
     )
-    jobs.execute_lazy(cmd)
+    jobs.execute(cmd)
 
