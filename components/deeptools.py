@@ -8,8 +8,8 @@ from utils.path_manager import cmdify, PathManager
 
 
 def generate_bed_matrix(beds: List[Path], bigwigs: List[Path],
-                        column_names: List[str], out_path: Path,
-                        jobs: JobManager, builder: JobBuilder,
+                        column_names: List[str], row_names: List[str],
+                        out_path: Path, jobs: JobManager, builder: JobBuilder,
                         start_array: Callable, stop_array: Callable,
                         path_manager: PathManager) -> None:
     """
@@ -29,6 +29,7 @@ def generate_bed_matrix(beds: List[Path], bigwigs: List[Path],
 
     This uses Alex's code as a skeleton.
 
+    :param row_names:
     :param beds:
     :param bigwigs:
     :param column_names:
@@ -91,26 +92,24 @@ def generate_bed_matrix(beds: List[Path], bigwigs: List[Path],
             '-o', tmp_col
         )
         jobs.execute_lazy(cmd)
-
-        labelled_col = path_manager.purgeable_files_dir / \
-                       (get_unique_filename() + '.gz')
-        cmd = cmdify(
-            "computeMatrixOperations relabel",
-            "-m", tmp_col,
-            "-o", labelled_col,
-            "--groupLabels", label
-        )
-        jobs.execute_lazy(cmd)
-        cols.append(labelled_col)
+        cols.append(tmp_col)
 
         to_remove.append(tmp_col)
-        to_remove.append(labelled_col)
 
     # Combine rows.
     cmd = cmdify(
         "computeMatrixOperations rbind",
         '-m', *cols,
         '-o', out_path
+    )
+    jobs.execute_lazy(cmd)
+
+    cmd = cmdify(
+        '#', get_unique_filename(), '\n'
+        "computeMatrixOperations relabel",
+        "-m", out_path,
+        '--groupLabels', *row_names,
+        '--sampleLabels', *column_names
     )
     jobs.execute_lazy(cmd)
 
