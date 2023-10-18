@@ -301,6 +301,8 @@ class PeakPCAAnalyser:
             else:
                 count_to_bam_map[col_name] = matching_bam
 
+        print('starting norm')
+
         norm_factors = []
         for i, col_name in enumerate(sample_names):
             bamfile = count_to_bam_map[col_name]
