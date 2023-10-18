@@ -484,6 +484,8 @@ class PeakPCAAnalyser:
             matrix_path = analysis_dir / 'merged_counts_matrix_normalized.tsv'
             bams_to_normalise_to = bams
 
+        counts_files = experimental_design.align_to_samples(counts_files)
+
         pj = PythonJob('make ' + str(matrix_path), [], self.make_counts_matrix,
                        counts_files=counts_files,
                        matrix_out_path=matrix_path,
