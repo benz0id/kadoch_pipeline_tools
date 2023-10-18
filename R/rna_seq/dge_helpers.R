@@ -174,6 +174,14 @@ get_gene_counts_bar <- function(expression_data, gene_name, sample_descs,
 #' @examples
 get_basic_bar <- function(values, value_labels, groups, title, x, y,
 fill, colours=NULL){
+  
+  if (! is.numeric(values)){
+    stop('values must be numeric')
+  }
+  if (! is.character(value_labels)){
+    stop('value labels must be character')
+  }
+  
   if (is.null(colours)){
     n <- length(unique(groups))
     colours <- viridis::viridis(n)
@@ -186,7 +194,7 @@ fill, colours=NULL){
   
   if (! is.factor(groups)){
     groups <- factor(groups, ordered = TRUE,
-                           levels=unique(groups))
+                           levels=rev(unique(groups)))
   }
   
   counts_df <- data.frame(label=value_labels, bars=values, group=groups)
