@@ -426,6 +426,7 @@ class PeakPCAAnalyser:
             print('here')
             norm_factors = self.get_number_of_mapped_reads(parsed_col_names,
                                                            bams_to_normalise_to)
+            print('done norm')
             for col in range(len(parsed_col_names)):
                 fac = norm_factors[col]
                 column = counts_array[:, col]
