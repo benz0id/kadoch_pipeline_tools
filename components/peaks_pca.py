@@ -186,7 +186,7 @@ class PeakPCAAnalyser:
         idx_stats = self._files.project_dir / (bam.name[:-4] + '.genome')
         self._jobs.execute_lazy(cmdify(
             'samtools idxstats', bam,
-            "| awk '{print $1,$2}'",
+            "| awk -v OFS='\t' {'print $1,$2'}",
             "| sed '$ d'"
             '>', idx_stats
         ))
