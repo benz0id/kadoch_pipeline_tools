@@ -37,7 +37,9 @@ MAX_PCA_DIMS = 5
 def generate_pca_plot(counts_matrix_path: Path,
                       design: ExperimentalDesign,
                       out_filepath: Path, dims: int = 3,
-                      n_info_cols: int = 0, sample_ids: bool = False) -> sns.scatterplot:
+                      n_info_cols: int = 0, sample_ids: bool = False,
+                      colour_groups: List[str] = None,
+                      shape_groups: List[str] = None) -> sns.scatterplot:
     """
     Generates a PCA plot displaying a dimensionality reduced -
     representation of the given counts matrix.
@@ -86,6 +88,11 @@ def generate_pca_plot(counts_matrix_path: Path,
     pcdf['reps'] = reps
     pcdf['labels'] = conds
 
+    if colour_groups:
+        pcdf['labels'] = colour_groups
+    if shape_groups:
+        pcdf['reps'] = shape_groups
+
     props = pca.explained_variance_ratio_ * 100
 
     # Compare multiple principle components.
@@ -95,7 +102,7 @@ def generate_pca_plot(counts_matrix_path: Path,
                              y='principal component ' + str(j + 1),
                              hue='labels', style='reps',
                              palette=sns.color_palette('colorblind',
-                                                       len(design.get_conditions())))
+                                                len(design.get_conditions())))
 
         ax.set(title='PCA',
                xlabel='PC%d:%.2f%%' % (1, props[i]),
