@@ -54,7 +54,6 @@ def generate_pca_plot(counts_matrix_path: Path,
     """
     # Extract raw data from the counts matrix.
     counts_dataframe = pd.read_csv(counts_matrix_path, sep='\t')
-    print(counts_dataframe.shape)
 
     samples = counts_dataframe.columns
     if n_info_cols > 0:
@@ -303,8 +302,6 @@ class PeakPCAAnalyser:
             else:
                 count_to_bam_map[col_name] = matching_bam
 
-        print('starting norm')
-
         norm_factors = []
         for i, col_name in enumerate(sample_names):
             bamfile = count_to_bam_map[col_name]
@@ -415,7 +412,6 @@ class PeakPCAAnalyser:
                     continue
 
                 if j >= nrow:
-                    print(vals)
                     failed = True
                     continue
 
@@ -423,14 +419,11 @@ class PeakPCAAnalyser:
 
                 contig, start, stop, count = vals
                 counts_array[j, i] = int(count)
-                print('here')
 
         # Normalise to cpms if bam files are provided.
         if bams_to_normalise_to:
-            print('here')
             norm_factors = self.get_number_of_mapped_reads(parsed_col_names,
                                                            bams_to_normalise_to)
-            print('done norm')
             for col in range(len(parsed_col_names)):
                 fac = norm_factors[col]
                 column = counts_array[:, col]
