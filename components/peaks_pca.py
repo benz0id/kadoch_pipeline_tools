@@ -54,6 +54,7 @@ def generate_pca_plot(counts_matrix_path: Path,
     """
     # Extract raw data from the counts matrix.
     counts_dataframe = pd.read_csv(counts_matrix_path, sep='\t')
+    print(counts_dataframe.shape)
 
     samples = counts_dataframe.columns
     if n_info_cols > 0:
