@@ -419,9 +419,11 @@ class PeakPCAAnalyser:
 
                 contig, start, stop, count = vals
                 counts_array[j, i] = int(count)
+                print('here')
 
         # Normalise to cpms if bam files are provided.
         if bams_to_normalise_to:
+            print('here')
             norm_factors = self.get_number_of_mapped_reads(parsed_col_names,
                                                            bams_to_normalise_to)
             for col in range(len(parsed_col_names)):
