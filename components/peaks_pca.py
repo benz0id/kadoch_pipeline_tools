@@ -433,7 +433,8 @@ class PeakPCAAnalyser:
         :param normalise_by_counts:
         :param beds: A list of bedfiles, to find common peaks on and generate
             PCA plots for.
-        :param bams: A list of bam files, to aggregate counts from.
+        :param bams: A list of bam files, to aggregate counts from. Must all be
+            sorted by position using the same genome.
         :param analysis_dir: The directory in which to place results and
             intermediary files.
         """
@@ -443,12 +444,20 @@ class PeakPCAAnalyser:
         common_peaks_path = analysis_dir / 'common_peaks.bed'
         self.find_all_common_peaks(beds, common_peaks_path)
 
+        idx_stats = analysis_dir / 'idx_stats.genome'
+        self._jobs.execute_lazy(cmdify(
+            'samtools idxstats', bams[0],
+            "| awk '{print $1,$2}'",
+            '>', idx_stats
+        ))
+
         counts_dir = analysis_dir / 'counts'
         if not counts_dir.exists():
             self._jobs.execute(cmdify('mkdir', counts_dir))
 
         counts_files = self.generate_counts(common_peaks_path, bams,
-                                            counts_dir)
+                                            counts_dir,
+                                            genome_index=idx_stats)
         counts_files = sorted(counts_files,
                               key=lambda x: str(x).split('_')[1])
 
