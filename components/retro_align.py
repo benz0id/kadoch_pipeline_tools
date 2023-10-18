@@ -38,7 +38,6 @@ def make_alignment_results_directory(results_dir: Path) -> AlignmentResults:
     for d in res:
         os.mkdir(d)
 
-
     return res
 
 
