@@ -75,7 +75,7 @@ def retro_fetch_manual(design: ExperimentalDesign, out_dir: Path,
     if bigwig_dir:
         add_move_file_cmds(bigwig_dir, 'bed', alignment_results.bw)
     if stats_dir:
-        add_move_file_cmds(bed_dir, 'txt', alignment_results.stats)
+        add_move_file_cmds(stats_dir, 'txt', alignment_results.stats)
 
     return alignment_results, cmds
 

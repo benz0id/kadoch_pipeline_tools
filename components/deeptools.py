@@ -24,8 +24,7 @@ def generate_bed_matrix(beds: List[Path], bigwigs: List[Path],
     bed2           <vals>
     bed3
 
-    Where each bed is expanded to all the sites it contains along the y
-    axis.
+    Where each bed is expanded to all the sites it contains along the yaxis.
 
     This uses Alex's code as a skeleton.
 
