@@ -44,6 +44,7 @@ def generate_pca_plot(counts_matrix_path: Path,
     Generates a PCA plot displaying a dimensionality reduced -
     representation of the given counts matrix.
 
+    :param colour_groups:
     :param dims:
     :param out_filepath:
     :param design: The design of the experiment.
