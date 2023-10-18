@@ -32,7 +32,7 @@ def get_alignment_stats(stats_filepaths: List[Path], out_filepath: Path,
         header = sample_stats_file.readline()
 
     first_col = header.split('\t')[0].strip()
-    assert first_col == 'ID' or first_col == 'Sample':
+    assert first_col == 'ID' or first_col == 'Sample'
 
     stats = []
     for stats_filepath in stats_filepaths:
