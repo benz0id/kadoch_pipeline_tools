@@ -187,6 +187,7 @@ class PeakPCAAnalyser:
         self._jobs.execute_lazy(cmdify(
             'samtools idxstats', bam,
             "| awk '{print $1,$2}'",
+            "| sed '$ d'"
             '>', idx_stats
         ))
 
