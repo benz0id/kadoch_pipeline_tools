@@ -369,6 +369,8 @@ class PeakPCAAnalyser:
 
         parsed_col_names = []
 
+        failed = False
+
         # Collect all counts values and store in NP array.#TODO imp with pandas
         for i, counts_file in enumerate(counts_files):
             if counts_names:
@@ -387,6 +389,11 @@ class PeakPCAAnalyser:
                     print(vals)
 
                 if not vals.strip():
+                    continue
+
+                if j >= nrow:
+                    print(vals)
+                    failed = True
                     continue
 
                 vals = vals.split('\t')
@@ -409,7 +416,8 @@ class PeakPCAAnalyser:
             for row_num in range(nrow):
                 outfile.write('\t'.join(
                     [str(val) for val in counts_array[row_num, :]]) + '\n')
-
+        if failed:
+            raise ValueError("Counts files of invalid lengths.")
         return counts_array
 
     def filter_counts_matrix(self, in_matrix: Path, out_matrix: Path,
