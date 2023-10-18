@@ -389,6 +389,8 @@ class PeakPCAAnalyser:
 
         # Collect all counts values and store in NP array.#TODO imp with pandas
         for i, counts_file in enumerate(counts_files):
+            logger.info("Starting to Parse Counts from " + str(counts_file))
+
             if counts_names:
                 col_name = counts_names[i]
                 parsed_col_names.append(col_name)
@@ -401,8 +403,8 @@ class PeakPCAAnalyser:
 
             for j, vals in enumerate(lines):
 
-                if j >= nrow:
-                    print(vals)
+                if j % 10000 == 0:
+                    logger.debug('\t' + str(j) + ' lines parsed')
 
                 if not vals.strip():
                     continue
