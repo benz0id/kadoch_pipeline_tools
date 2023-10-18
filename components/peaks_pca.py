@@ -382,6 +382,10 @@ class PeakPCAAnalyser:
                 lines = counts_file_obj.readlines()
 
             for j, vals in enumerate(lines):
+
+                if j >= nrow:
+                    print(vals)
+
                 if not vals.strip():
                     continue
 
