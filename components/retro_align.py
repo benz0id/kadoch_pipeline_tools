@@ -36,7 +36,8 @@ def make_alignment_results_directory(results_dir: Path) -> AlignmentResults:
                            stats=align_stats_path)
 
     for d in res:
-        os.mkdir(d)
+        if not d.exists():
+            os.mkdir(d)
 
     return res
 
