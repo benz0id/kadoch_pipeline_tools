@@ -162,6 +162,7 @@ class PeakPCAAnalyser:
             array of jobs.
         """
 
+        self._idx_stats = HG19_GENOME
         self._jobs = job_manager
         self._files = file_manager
 
@@ -175,8 +176,23 @@ class PeakPCAAnalyser:
         self._wait_job_array = wait_job_array_fxn
         self._verbose = verbose
 
-    def find_all_common_peaks(self, beds: List[Path], common_peak_out: Path,
-                              genome_index: Path = HG19_GENOME) -> None:
+    def update_genome_index(self, bam: Path) -> None:
+        """
+        Creates a new genome from the given bam which will be used for all
+        subsequent sorting operations.
+        :return:
+        """
+        idx_stats = self._files.project_dir / (bam.name[:-4] + '.genome')
+        self._jobs.execute_lazy(cmdify(
+            'samtools idxstats', bam,
+            "| awk '{print $1,$2}'",
+            '>', idx_stats
+        ))
+
+        self._idx_stats = idx_stats
+
+    def find_all_common_peaks(self, beds: List[Path], common_peak_out: Path) \
+            -> None:
         """
         Merges all the given beds into a single sorted bedfile.
 
@@ -191,14 +207,14 @@ class PeakPCAAnalyser:
         self._jobs.execute_lazy(
             cmdify('cat', *beds, '|',
                    'bedtools sort',
-                   '-faidx', genome_index, '|',
+                   '-faidx', self._idx_stats, '|',
                    'bedtools merge',
                    '>', common_peak_out
                    ))
 
     def generate_counts(self, bedfile: Path, bamfiles: List[Path],
-                        out_dir: Path, out_count_names: List[str] = None,
-                        genome_index: Path = HG19_GENOME) -> List[Path]:
+                        out_dir: Path, out_count_names: List[str] = None) \
+            -> List[Path]:
         """
         Gets the number of reads in each bamfile in <bamfiles> that lie at each
         peak in bedfile in bedfiles.
@@ -235,7 +251,7 @@ class PeakPCAAnalyser:
                     'bedtools intersect',
                     '-a', bedfile,
                     '-b', bamfile,
-                    '-g', genome_index,
+                    '-g', self._idx_stats,
                     '-c',
                     '-sorted',
                     '>', out_dir / count_file_name
@@ -290,7 +306,7 @@ class PeakPCAAnalyser:
             bamfile = count_to_bam_map[col_name]
             result = subprocess.run(['samtools', 'view', '-c', str(bamfile)],
                                     stdout=subprocess.PIPE)
-            n_reads = int((result.stdout).decode('utf-8').split(' ')[0])
+            n_reads = int(result.stdout.decode('utf-8').split(' ')[0])
             norm_factors.append(n_reads)
 
         s = 'Normalisation info:\n'
@@ -442,26 +458,22 @@ class PeakPCAAnalyser:
         :param analysis_dir: The directory in which to place results and
             intermediary files.
         """
+
+        old_idx = self._idx_stats
+        self.update_genome_index(bams[0])
+
         if not analysis_dir.exists():
             self._jobs.execute(cmdify('mkdir', analysis_dir))
 
         common_peaks_path = analysis_dir / 'common_peaks.bed'
         self.find_all_common_peaks(beds, common_peaks_path)
 
-        idx_stats = analysis_dir / 'idx_stats.genome'
-        self._jobs.execute_lazy(cmdify(
-            'samtools idxstats', bams[0],
-            "| awk '{print $1,$2}'",
-            '>', idx_stats
-        ))
-
         counts_dir = analysis_dir / 'counts'
         if not counts_dir.exists():
             self._jobs.execute(cmdify('mkdir', counts_dir))
 
         counts_files = self.generate_counts(common_peaks_path, bams,
-                                            counts_dir,
-                                            genome_index=idx_stats)
+                                            counts_dir)
         counts_files = sorted(counts_files,
                               key=lambda x: str(x).split('_')[1])
 
@@ -482,3 +494,5 @@ class PeakPCAAnalyser:
         pj = PythonJob('Generate PCA figures' + str(args[-2:]), [],
                        generate_pca_plot, *args)
         self._jobs.execute_lazy(pj)
+
+        self._idx_stats = old_idx
