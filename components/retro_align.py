@@ -35,6 +35,10 @@ def make_alignment_results_directory(results_dir: Path) -> AlignmentResults:
                            bw=bigwigs_path,
                            stats=align_stats_path)
 
+    for d in res:
+        os.mkdir(d)
+
+
     return res
 
 
