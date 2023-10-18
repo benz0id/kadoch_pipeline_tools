@@ -67,8 +67,7 @@ def retro_fetch_manual(design: ExperimentalDesign, out_dir: Path,
             get_matching_files(directory, regexes, paths=True, verbose=True)
             raise e
 
-        for file in matching_files:
-            cmds.append(cmdify('cp', file, out_path))
+        cmds.extend(copy_to_cmds(out_path, matching_files, avoid_recopy=True))
 
     if bam_dir:
         add_move_file_cmds(bam_dir, 'bam', alignment_results.bam)
