@@ -304,6 +304,7 @@ class PeakPCAAnalyser:
         norm_factors = []
         for i, col_name in enumerate(sample_names):
             bamfile = count_to_bam_map[col_name]
+            logger.info('Calculating library size for ' + bamfile.name)
             result = subprocess.run(['samtools', 'view', '-c', str(bamfile)],
                                     stdout=subprocess.PIPE)
             n_reads = int(result.stdout.decode('utf-8').split(' ')[0])
