@@ -54,8 +54,7 @@ def generate_bed_matrix(beds: List[Path], bigwigs: List[Path],
     for i, bedfile in enumerate(beds):
         matrix_files.append([])
         for j, bigwig in enumerate(bigwigs):
-            tmp = path_manager.purgeable_files_dir / (bedfile.name[:-4] + '_'
-                                                      + bigwig.name[:-3] + '.gz')
+            tmp = path_manager.purgeable_files_dir / (get_unique_filename() + 'tmp.gz')
             to_remove.append(tmp)
 
             cmd = cmdify(
@@ -80,12 +79,7 @@ def generate_bed_matrix(beds: List[Path], bigwigs: List[Path],
             )
             jobs.execute(cmd, four_core)
             matrix_files[i].append(tmp)
-
-    if only_submats:
-        return
     stop_array()
-
-
 
     # Combine columns and rename.
     cols = []
