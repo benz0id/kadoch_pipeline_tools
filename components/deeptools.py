@@ -11,7 +11,7 @@ def generate_bed_matrix(beds: List[Path], bigwigs: List[Path],
                         column_names: List[str], row_names: List[str],
                         out_path: Path, jobs: JobManager, builder: JobBuilder,
                         start_array: Callable, stop_array: Callable,
-                        path_manager: PathManager) -> None:
+                        path_manager: PathManager, only_submats: bool = False) -> None:
     """
     Quantify each of the given bigwig files against the given beds, to form a
     large matrix of counts for use in heatmap plotting.
@@ -80,7 +80,12 @@ def generate_bed_matrix(beds: List[Path], bigwigs: List[Path],
             )
             jobs.execute(cmd, four_core)
             matrix_files[i].append(tmp)
+
+    if only_submats:
+        return
     stop_array()
+
+
 
     # Combine columns and rename.
     cols = []
