@@ -45,6 +45,11 @@ def generate_bed_matrix(beds: List[Path], bigwigs: List[Path],
                            ram_per_core=512,
                            builder=builder)
 
+    one_core = ExecParams(max_runtime=Runtime(0, 0, 30),
+                           num_cores=1,
+                           ram_per_core=1048,
+                           builder=builder)
+
     to_remove = []
 
     matrix_files = []
@@ -83,6 +88,7 @@ def generate_bed_matrix(beds: List[Path], bigwigs: List[Path],
 
     # Combine columns and rename.
     cols = []
+    start_array()
     for i in range(len(matrix_files[0])):
         col = [row[i] for row in matrix_files]
 
@@ -94,10 +100,11 @@ def generate_bed_matrix(beds: List[Path], bigwigs: List[Path],
             '-m', *col,
             '-o', tmp_col
         )
-        jobs.execute(cmd)
+        jobs.execute(cmd, one_core)
         cols.append(tmp_col)
 
         to_remove.append(tmp_col)
+    stop_array()
 
     # Combine rows.
     cmd = cmdify(
@@ -105,5 +112,5 @@ def generate_bed_matrix(beds: List[Path], bigwigs: List[Path],
         '-m', *cols,
         '-o', out_path
     )
-    jobs.execute(cmd)
+    jobs.execute(cmd, one_core)
 
