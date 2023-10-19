@@ -107,10 +107,12 @@ def generate_bed_matrix(beds: List[Path], bigwigs: List[Path],
     stop_array()
 
     # Combine rows.
+    start_array()
     cmd = cmdify(
         "computeMatrixOperations cbind",
         '-m', *cols,
         '-o', out_path
     )
+    stop_array()
     jobs.execute(cmd, one_core)
 
