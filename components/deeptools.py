@@ -92,6 +92,11 @@ def generate_bed_matrix(beds: List[Path], bigwigs: List[Path],
     for i in range(len(matrix_files[0])):
         col = [row[i] for row in matrix_files]
 
+        # There
+        if len(col) == 1:
+            to_remove.append(col)
+            continue
+
         tmp_col = path_manager.purgeable_files_dir / (
                     get_unique_filename() + '.gz')
 
@@ -115,4 +120,6 @@ def generate_bed_matrix(beds: List[Path], bigwigs: List[Path],
     )
     stop_array()
     jobs.execute(cmd, one_core)
+
+
 
