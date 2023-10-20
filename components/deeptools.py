@@ -94,7 +94,7 @@ def generate_bed_matrix(beds: List[Path], bigwigs: List[Path],
 
         # There
         if len(col) == 1:
-            cols.append(col)
+            cols.append(col[0])
             continue
 
         tmp_col = path_manager.purgeable_files_dir / (
