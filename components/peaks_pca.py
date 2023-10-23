@@ -82,8 +82,6 @@ def generate_pca_plot(counts_matrix_path: Path,
         conds = [design.get_condition(label) for label in samples]
         counts_dataframe = counts_dataframe[samples]
 
-    print(counts_dataframe.head(5))
-
     if isinstance(colour_groups, list):
         assert len(colour_groups) == len(samples)
     if isinstance(shape_groups, list):
