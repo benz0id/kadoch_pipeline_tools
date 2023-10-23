@@ -99,7 +99,7 @@ def generate_pca_plot(counts_matrix_path: Path,
     if colour_groups == 'by_condition':
         pcdf['labels'] = conds
     if shape_groups == 'by_rep':
-    pcdf['labels'] = conds
+        pcdf['reps'] = reps
 
     if isinstance(colour_groups, list):
         pcdf['labels'] = colour_groups
@@ -115,18 +115,16 @@ def generate_pca_plot(counts_matrix_path: Path,
             "data": pcdf,
             "x": 'principal component ' + str(i + 1),
             "y": 'principal component ' + str(j + 1),
-            "hue": 'labels',
-            "style": 'reps',
-            "palette": sns.color_palette('colorblind',len(design.get_conditions()))
+            "palette": sns.color_palette('colorblind',
+                                         len(design.get_conditions()))
         }
 
+        if colour_groups != None:
+            kwargs['hue'] = 'labels'
+        if shape_groups != None:
+            kwargs["style"] = 'reps'
 
-        ax = sns.scatterplot(data=pcdf,
-                             x='principal component ' + str(i + 1),
-                             y='principal component ' + str(j + 1),
-                             hue='labels', style='reps',
-                             palette=sns.color_palette('colorblind',
-                                                len(design.get_conditions())))
+        ax = sns.scatterplot(**kwargs)
 
         ax.set(title='PCA',
                xlabel='PC%d:%.2f%%' % (1, props[i]),
