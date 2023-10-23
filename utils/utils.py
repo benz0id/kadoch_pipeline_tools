@@ -418,6 +418,19 @@ class TargetedDesign(ExperimentalDesign):
 
         return matching_samples
 
+    def get_mark(self, sample: str) -> str:
+        return self._sample_to_mark[sample]
+
+    def get_marks(self, samples: List[str]) -> List[str]:
+        return [self.get_mark(sample) for sample in samples]
+
+    def get_treatment(self, sample: str) -> str:
+        return self._sample_to_treatment[sample]
+
+    def get_treatments(self, samples: List[str]) -> List[str]:
+        return [self.get_treatment(sample) for sample in samples]
+
+
     def __str__(self) -> str:
         def pretty_dict(dic: Dict[str, Any]) -> str:
             s = ''
@@ -446,10 +459,6 @@ def convert_to_targeted(design: ExperimentalDesign, mark_slice: slice,
         design.
     :return: TargetedDesign
     """
-    print(mark_slice)
-    print(treatment_slice)
-    print(['a', 'b'][mark_slice])
-    print(['a', 'b'][treatment_slice])
     samples = design.get_samples()
 
     sample_to_cond = {}
