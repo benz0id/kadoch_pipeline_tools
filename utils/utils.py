@@ -418,6 +418,25 @@ class TargetedDesign(ExperimentalDesign):
 
         return matching_samples
 
+    def __str__(self) -> str:
+        def pretty_dict(dic: Dict[str, Any]) -> str:
+            s = ''
+            for sample in self._samples:
+                s += '\t' + sample + ': ' + str(dic[sample]) + '\n'
+            return s
+
+        return \
+            f'=== Sample: Sample ID ===\n' \
+            f'{pretty_dict(self._sample_to_sample_id)}\n' \
+            f'=== Sample: Condition ===\n' \
+            f'{pretty_dict(self._sample_to_condition)}\n' \
+            f'=== Sample: Replicate ===\n' \
+            f'{pretty_dict(self._sample_to_rep_number)}\n' \
+            f'=== Sample: Mark ===\n' \
+            f'{pretty_dict(self._sample_to_mark)}\n' \
+            f'=== Sample: Treatment ===\n' \
+            f'{pretty_dict(self._sample_to_treatment)}\n'
+
 
 def convert_to_targeted(design: ExperimentalDesign, mark_slice: slice,
                         treatment_slice: slice) -> TargetedDesign:
