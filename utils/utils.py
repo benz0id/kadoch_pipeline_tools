@@ -112,6 +112,7 @@ class ExperimentalDesign:
             if pruned_condition in self._conditions:
                 continue
             else:
+                print(condition, pruned_condition, sample)
                 for sample in self._sample_to_condition[condition]:
                     self._sample_to_condition[sample] = pruned_condition
 
