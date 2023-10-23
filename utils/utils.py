@@ -83,6 +83,7 @@ class ExperimentalDesign:
         else:
             self._sample_to_rep_number = copy(sample_to_rep_number)
 
+
     def get_condition(self, sample: str) -> str:
         return self._sample_to_condition[sample]
 

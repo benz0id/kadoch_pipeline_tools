@@ -38,6 +38,7 @@ def generate_pca_plot(counts_matrix_path: Path,
                       design: ExperimentalDesign,
                       out_filepath: Path, dims: int = 3,
                       n_info_cols: int = 0, sample_ids: bool = False,
+                      samples: List[str] = None,
                       colour_groups: List[str] = None,
                       shape_groups: List[str] = None) -> sns.scatterplot:
     """
@@ -58,19 +59,26 @@ def generate_pca_plot(counts_matrix_path: Path,
     # Extract raw data from the counts matrix.
     counts_dataframe = pd.read_csv(counts_matrix_path, sep='\t')
 
-    samples = counts_dataframe.columns
+    matrix_samples = counts_dataframe.columns
     if n_info_cols > 0:
-        to_rem = [samples[i] for i in range(n_info_cols)]
+        to_rem = [matrix_samples[i] for i in range(n_info_cols)]
         counts_dataframe = counts_dataframe.drop(columns=to_rem)
-        samples = counts_dataframe.columns
-        counts_dataframe = counts_dataframe[samples].astype(float)
+        matrix_samples = counts_dataframe.columns
+        counts_dataframe = counts_dataframe[matrix_samples].astype(float)
 
     if sample_ids:
-        samples = [sample.strip().split('_')[1] for sample in samples]
-        counts_dataframe.columns = samples
+        matrix_samples = [sample.strip().split('_')[1] for sample in matrix_samples]
+        counts_dataframe.columns = matrix_samples
 
-    reps = [design.get_rep_num(label) for label in samples]
-    conds = [design.get_condition(label) for label in samples]
+    reps = [design.get_rep_num(label) for label in matrix_samples]
+    conds = [design.get_condition(label) for label in matrix_samples]
+
+    if not samples:
+        samples = design.get_samples()
+
+    assert len(samples) == len(colour_groups) == len(shape_groups)
+
+    counts_dataframe = counts_dataframe[samples]
 
     counts_matrix = np.log2(counts_dataframe + 1)
 
@@ -509,3 +517,6 @@ class PeakPCAAnalyser:
         self._jobs.execute_lazy(pj)
 
         self._idx_stats = old_idx
+
+
+
