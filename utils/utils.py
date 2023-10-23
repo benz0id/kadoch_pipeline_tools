@@ -421,13 +421,17 @@ class TargetedDesign(ExperimentalDesign):
     def get_mark(self, sample: str) -> str:
         return self._sample_to_mark[sample]
 
-    def get_marks(self, samples: List[str]) -> List[str]:
+    def get_marks(self, samples: List[str] = None) -> List[str]:
+        if not samples:
+            samples = self.get_samples()
         return [self.get_mark(sample) for sample in samples]
 
     def get_treatment(self, sample: str) -> str:
         return self._sample_to_treatment[sample]
 
-    def get_treatments(self, samples: List[str]) -> List[str]:
+    def get_treatments(self, samples: List[str] = None) -> List[str]:
+        if not samples:
+            samples = self.get_samples()
         return [self.get_treatment(sample) for sample in samples]
 
 
