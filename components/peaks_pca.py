@@ -68,9 +68,13 @@ def generate_pca_plot(counts_matrix_path: Path,
         matrix_samples = counts_dataframe.columns
         counts_dataframe = counts_dataframe[matrix_samples].astype(float)
 
+    print(counts_dataframe.head(5))
+
     if sample_ids:
         matrix_samples = [sample.strip().split('_')[1] for sample in matrix_samples]
         counts_dataframe.columns = matrix_samples
+
+    print(counts_dataframe.head(5))
 
     if not samples:
         reps = [design.get_rep_num(label) for label in matrix_samples]
@@ -80,6 +84,8 @@ def generate_pca_plot(counts_matrix_path: Path,
         reps = [design.get_rep_num(label) for label in samples]
         conds = [design.get_condition(label) for label in samples]
         counts_dataframe = counts_dataframe[samples]
+
+    print(counts_dataframe.head(5))
 
     if isinstance(colour_groups, list):
         assert len(colour_groups) == len(samples)
