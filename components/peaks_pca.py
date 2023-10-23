@@ -39,12 +39,14 @@ def generate_pca_plot(counts_matrix_path: Path,
                       out_filepath: Path, dims: int = 3,
                       n_info_cols: int = 0, sample_ids: bool = False,
                       samples: List[str] = None,
-                      colour_groups: List[str] = None,
-                      shape_groups: List[str] = None) -> sns.scatterplot:
+                      colour_groups: List[str] = 'by_condition',
+                      shape_groups: List[str] = 'by_rep') -> sns.scatterplot:
     """
     Generates a PCA plot displaying a dimensionality reduced -
     representation of the given counts matrix.
 
+    :param samples:
+    :param shape_groups:
     :param colour_groups:
     :param dims:
     :param out_filepath:
@@ -94,18 +96,31 @@ def generate_pca_plot(counts_matrix_path: Path,
                         columns=['principal component ' + str(i)
                                  for i in range(1, pcs.shape[1] + 1)])
 
-    pcdf['reps'] = reps
+    if colour_groups == 'by_condition':
+        pcdf['labels'] = conds
+    if shape_groups == 'by_rep':
     pcdf['labels'] = conds
 
-    if colour_groups:
+    if isinstance(colour_groups, list):
         pcdf['labels'] = colour_groups
-    if shape_groups:
+    if isinstance(shape_groups, list):
         pcdf['reps'] = shape_groups
 
     props = pca.explained_variance_ratio_ * 100
 
     # Compare multiple principle components.
     for i, j in itertools.combinations(range(dims), 2):
+
+        kwargs = {
+            "data": pcdf,
+            "x": 'principal component ' + str(i + 1),
+            "y": 'principal component ' + str(j + 1),
+            "hue": 'labels',
+            "style": 'reps',
+            "palette": sns.color_palette('colorblind',len(design.get_conditions()))
+        }
+
+
         ax = sns.scatterplot(data=pcdf,
                              x='principal component ' + str(i + 1),
                              y='principal component ' + str(j + 1),
