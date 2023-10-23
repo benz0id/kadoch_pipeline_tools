@@ -76,6 +76,7 @@ def generate_pca_plot(counts_matrix_path: Path,
         reps = [design.get_rep_num(label) for label in matrix_samples]
         conds = [design.get_condition(label) for label in matrix_samples]
         assert len(samples) == len(colour_groups) == len(shape_groups)
+        samples = matrix_samples
     else:
         reps = [design.get_rep_num(label) for label in samples]
         conds = [design.get_condition(label) for label in samples]
@@ -95,7 +96,7 @@ def generate_pca_plot(counts_matrix_path: Path,
 
     pcs = qnorm.quantile_normalize(norm_counts.T)
 
-    pca = PCA(MAX_PCA_DIMS)
+    pca = PCA(min(MAX_PCA_DIMS, len(samples)))
     pcs = pca.fit_transform(pcs)
 
     pcdf = pd.DataFrame(data=pcs,
