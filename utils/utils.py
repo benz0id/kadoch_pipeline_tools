@@ -83,6 +83,46 @@ class ExperimentalDesign:
         else:
             self._sample_to_rep_number = copy(sample_to_rep_number)
 
+    def remove_str(self, s: str, samples: List[str] = None) -> None:
+        """
+        Removes the given string from all attributes associated with the
+        given samples.
+        :param s: The string to be removed
+        :param samples: The samples to remove the given string from. All
+            samples by default.
+        """
+        if not samples:
+            samples = self._samples
+
+        conditions = []
+        for sample in samples:
+            conditions.append(self._sample_to_condition[sample])
+
+        while conditions:
+            condition = conditions.pop()
+            pruned_condition = condition.replace(s, '')
+            pruned_condition = pruned_condition.replace('__', '_')
+
+            if pruned_condition[0] == '_':
+                pruned_condition = pruned_condition[1:]
+
+            if pruned_condition[-1] == '_':
+                pruned_condition = pruned_condition[:-1]
+
+            if pruned_condition in self._conditions:
+                continue
+            else:
+                ind = self._conditions.index(condition)
+                self._conditions.remove(condition)
+                self._conditions.insert(ind, pruned_condition)
+
+                for sample in self._sample_to_condition[condition]:
+                    self._sample_to_condition[sample] = pruned_condition
+
+                self._condition_to_samples[pruned_condition] = \
+                    self._condition_to_samples[condition]
+
+                self._condition_to_samples.pop(condition)
 
     def get_condition(self, sample: str) -> str:
         return self._sample_to_condition[sample]
@@ -95,6 +135,9 @@ class ExperimentalDesign:
 
     def get_conditions(self) -> List[str]:
         return copy(self._conditions)
+
+    def get_sample_id(self, sample: str) -> str:
+        return self._sample_to_sample_id[sample]
 
     def get_ordered_conditions(self) -> List[str]:
         return [self.get_condition(sample) for sample in self._samples]
@@ -339,6 +382,84 @@ class ExperimentalDesign:
                 raise ValueError("Could not find match for" + str(file))
 
         return groups
+
+
+class TargetedDesign(ExperimentalDesign):
+
+    def __init__(self, sample_to_condition: Dict[str, str],
+                 sample_to_mark: Dict[str, str],
+                 sample_to_treatment: Dict[str, str],
+                 sample_to_rep_number: Dict[str, int] = None,
+                 sample_to_sample_id: Dict[str, str] = None) -> None:
+        super().__init__(sample_to_condition, sample_to_rep_number,
+                         sample_to_sample_id)
+
+        self._sample_to_mark = copy(sample_to_mark)
+        self._sample_to_treatment = copy(sample_to_treatment)
+
+    def get_samples(self, condition: str = None,
+                    mark: str = None,
+                    treatment: str = None,
+                    rep: int = None) -> List[str]:
+
+        matching_samples = []
+        for sample in self._samples:
+
+            if condition and self._sample_to_condition[sample] == condition:
+                continue
+            if mark and not self._sample_to_mark[sample] == mark:
+                continue
+            if treatment and not self._sample_to_treatment[sample] == treatment:
+                continue
+            if rep and not self._sample_to_rep_number[sample] == rep:
+                continue
+            matching_samples.append(sample)
+
+        return matching_samples
+
+
+def convert_to_targeted(design: ExperimentalDesign, mark_slice: slice,
+                        treatment_slice: slice) -> TargetedDesign:
+    """
+    Converts the given experimental design into a targeted design.
+    :param design: An experimental design. Cannot be an instance of Targetted
+        design.
+    :return: TargetedDesign
+    """
+    samples = design.get_samples()
+
+    sample_to_cond = {}
+    cond_to_samples = {}
+    sample_to_rep_num = {}
+    sample_to_mark = {}
+    sample_to_treat = {}
+    sample_to_sample_id = {}
+
+    def add(dic, key, val) -> None:
+        if key in dic:
+            dic[key].append(val)
+        else:
+            dic[key] = [val]
+
+    for sample in samples:
+        cond = design.get_condition(sample)
+        sample_to_cond[sample] = cond
+        add(cond_to_samples, cond, sample)
+        sample_to_rep_num[sample] = design.get_rep_num(sample)
+
+        mark = cond[mark_slice]
+        treat = cond[treatment_slice]
+
+        sample_to_mark[sample] = mark
+        sample_to_treat[sample] = treat
+
+        sample_to_sample_id[sample] = design.get_sample_id(sample)
+
+    return TargetedDesign(sample_to_cond,
+                          sample_to_mark,
+                          sample_to_treat,
+                          sample_to_rep_num,
+                          sample_to_sample_id)
 
 
 def combine_runs(*runs: ExperimentalDesign) -> ExperimentalDesign:
