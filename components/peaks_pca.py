@@ -119,13 +119,14 @@ def generate_pca_plot(counts_matrix_path: Path,
         kwargs = {
             "data": pcdf,
             "x": 'principal component ' + str(i + 1),
-            "y": 'principal component ' + str(j + 1),
-            "palette": sns.color_palette('colorblind',
-                                         len(design.get_condition(samples)))
+            "y": 'principal component ' + str(j + 1)
         }
 
         if colour_groups != None:
             kwargs['hue'] = 'labels'
+            kwargs['palette'] = \
+                sns.color_palette('colorblind',
+                                  len(pcdf['labels']))
         if shape_groups != None:
             kwargs["style"] = 'reps'
 
