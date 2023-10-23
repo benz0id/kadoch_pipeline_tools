@@ -57,7 +57,8 @@ DEFAULT_COLOUR_MAP = {'9ala': 'green',
                       'wt': 'blue'}
 
 
-def get_colour(mark: str, mark_palette: Dict[str, str] = DEFAULT_COLOUR_MAP) \
+def get_colour(mark: str, mark_palette: Dict[str, str] = DEFAULT_COLOUR_MAP,
+               add_white: bool = False) \
         -> str:
     """
     Gets a standardised colour for the given mark.
@@ -66,5 +67,8 @@ def get_colour(mark: str, mark_palette: Dict[str, str] = DEFAULT_COLOUR_MAP) \
     """
     if mark not in mark_palette:
         raise ValueError(f'{mark} not found in palette.')
+
+    if add_white:
+        return '"white,' + mark_palette[mark]
 
     return mark_palette[mark]
