@@ -57,14 +57,14 @@ DEFAULT_COLOUR_MAP = {'9ala': 'green',
                       'wt': 'blue'}
 
 
-def get_colour(mark: str, mark_pallete: Dict[str, str] = DEFAULT_COLOUR_MAP) \
+def get_colour(mark: str, mark_palette: Dict[str, str] = DEFAULT_COLOUR_MAP) \
         -> str:
     """
-      Gets a standardised colour for the given mark.
-      :param mark: The mark of interest.
-      :param mark_pallete: Palette to be used.
-      """
-    if mark not in mark_pallete:
+    Gets a standardised colour for the given mark.
+    :param mark: The mark of interest.
+    :param mark_palette: Palette to be used.
+    """
+    if mark not in mark_palette:
         raise ValueError(f'{mark} not found in palette.')
 
-    return mark_pallete[mark]
+    return mark_palette[mark]
