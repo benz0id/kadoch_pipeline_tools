@@ -72,15 +72,20 @@ def generate_pca_plot(counts_matrix_path: Path,
         matrix_samples = [sample.strip().split('_')[1] for sample in matrix_samples]
         counts_dataframe.columns = matrix_samples
 
-    reps = [design.get_rep_num(label) for label in matrix_samples]
-    conds = [design.get_condition(label) for label in matrix_samples]
 
     if not samples:
-        samples = design.get_samples()
+        reps = [design.get_rep_num(label) for label in matrix_samples]
+        conds = [design.get_condition(label) for label in matrix_samples]
+        assert len(samples) == len(colour_groups) == len(shape_groups)
+    else:
+        reps = [design.get_rep_num(label) for label in samples]
+        conds = [design.get_condition(label) for label in samples]
+        counts_dataframe = counts_dataframe[samples]
 
-    assert len(samples) == len(colour_groups) == len(shape_groups)
-
-    counts_dataframe = counts_dataframe[samples]
+    if isinstance(colour_groups, list):
+        assert len(colour_groups) == len(samples)
+    if isinstance(shape_groups, list):
+        assert len(shape_groups) == len(samples)
 
     counts_matrix = np.log2(counts_dataframe + 1)
 
@@ -116,7 +121,7 @@ def generate_pca_plot(counts_matrix_path: Path,
             "x": 'principal component ' + str(i + 1),
             "y": 'principal component ' + str(j + 1),
             "palette": sns.color_palette('colorblind',
-                                         len(design.get_conditions()))
+                                         len(design.get_condition(samples)))
         }
 
         if colour_groups != None:
