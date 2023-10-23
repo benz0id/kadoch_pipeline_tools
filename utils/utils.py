@@ -112,12 +112,12 @@ class ExperimentalDesign:
             if pruned_condition in self._conditions:
                 continue
             else:
+                for sample in self._sample_to_condition[condition]:
+                    self._sample_to_condition[sample] = pruned_condition
+
                 ind = self._conditions.index(condition)
                 self._conditions.remove(condition)
                 self._conditions.insert(ind, pruned_condition)
-
-                for sample in self._sample_to_condition[condition]:
-                    self._sample_to_condition[sample] = pruned_condition
 
                 self._condition_to_samples[pruned_condition] = \
                     self._condition_to_samples[condition]
