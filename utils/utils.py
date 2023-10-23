@@ -466,10 +466,10 @@ def convert_to_targeted(design: ExperimentalDesign, mark_slice: slice,
         sample_to_cond[sample] = cond
         add(cond_to_samples, cond, sample)
         sample_to_rep_num[sample] = design.get_rep_num(sample)
-
+        print(cond.split('_'))
         mark = '_'.join(cond.split('_')[mark_slice])
         treat = '_'.join(cond.split('_')[treatment_slice])
-
+        print(cond.split('_'), mark, treat)
         sample_to_mark[sample] = mark
         sample_to_treat[sample] = treat
 
