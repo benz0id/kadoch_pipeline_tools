@@ -466,7 +466,8 @@ class TargetedDesign(ExperimentalDesign):
                       conditions: List[str] = None,
                       reps: List[int] = None,
                       marks: List[str] = None,
-                      treatments: List[str] = None) -> List[Path]:
+                      treatments: List[str] = None,
+                      num_expected: int = None) -> List[Path]:
         valid_files = []
 
         super_valid = super().find_in_files(files=files, samples=samples,
@@ -485,6 +486,10 @@ class TargetedDesign(ExperimentalDesign):
 
             if valid_mark and valid_treat:
                 valid_files.append(file)
+
+        if num_expected and len(valid_files) != num_expected:
+            raise ValueError("More files found than specified")
+
         return valid_files
 
 

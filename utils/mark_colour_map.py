@@ -65,6 +65,8 @@ def get_colour(mark: str, mark_palette: Dict[str, str] = DEFAULT_COLOUR_MAP,
     :param mark: The mark of interest.
     :param mark_palette: Palette to be used.
     """
+    mark = mark.lower()
+
     if mark not in mark_palette:
         raise ValueError(f'{mark} not found in palette.')
 
