@@ -401,7 +401,8 @@ class ExperimentalDesign:
             sample = file.name.split('_')[1]
 
             if sample not in self._samples:
-                raise ValueError(f'{sample} in {file.name} is not a valid sample.')
+                raise ValueError(
+                    f'{sample} in {file.name} is not a valid sample.')
 
             cond = self._sample_to_condition[sample]
             rep = self._sample_to_rep_number[sample]
@@ -413,8 +414,6 @@ class ExperimentalDesign:
             if valid_rep and valid_cond and valid_sample:
                 valid_files.append(file)
         return valid_files
-
-
 
 
 class TargetedDesign(ExperimentalDesign):
@@ -439,7 +438,8 @@ class TargetedDesign(ExperimentalDesign):
         for sample in super().get_samples(condition, rep):
             if mark and not self._sample_to_mark[sample] == mark:
                 continue
-            if treatment and not self._sample_to_treatment[sample] == treatment:
+            if treatment and not self._sample_to_treatment[
+                                     sample] == treatment:
                 continue
             matching_samples.append(sample)
 
@@ -447,6 +447,19 @@ class TargetedDesign(ExperimentalDesign):
 
     def get_mark(self, sample: str) -> str:
         return self._sample_to_mark[sample]
+
+    def get_file_to_control(self, files: List[Path],
+                            control_id: str = 'IgG') -> Dict[Path, Path]:
+        file_to_control = {}
+        for bam in files:
+            sample = bam.name.split('_')[1]
+            treatment = self.get_treatment(sample)
+            control = self.find_in_files(files,
+                                         treatments=[treatment],
+                                         marks=[control_id], num_expected=1)[
+                0]
+            file_to_control[bam] = control
+        return file_to_control
 
     def get_marks(self, samples: List[str] = None) -> List[str]:
         if not samples:
@@ -491,7 +504,6 @@ class TargetedDesign(ExperimentalDesign):
             raise ValueError("More files found than specified")
 
         return valid_files
-
 
     def __str__(self) -> str:
         def pretty_dict(dic: Dict[str, Any]) -> str:
