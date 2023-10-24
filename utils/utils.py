@@ -128,11 +128,19 @@ class ExperimentalDesign:
     def get_condition(self, sample: str) -> str:
         return self._sample_to_condition[sample]
 
-    def get_samples(self, condition: str = None) -> List[str]:
-        if not condition:
-            return copy(self._samples)
-        else:
-            return self._condition_to_samples[condition]
+    def get_samples(self, condition: str = None,
+                    rep: int = None) -> List[str]:
+
+        matching_samples = []
+        for sample in self._samples:
+
+            if condition and self._sample_to_condition[sample] == condition:
+                continue
+            if rep and not self._sample_to_rep_number[sample] == rep:
+                continue
+            matching_samples.append(sample)
+
+        return matching_samples
 
     def get_conditions(self) -> List[str]:
         return copy(self._conditions)
@@ -384,6 +392,30 @@ class ExperimentalDesign:
 
         return groups
 
+    def find_in_files(self, files: List[Path],
+                      samples: List[str] = None,
+                      conditions: List[str] = None,
+                      reps: List[int] = None) -> List[Path]:
+        valid_files = []
+        for file in files:
+            sample = file.name.split('_')[1]
+
+            if sample not in self._samples:
+                raise ValueError(f'{sample} in {file.name} is not a valid sample.')
+
+            cond = self._sample_to_condition[sample]
+            rep = self._sample_to_rep_number[sample]
+
+            valid_sample = not samples or sample in samples
+            valid_cond = not conditions or cond in conditions
+            valid_rep = not reps or rep in reps
+
+            if valid_rep and valid_cond and valid_sample:
+                valid_files.append(file)
+        return valid_files
+
+
+
 
 class TargetedDesign(ExperimentalDesign):
 
@@ -404,15 +436,10 @@ class TargetedDesign(ExperimentalDesign):
                     rep: int = None) -> List[str]:
 
         matching_samples = []
-        for sample in self._samples:
-
-            if condition and self._sample_to_condition[sample] == condition:
-                continue
+        for sample in super().get_samples(condition, rep):
             if mark and not self._sample_to_mark[sample] == mark:
                 continue
             if treatment and not self._sample_to_treatment[sample] == treatment:
-                continue
-            if rep and not self._sample_to_rep_number[sample] == rep:
                 continue
             matching_samples.append(sample)
 
@@ -433,6 +460,32 @@ class TargetedDesign(ExperimentalDesign):
         if not samples:
             samples = self.get_samples()
         return [self.get_treatment(sample) for sample in samples]
+
+    def find_in_files(self, files: List[Path],
+                      samples: List[str] = None,
+                      conditions: List[str] = None,
+                      reps: List[int] = None,
+                      marks: List[str] = None,
+                      treatments: List[str] = None) -> List[Path]:
+        valid_files = []
+
+        super_valid = super().find_in_files(files=files, samples=samples,
+                                            conditions=conditions, reps=reps)
+        for file in super_valid:
+            sample = file.name.split('_')[1]
+
+            if sample not in self._samples:
+                raise ValueError(
+                    f'{sample} in {file.name} is not a valid sample.')
+            mark = self.get_mark(sample)
+            treat = self.get_treatment(sample)
+
+            valid_mark = not marks or mark in marks
+            valid_treat = not treatments or treat in treatments
+
+            if valid_mark and valid_treat:
+                valid_files.append(file)
+        return valid_files
 
 
     def __str__(self) -> str:
