@@ -455,7 +455,7 @@ class TargetedDesign(ExperimentalDesign):
             sample = bam.name.split('_')[1]
 
             if self.get_mark(sample) == control_id:
-                pass
+                continue
             treatment = self.get_treatment(sample)
             control = self.find_in_files(files,
                                          treatments=[treatment],
