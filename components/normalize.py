@@ -23,7 +23,7 @@ def subtract_background(bams: List[Path],
         control = bam_to_control[bam]
 
         control_sample = control.name.split('_')[1]
-        outfile = out_dir / (bam.name[:-4] + 'sub' + control_sample + '.bw')
+        outfile = out_dir / (bam.name[:-4] + '.sub' + control_sample + '.bw')
 
         cmd = cmdify(
             "bamCompare",
