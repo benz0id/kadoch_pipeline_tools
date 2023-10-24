@@ -453,10 +453,14 @@ class TargetedDesign(ExperimentalDesign):
         file_to_control = {}
         for bam in files:
             sample = bam.name.split('_')[1]
+
+            if self.get_mark(sample) == control_id:
+                pass
             treatment = self.get_treatment(sample)
             control = self.find_in_files(files,
                                          treatments=[treatment],
-                                         marks=[control_id], num_expected=1)[
+                                         marks=[control_id],
+                                         num_expected=1)[
                 0]
             file_to_control[bam] = control
         return file_to_control
