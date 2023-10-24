@@ -524,6 +524,11 @@ class TargetedDesign(ExperimentalDesign):
             f'=== Sample: Treatment ===\n' \
             f'{pretty_dict(self._sample_to_treatment)}\n'
 
+    def remove_sample(self, sample: str) -> None:
+        super().remove_sample(sample)
+        del self._sample_to_mark[sample]
+        del self._sample_to_treatment[sample]
+
 
 def convert_to_targeted(design: ExperimentalDesign, mark_slice: slice,
                         treatment_slice: slice) -> TargetedDesign:
