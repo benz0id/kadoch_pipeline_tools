@@ -16,7 +16,8 @@ def subtract_background(bams: List[Path],
 
     bam_to_control = design.get_file_to_control(bams, control_id)
 
-    print(bam_to_control)
+    for bam in bam_to_control:
+        print(bam.name, bam_to_control[bam].name)
 
     cmds = []
     outfiles = []
