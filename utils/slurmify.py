@@ -425,21 +425,28 @@ class Slurmifier(JobBuilder, Observer):
         """
 
         if not any([thread.is_alive() for thread in self._active_threads]):
-            print('No active threads - continuing.')
             self._array_mode_active = False
             return
         t = PRINT_WAITING_FOR_EVERY
 
-        while any([thread.is_alive() for thread in self._active_threads]):
+        alive = []
+        for thread in self._active_threads:
+            if thread.is_alive():
+                alive.append(thread)
+        while alive:
             sleep(SLURMIFIER_WAIT_INTERVAL)
             t -= SLURMIFIER_WAIT_INTERVAL
 
-            if t <= 0:
-                print('\n\nWaiting for:')
-                for thread in self._active_threads:
-                    if thread.is_alive():
-                        print('\t', thread)
-                t = PRINT_WAITING_FOR_EVERY
+            completed = []
+
+            for thread in alive:
+                if not thread.is_alive():
+                    alive.remove(thread)
+                    completed.append(thread)
+
+            if completed:
+                for thread in completed:
+                    print('Complete: ',  str(thread))
 
         print('All threads complete.')
 
