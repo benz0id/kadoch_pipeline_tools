@@ -104,8 +104,6 @@ def generate_pca_plot(counts_matrix_path: Path,
                                  for i in range(1, pcs.shape[1] + 1)])
     pcdf['samples'] = samples
 
-    if verbose:
-        print(pcdf)
 
     if colour_groups == 'by_condition':
         pcdf['labels'] = conds
@@ -116,6 +114,9 @@ def generate_pca_plot(counts_matrix_path: Path,
         pcdf['labels'] = colour_groups
     if isinstance(shape_groups, list):
         pcdf['reps'] = shape_groups
+
+    if verbose:
+        print(pcdf)
 
     props = pca.explained_variance_ratio_ * 100
 
