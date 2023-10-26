@@ -103,6 +103,9 @@ def generate_pca_plot(counts_matrix_path: Path,
                         columns=['principal component ' + str(i)
                                  for i in range(1, pcs.shape[1] + 1)])
 
+    if verbose:
+        print(pcdf)
+
     if colour_groups == 'by_condition':
         pcdf['labels'] = conds
     if shape_groups == 'by_rep':
