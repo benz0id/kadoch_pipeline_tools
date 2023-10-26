@@ -241,7 +241,7 @@ class ExperimentalDesign:
             conditions = [conditions]
 
         for condition in conditions:
-            samples = self.get_samples(condition)
+            samples = self.get_samples(conditions=conditions)
             for sample in samples:
                 self.remove_sample(sample)
 
@@ -562,6 +562,8 @@ def convert_to_targeted(design: ExperimentalDesign, mark_slice: slice,
                         treatment_slice: slice) -> TargetedDesign:
     """
     Converts the given experimental design into a targeted design.
+    :param treatment_slice:
+    :param mark_slice:
     :param design: An experimental design. Cannot be an instance of Targetted
         design.
     :return: TargetedDesign
