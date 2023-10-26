@@ -4,10 +4,14 @@ from typing import List, Tuple
 from utils.path_manager import cmdify
 from utils.utils import TargetedDesign
 
-DEFAULT_SUBSTRACT = '--operation subtract ' \
-                    '-bs 50 ' \
-                    '--smoothLength 600 ' \
-                    '--samFlagInclude 64'
+DEFAULT_SUBSTRACT = ' '.join(
+    [
+        '--operation "subtract" ',
+        '-bs "40" ',
+        '--normalizeUsing "CPM" ',
+        '--scaleFactorsMethod "None" ',
+        '--exactScaling '
+    ])
 
 
 def subtract_background(bams: List[Path],
@@ -16,7 +20,6 @@ def subtract_background(bams: List[Path],
                         args: str = DEFAULT_SUBSTRACT,
                         control_id: str = 'IgG',
                         num_cores: int = 1) -> Tuple[List[str], List[Path]]:
-
     bam_to_control = design.get_file_to_control(bams, control_id)
 
     cmds = []
