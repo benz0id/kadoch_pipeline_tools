@@ -128,17 +128,26 @@ class ExperimentalDesign:
     def get_condition(self, sample: str) -> str:
         return self._sample_to_condition[sample]
 
-    def get_samples(self, condition: str = None,
-                    rep: int = None) -> List[str]:
+    def get_samples(self, conditions: List[str] = None,
+                    reps: List[int] = None,
+                    num_expected: int = None) -> List[str]:
 
         matching_samples = []
         for sample in self._samples:
 
-            if condition and self._sample_to_condition[sample] == condition:
+            if conditions and \
+                    self._sample_to_condition[sample] not in conditions:
                 continue
-            if rep and not self._sample_to_rep_number[sample] == rep:
+            if reps and \
+                    self._sample_to_rep_number[sample] not in reps:
                 continue
             matching_samples.append(sample)
+
+        if num_expected and len(matching_samples) != num_expected:
+            f_str = '\t\n' + '\t\n'.join([s + ' - ' + self._sample_to_condition[s]
+                                          for s in matching_samples])
+            raise ValueError(f"Unexpected number of files found,"
+                             f" {len(matching_samples)} != {num_expected} {f_str}")
 
         return matching_samples
 
@@ -198,7 +207,7 @@ class ExperimentalDesign:
         sample_to_sample_id = {}
 
         for condition in self._conditions:
-            samples = sorted(self.get_samples(condition))
+            samples = sorted(self.get_samples(conditions=[condition]))
             date_string = self._sample_to_sample_id[samples[0]][:8]
 
             # Split sample that have already been merged to maintain order.
@@ -395,7 +404,8 @@ class ExperimentalDesign:
     def find_in_files(self, files: List[Path],
                       samples: List[str] = None,
                       conditions: List[str] = None,
-                      reps: List[int] = None) -> List[Path]:
+                      reps: List[int] = None,
+                      num_expected: int = None) -> List[Path]:
         valid_files = []
         for file in files:
             sample = file.name.split('_')[1]
@@ -413,6 +423,11 @@ class ExperimentalDesign:
 
             if valid_rep and valid_cond and valid_sample:
                 valid_files.append(file)
+
+        if num_expected and len(valid_files) != num_expected:
+            f_str = '\t\n' + '\t\n'.join([f.name for f in valid_files])
+            raise ValueError(f"Unexpected number of files found,"
+                             f" {len(valid_files)} != {num_expected} {f_str}")
         return valid_files
 
 
@@ -429,19 +444,26 @@ class TargetedDesign(ExperimentalDesign):
         self._sample_to_mark = copy(sample_to_mark)
         self._sample_to_treatment = copy(sample_to_treatment)
 
-    def get_samples(self, condition: str = None,
-                    mark: str = None,
-                    treatment: str = None,
-                    rep: int = None) -> List[str]:
+    def get_samples(self, conditions: str = None,
+                    marks: str = None,
+                    treatments: str = None,
+                    reps: int = None,
+                    num_expected: int = None) -> List[str]:
 
         matching_samples = []
-        for sample in super().get_samples(condition, rep):
-            if mark and not self._sample_to_mark[sample] == mark:
+        for sample in super().get_samples(conditions=conditions, reps=reps):
+            if marks and self._sample_to_mark[sample] not in marks:
                 continue
-            if treatment and not self._sample_to_treatment[
-                                     sample] == treatment:
+            if treatments and not self._sample_to_treatment[
+                                     sample] not in treatments:
                 continue
             matching_samples.append(sample)
+
+        if num_expected and len(matching_samples) != num_expected:
+            f_str = '\t\n' + '\t\n'.join([s + ' - ' + self._sample_to_condition[s]
+                                          for s in matching_samples])
+            raise ValueError(f"Unexpected number of files found,"
+                             f" {len(matching_samples)} != {num_expected} {f_str}")
 
         return matching_samples
 
@@ -504,8 +526,10 @@ class TargetedDesign(ExperimentalDesign):
             if valid_mark and valid_treat:
                 valid_files.append(file)
 
-        if num_expected and len(valid_files) != num_expected:
-            raise ValueError("More files found than specified")
+        if n and len(valid_files) != n:
+            f_str = '\t\n' + '\t\n'.join([f.name for f in valid_files])
+            raise ValueError(f"Unexpected number of files found,"
+                             f" {len(valid_files)} != {n} {f_str}")
 
         return valid_files
 
