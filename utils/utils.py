@@ -526,10 +526,10 @@ class TargetedDesign(ExperimentalDesign):
             if valid_mark and valid_treat:
                 valid_files.append(file)
 
-        if n and len(valid_files) != n:
+        if num_expected and len(valid_files) != num_expected:
             f_str = '\t\n' + '\t\n'.join([f.name for f in valid_files])
             raise ValueError(f"Unexpected number of files found,"
-                             f" {len(valid_files)} != {n} {f_str}")
+                             f" {len(valid_files)} != {num_expected} {f_str}")
 
         return valid_files
 
