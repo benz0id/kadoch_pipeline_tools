@@ -102,6 +102,7 @@ def generate_pca_plot(counts_matrix_path: Path,
     pcdf = pd.DataFrame(data=pcs,
                         columns=['principal component ' + str(i)
                                  for i in range(1, pcs.shape[1] + 1)])
+    pcdf['samples'] = samples
 
     if verbose:
         print(pcdf)
