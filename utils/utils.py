@@ -746,6 +746,8 @@ def align_to_strs(to_align: Union[List[str], List[Path]],
     mapping between each of to_align and strs, returns files ordered by
     strs.
 
+    Does not consider contents of files past the first '.'.
+
     Note: There must be a one to one mapping between <strs> and <to_align>,
         where each of <to_align> contains one of <strs> as a substring.
 
@@ -773,7 +775,7 @@ def align_to_strs(to_align: Union[List[str], List[Path]],
         for i, p_to_align in enumerate(to_align):
             # Convert from path to string if necessary.
             if isinstance(p_to_align, Path):
-                s_to_align = p_to_align.name
+                s_to_align = p_to_align.name.split('.')[0]
             elif isinstance(p_to_align, str):
                 s_to_align = p_to_align
             else:
