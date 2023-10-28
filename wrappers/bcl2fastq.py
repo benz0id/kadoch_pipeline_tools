@@ -114,7 +114,7 @@ class Demultiplexer(ProgramWrapper):
             '--runfolder-dir', sequencing_dir,
             '--output-dir', output_dir,
             '--sample-sheet', sample_sheet_path,
-            "--ignore-missing-bcls",
+            # "--ignore-missing-bcls",
             "--no-lane-splitting",
             "--barcode-mismatches \"1,1\"",
             *optionals
