@@ -94,11 +94,12 @@ def retro_fetch_align_results(fastqs: List[Path], alignment_dir: Path,
 
     # Extract sample names from fastqs.
     sample_ids = []
+    samples = []
     for fastq in fastqs:
         name = fastq.name
         sample_name = '_'.join(name.split('_')[0:3])
-        print(sample_name)
         sample_ids.append(sample_name)
+        samples.append(name.split('_')[1])
     sample_ids = sorted(sample_ids)
 
     # Copy all matching sequencing result folders over.
@@ -123,8 +124,8 @@ def retro_fetch_align_results(fastqs: List[Path], alignment_dir: Path,
         cmds.extend(copy_to_cmds(res.stats,
                                  get_matching_files(
                                      alignment_dir / 'stats_storage_atac',
-                                     sample_ids,
-                                     containing=True, paths=True),
+                                     samples,
+                                     containing=True, paths=True, verbose=True),
                                  avoid_recopy=True))
 
     random.shuffle(cmds)

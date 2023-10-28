@@ -58,7 +58,7 @@ analysis_exists <- function(ref_condition, compare_cond, geneset,
   results_dir_contents <- list.files(containing_path)
   analysis_regex <- paste0(c(ref_condition, '_vs_', compare_cond, '_', geneset, '.Gsea'), collapse = '')
   results_filename <- results_dir_contents[grepl(analysis_regex, results_dir_contents)]
-  print(results_filename)
+  # print(results_filename)
   
   # Ensure that the correct number of file names were found.
   return(length(results_filename) != 0)
@@ -101,22 +101,41 @@ get_matching_file <- function(dir, patt){
 #' @export
 #'
 #' @examples
+
+ref_condition <- "empty" 
+compare_cond <- "WT" 
+genesets <- "c5.go.bp"
+
+
 get_gsea_results <- function(ref_condition, compare_cond, genesets){
-  
+  print(ref_condition)
+  print(compare_cond)
+  print(genesets)
   analysis_path <- get_analysis_path(ref_condition, compare_cond, genesets)
   
   # Extract results by combining positively and negatively enriched genes.
   pos_path <- get_matching_file(analysis_path, 'gsea_report_for_na_pos.*.tsv')
   neg_path <- get_matching_file(analysis_path, 'gsea_report_for_na_neg.*.tsv')
+  print(pos_path)
   
-  pos_df <- read.delim(pos_path, header=TRUE, sep='\t')
-  neg_df <- read.delim(neg_path, header=TRUE, sep='\t')
+  pos_df <- read.table(pos_path, header=TRUE, sep='\t')
+  neg_df <- read.table(neg_path, header=TRUE, sep='\t')
   
   results <- rbind(pos_df, neg_df)
   
+  dud_rows <- results$NES == '---'
+  if (length(dud_rows) != 0){
+    results$NES[dud_rows] <- 0
+    results$NOM.p.val[dud_rows] <- 1
+  }
+
+  
+  results$ES <- as.numeric(results$ES)
+  results$NES <- as.numeric(results$NES)
+  
   # Make sure that we have the expected number of gene sets.
   gene_sets_path <- file.path(analysis_path, 'edb', 'gene_sets.gmt')
-  expected_num_gene_sets <- R.utils::countLines(gene_sets_path)
+  expected_num_gene_sets <- R.utils::countLines(gene_sets_path)[[1]]
   
   if (nrow(results) != expected_num_gene_sets){
     stop(paste0(c(as.character(expected_num_gene_sets - nrow(results)),
@@ -548,6 +567,12 @@ get_mapping <- function(a, b){
 #' @export
 #'
 #' @examples
+
+results <- geneset_results
+n <- 50
+max_fdr <- 0.05
+sort_by <- 'fdr'
+
 get_enrichment_heatmap <- function(results,
                                    n=50,
                                    max_fdr=0.05,
@@ -589,9 +614,7 @@ get_enrichment_heatmap <- function(results,
   if (any(sort_by == 'fdr')){
     min_fdrs <- min_fdrs[gt_threshold]
     nes_matrix <- nes_matrix[order(min_fdrs, decreasing = FALSE),]
-  } 
-  
-  else if (sort_by == 'delta_nes'){
+  } else if (sort_by == 'delta_nes'){
     
     get_delta <- function(x){
       s <- 0
@@ -609,8 +632,9 @@ get_enrichment_heatmap <- function(results,
   }
   nes_matrix <- nes_matrix[1:min(c(n, nrow(nes_matrix))), ]
   
-  heatmap_col = circlize::colorRamp2(c(min(nes_matrix), 0, 
-                                       max(nes_matrix)), c("blue", "white", "red"))
+  b <- max((abs(c(min(nes_matrix), max(nes_matrix)))))
+  
+  heatmap_col = circlize::colorRamp2(c(-b, 0, b, c("blue", "white", "red"))
   
   
   heatmap <- ComplexHeatmap::Heatmap(nes_matrix,
