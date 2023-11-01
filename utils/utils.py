@@ -444,10 +444,10 @@ class TargetedDesign(ExperimentalDesign):
         self._sample_to_mark = copy(sample_to_mark)
         self._sample_to_treatment = copy(sample_to_treatment)
 
-    def get_samples(self, conditions: str = None,
-                    marks: str = None,
-                    treatments: str = None,
-                    reps: int = None,
+    def get_samples(self, conditions: List[str] = None,
+                    marks: List[str] = None,
+                    treatments: List[str] = None,
+                    reps: List[int] = None,
                     num_expected: int = None) -> List[str]:
 
         matching_samples = []

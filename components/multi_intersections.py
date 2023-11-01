@@ -205,7 +205,7 @@ class MultiIntersector:
                                    identifiers: List[str],
                                    output_dir: Path,
                                    merge: bool = True,
-                                   verbose = False) -> Dict[str, int]:
+                                   verbose: bool = False) -> Dict[str, int]:
         """
         Gets the possible exclusive set combinations of the given
         bedfiles, essentially giving all section of a venn diagram as peaks
