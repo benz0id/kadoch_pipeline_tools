@@ -454,7 +454,7 @@ class TargetedDesign(ExperimentalDesign):
         for sample in super().get_samples(conditions=conditions, reps=reps):
             if marks and self._sample_to_mark[sample] not in marks:
                 continue
-            if treatments and not self._sample_to_treatment[
+            if treatments and self._sample_to_treatment[
                                      sample] not in treatments:
                 continue
             matching_samples.append(sample)
