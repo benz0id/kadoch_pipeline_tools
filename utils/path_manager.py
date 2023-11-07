@@ -199,14 +199,11 @@ class PathManager:
             p1 = filepath.parent
             p2 = p1.parent
 
-            out_dir = self.make(PIPELINE_BACKUP_DIR / p2)
-            out_dir = self.make(out_dir / p1)
+            out_dir = self.make(PIPELINE_BACKUP_DIR / p2.name)
+            out_dir = self.make(out_dir / p1.name)
 
             if filetype in types_to_backup:
                 shutil.copy(filepath, out_dir / file)
-
-
-
 
 
     def add_basic_info(self, sequencing_results_name: str,
