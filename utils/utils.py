@@ -327,7 +327,7 @@ class ExperimentalDesign:
         f_found = False
         r_found = False
         for file in fastqs:
-            tail = file.name.split('.')[0].split('_')[-2]
+            tail = file.name.split('.')[0].split('_')[-2:]
             if "R1" in tail:
                 f_found = True
             elif "R2" in tail:
