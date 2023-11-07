@@ -83,13 +83,14 @@ class ExperimentalDesign:
         else:
             self._sample_to_rep_number = copy(sample_to_rep_number)
 
-    def remove_str(self, s: str, samples: List[str] = None) -> None:
+    def remove_str(self, s: str, samples: List[str] = None, pos=None) -> None:
         """
         Removes the given string from all attributes associated with the
         given samples.
         :param s: The string to be removed
         :param samples: The samples to remove the given string from. All
             samples by default.
+        :param pos: Only remove <s> if it occurs at <pos> after splitting by '_'.
         """
         if not samples:
             samples = self._samples
@@ -100,8 +101,17 @@ class ExperimentalDesign:
 
         while conditions:
             condition = conditions.pop()
-            pruned_condition = condition.replace(s, '')
-            pruned_condition = pruned_condition.replace('__', '_')
+            while condition in conditions:
+                conditions.remove(condition)
+
+            if pos is not None:
+                components = condition.split('_')
+                if s == components[pos]:
+                    components.pop(pos)
+                pruned_condition = '_'.join(components)
+            else:
+                pruned_condition = condition.replace(s, '')
+                pruned_condition = pruned_condition.replace('__', '_')
 
             if pruned_condition[0] == '_':
                 pruned_condition = pruned_condition[1:]

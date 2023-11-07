@@ -21,7 +21,6 @@ get_analysis_path <- function(ref_condition, compare_cond, genesets,
   results_dir_contents <- list.files(containing_path)
   analysis_regex <- paste0(c(ref_condition, '_vs_', compare_cond, '_', genesets, '.Gsea'), collapse = '')
   results_filename <- results_dir_contents[grepl(analysis_regex, results_dir_contents)]
-  print(results_filename)
   
   # Ensure that the correct number of file names were found.
   if (length(results_filename) == 0){
@@ -58,7 +57,6 @@ analysis_exists <- function(ref_condition, compare_cond, geneset,
   results_dir_contents <- list.files(containing_path)
   analysis_regex <- paste0(c(ref_condition, '_vs_', compare_cond, '_', geneset, '.Gsea'), collapse = '')
   results_filename <- results_dir_contents[grepl(analysis_regex, results_dir_contents)]
-  # print(results_filename)
   
   # Ensure that the correct number of file names were found.
   return(length(results_filename) != 0)
@@ -102,21 +100,14 @@ get_matching_file <- function(dir, patt){
 #'
 #' @examples
 
-ref_condition <- "empty" 
-compare_cond <- "WT" 
-genesets <- "c5.go.bp"
 
 
-get_gsea_results <- function(ref_condition, compare_cond, genesets){
-  print(ref_condition)
-  print(compare_cond)
-  print(genesets)
-  analysis_path <- get_analysis_path(ref_condition, compare_cond, genesets)
+get_gsea_results <- function(ref_condition, compare_cond, genesets, gsea_out_dir = 'gsea_out'){
+  analysis_path <- get_analysis_path(ref_condition, compare_cond, genesets, parent_dir=gsea_out_dir)
   
   # Extract results by combining positively and negatively enriched genes.
   pos_path <- get_matching_file(analysis_path, 'gsea_report_for_na_pos.*.tsv')
   neg_path <- get_matching_file(analysis_path, 'gsea_report_for_na_neg.*.tsv')
-  print(pos_path)
   
   pos_df <- read.table(pos_path, header=TRUE, sep='\t')
   neg_df <- read.table(neg_path, header=TRUE, sep='\t')
@@ -176,6 +167,10 @@ fetch_rank_list <- function(ref_condition, treat_condition, out_dir='output'){
 #' @param gsea_out_dir The output directory containing all of the GSEA results.
 #' This directory must only contain directories containing GSEA results.
 #' 
+#' @param comparisons A list of character vectors formatted 
+#'  c(<control>, <treatment). Only these DE comparisons will be fetched from the
+#'  <gsea_out_dir>.
+#' 
 #'  |gsea_out_dir
 #'  |--- Genesets 1
 #'  |  |--- GSEA Result from Condition 1
@@ -198,39 +193,98 @@ fetch_rank_list <- function(ref_condition, treat_condition, out_dir='output'){
 #'|  |--- GSEA Result from Condition 1
 #'|  |--- GSEA Result from Condition 2
 #'|--- h.all
-#'|  |--- D81WT_vs_D81A_h.all
-#'|  |--- D81WT_vs_D81N_h.all
+#'|  |--- D81WT_vs_D81A
+#'|  |--- D81WT_vs_D81N
 #' 
 #' Where each GSEA result contains the values reported in the for both of
 #' gsea_report_for_neg_.tsv and gsea_report_for_pos_.tsv.
 #' 
 #' The <reference>_<comparison>_<genesets> name order is important for 
 #' downstream interpretation.
-#' 
-#' 
-get_all_gsea_results <- function(gsea_out_dir='gsea_out', verbose=TRUE){
+get_all_gsea_results <- function(gsea_out_dir='gsea_out', 
+                                 comparisons_to_fetch=NA, 
+                                 verbose=TRUE,
+                                 add_dummys=FALSE){
   
   all_gsea_results <- list()
   for (gs_dir in list.files(gsea_out_dir)){
     
-    print(paste0(c('|--\t', gs_dir), collapse=''))
+    cat(paste0(c('|--\t', gs_dir, '\n'), collapse=''))
     all_gsea_results[[gs_dir]] <- list()
     
     res_path <- file.path(gsea_out_dir, gs_dir)
-    for (gsea_res in list.files(res_path)){
-      print(gsea_res)
+    
+    # Fetch only the specified comparisons.
+    if (! is.list(comparisons_to_fetch)){
+      for (gsea_res in list.files(res_path)){
+        components <- partition_comparison_name(gsea_res)
+        analysis_name <- paste0(c(components[1], '_vs_', components[2]), collapse = '')
+        
+        all_gsea_results[[gs_dir]][[analysis_name]] <- get_gsea_results(components[1],
+                                                       components[2],
+                                                       components[3], gsea_out_dir=gsea_out_dir)
+        
+        n_res <- nrow(all_gsea_results[[gs_dir]][[analysis_name]])
+        
+        cat(paste('|\t|--\t', analysis_name, '\t - ', n_res, '\n', collapse=''))
+      }
       
-      components <- partition_comparison_name(gsea_res)
-      
-      all_gsea_results[[gs_dir]][[gsea_res]] <- get_gsea_results(components[1],
-                                                     components[2],
-                                                     components[3])
-      
-      analysis_name <- paste0(c(components[1], '_vs_', components[2], '_',
-                                components[3]), collapse = '')
-      print(paste0(c('|\t|--\t', analysis_name), collapse=''))
+    # Fetch only the specified comparisons.
+    } else {
+      for (comparison in comparisons_to_fetch){
+        components <- c(comparison, gs_dir)
+        analysis_name <- paste0(c(components[1], '_vs_', components[2]), collapse = '')
+        
+        all_gsea_results[[gs_dir]][[analysis_name]] <- get_gsea_results(components[1],
+                                                                        components[2],
+                                                                        components[3],
+                                                                        gsea_out_dir=gsea_out_dir)
+        n_res <- nrow(all_gsea_results[[gs_dir]][[analysis_name]])
+        
+        cat(paste('|\t|--\t', analysis_name, '\t - ', n_res, '\n', collapse=''))
+      }
     }
   }
+  
+  
+  if(add_dummys){
+    print('!!! Adding dummy rows !!!.')
+    # Add dummy negative results for genesets that weren't analysed.
+    for (i in seq_along(all_gsea_results)){
+      results <- all_gsea_results[[i]]
+      genesets <- c()
+      # Collect all genesets
+      for (j in seq_along(results)){
+        comparison <- results[[j]]
+        genesets <- unique(c(genesets, unlist(comparison$NAME)))
+      }
+      
+      
+      for (j in seq_along(results)){
+        comparison <- results[[j]]
+        missing_genesets <- genesets[! (genesets %in% comparison$NAME)]
+        
+        if (length(missing_genesets) == 0){
+          next
+        }
+        
+        new_rows <- data.frame(NAME=missing_genesets,
+                               GS.br..follow.link.to.MSigDB='untested',
+                               GS.DETAILS='untested',
+                               SIZE=0,
+                               ES=0,
+                               NES=0,
+                               NOM.p.val=1,
+                               FDR.q.val=1,
+                               FWER.p.val=1,
+                               RANK.AT.MAX=0,
+                               LEADING.EDGE='untested',
+                               X=NA)
+        all_gsea_results[[i]][[j]] <- rbind(all_gsea_results[[i]][[j]], new_rows)
+      }
+    }
+  }
+  
   return(all_gsea_results)
 }
 
@@ -242,12 +296,17 @@ get_all_gsea_results <- function(gsea_out_dir='gsea_out', verbose=TRUE){
 #' @return Length 3 named character vector with components equal to  <ref_cond>, 
 #' <compare_cond>, and <geneset>.
 #' 
-partition_comparison_name <- function(gsea_result_name){
-  s1 <- unlist(strsplit(gsea_result_name, '.Gsea'))
-  s2 <- unlist(strsplit(s1[1], '_'))
-  genesets <- s2[length(s2)]
+partition_comparison_name <- function(gsea_result_name, geneset=TRUE){
+  if (geneset){
+    s1 <- unlist(strsplit(gsea_result_name, '.Gsea'))
+    s2 <- unlist(strsplit(s1[1], '_'))
+    genesets <- s2[length(s2)]
+    s3 <- paste0(s2[-length(s2)], collapse='_')
+  } else {
+    s3 <- gsea_result_name
+    genesets <- NA
+  }
   
-  s3 <- paste0(s2[-length(s2)], collapse='_')
   s4 <- unlist(strsplit(s3, '_vs_'))
   ref_cond <- s4[1]
   compare_cond <- s4[2]
@@ -485,8 +544,6 @@ get_gsea_collapsed_rank_list <- function(ref_condition, compare_cond, genesets){
   
   analysis_path <- get_analysis_path(ref_condition, compare_cond, genesets)
   
-  print(analysis_path)
-  
   hyphen_title <- paste0(c(ref_condition, '-', compare_cond), collapse = '')
   
   collapsed_rank_path <- file.path(analysis_path, 'edb',
@@ -548,7 +605,7 @@ get_mapping <- function(a, b){
 # === Figure Generation ===
 
 
-#' Produce a Heatmap Visualising the Gene Set Enrichment REsults
+#' Produce a Heatmap Visualising the Gene Set Enrichment Results
 #'
 #' @param results A list of GSEA results, where each entry corresponds to the
 #' concatentation of gsea_report_for_na_pos.tsv and 
@@ -568,15 +625,16 @@ get_mapping <- function(a, b){
 #'
 #' @examples
 
-results <- geneset_results
-n <- 50
-max_fdr <- 0.05
-sort_by <- 'fdr'
+# results <- geneset_results
+# n <- 50
+# max_fdr <- 0.05
+# sort_by <- 'fdr'
 
 get_enrichment_heatmap <- function(results,
                                    n=50,
                                    max_fdr=0.05,
-                                   sort_by=c('fdr', 'delta_nes')){
+                                   sort_by=c('fdr', 'variance'),
+                                   manual_scale=c(0, 0)){
   num_gs <- nrow(results[[1]])
   gs_names <- unlist(results[[1]][1])
   
@@ -608,47 +666,93 @@ get_enrichment_heatmap <- function(results,
   # Filter by FDR threshold.
   min_fdrs <- apply(fdr_matrix, 1, min)
   gt_threshold <- min_fdrs < max_fdr
-  nes_matrix <- nes_matrix[gt_threshold,]
   
-  # Sort by fdr or delta NES.
+  nes_matrix <- nes_matrix[gt_threshold,]
+  min_fdrs <- min_fdrs[gt_threshold]
+  names_matrix <- names_matrix[gt_threshold,]
+  
+  # Sort by fdr or variance.
+  geneset_order <- seq(1, nrow(nes_matrix))
   if (any(sort_by == 'fdr')){
-    min_fdrs <- min_fdrs[gt_threshold]
-    nes_matrix <- nes_matrix[order(min_fdrs, decreasing = FALSE),]
-  } else if (sort_by == 'delta_nes'){
-    
-    get_delta <- function(x){
-      s <- 0
-      for(i in 1:(length(x) - 1)){
-        for(j in (i + 1):length(x)){
-          s <- s + abs(x[i] - x[j])
-        }
-      }
-      return(s)
-    }
-    
-    deltas <- apply(nes_matrix, 1, get_delta)
-    nes_matrix <- nes_matrix[order(deltas, decreasing = TRUE),]
-    
+    geneset_order <- order(min_fdrs, decreasing = FALSE)
+  } else if (sort_by == 'variance'){
+    geneset_order <- order(apply(nes_matrix, 1, var), decreasing=TRUE)
+  } else if (sort_by == 'none'){
+    # Keep default order
+  } else {
+    stop('Unrecognised sorting method')
   }
+  
+  nes_matrix <- nes_matrix[geneset_order,]
   nes_matrix <- nes_matrix[1:min(c(n, nrow(nes_matrix))), ]
   
-  b <- max((abs(c(min(nes_matrix), max(nes_matrix)))))
+  if (all(manual_scale == 0)){
+    b <- max((abs(c(min(nes_matrix), max(nes_matrix)))))
+    scale <- c(-b, 0, b)
+  } else {
+    if (max(nes_matrix) > manual_scale[2]){
+      stop(paste('Provided scale is not broad enough:', max(nes_matrix), '>', manual_scale[2]))
+    }
+    if (min(nes_matrix) < manual_scale[1]){
+      stop(paste('Provided scale is not broad enough:', min(nes_matrix), '<', manual_scale[1]))
+    }
+    scale <- c(manual_scale[1], 0, manual_scale[2])
+  }
   
-  heatmap_col = circlize::colorRamp2(c(-b, 0, b, c("blue", "white", "red"))
+  heatmap_col = circlize::colorRamp2(scale, c("blue", "white", "red"))
   
   
   heatmap <- ComplexHeatmap::Heatmap(nes_matrix,
                                      show_row_dend = FALSE, show_column_dend = FALSE, 
                                      col=heatmap_col, show_column_names = TRUE, 
-                                     show_row_names = TRUE,show_heatmap_legend = TRUE, 
-                                     use_raster=TRUE, row_names_side='left',
+                                     show_row_names = TRUE,
+                                     ,show_heatmap_legend = TRUE
+                                     , row_names_side='left',
                                      name='NES', row_names_max_width = unit(15, 'cm'),
                                      cluster_columns = FALSE)
+  
   return(heatmap)
 }
 
 
 
+#' Write out all GSEA Results as TSV files into a Directory
+#' 
+#' Writes the GSEA results stored as dataframes within the lists nested within
+#' <all_results> out as tsv files into the given directory.
+#' 
+#' @param all_results A list of lists of the structure described as in the 
+#'  function *get_all_gsea_results*.
+#'  
+#' @param directory Path to an existing directory.
+#'  
+#' 
+write_out_gsea_results <- function(all_results, directory){
+  if (! dir.exists(directory)){
+    stop("Provided crectory does not exist.")
+  }
+  
+  for (i in seq_along(all_results)){
+    geneset_name <- names(all_results)[i]
+    geneset_results <- all_results[[i]]
+    
+    dir_name <- gsub('\\.', '_', geneset_name)
+    geneset_dir <- paste0(directory, '/', dir_name, sep='')
+    
+    if (! dir.exists(geneset_dir)){
+      dir.create(geneset_dir)
+    }
+    
+    for (j in seq_along(geneset_results)){
+      name <- names(geneset_results)[j]
+      results <- geneset_results[[j]]
+      
+      out_file_name <- paste0(geneset_dir, '/', name, '.tsv', sep='')
+      
+      write.table(results, out_file_name, sep='\t')
+    }
+  }
+}
 
 
 #' Generate a Bubble-Lattice Plot Displaying GSEA Results
@@ -684,7 +788,7 @@ bubble_lattice_plot <- function(all_results,
     comparison_results <- all_results[[genesets]]
     
     for (comparison in names(comparison_results)){
-      parts <- partition_comparison_name(comparison)
+      parts <- partition_comparison_name(comparison, geneset=FALSE)
       reference <- parts[['reference_cond']]
       compare <- parts[['compare_cond']]
       
@@ -709,7 +813,6 @@ bubble_lattice_plot <- function(all_results,
         is_sig <- fdr < fdr_threshold
         
         new_row <- c(comparison, geneset, nes, is_sig)
-        print(new_row)
         
         formatted_results <- rbind(formatted_results, new_row)
       }
@@ -719,6 +822,11 @@ bubble_lattice_plot <- function(all_results,
   colnames(formatted_results) <- c("DataSet", "GeneSet", "NES", "isSig")
   
   formatted_results$NES <- as.numeric(formatted_results$NES)
+  
+  
+  formatted_results$DataSet <- factor(formatted_results$DataSet, 
+                                      levels=unique(formatted_results$DataSet),
+                                      ordered=TRUE)
   
   library(colorspace)
   library(RColorBrewer)

@@ -194,7 +194,7 @@ fill, colours=NULL){
   
   if (! is.factor(groups)){
     groups <- factor(groups, ordered = TRUE,
-                           levels=rev(unique(groups)))
+                           levels=unique(groups))
   }
   
   counts_df <- data.frame(label=value_labels, bars=values, group=groups)
@@ -343,7 +343,7 @@ tmm_normalize <- function(raw_counts, groups, num_desc_columns, show_factors=TRU
 # compare_cond <- treatment
 # logfc_threshold <- logfc_threshold
 # n_info_cols <- 1
-
+# num_names <- 5
 
 
 logfc_MA_plot <- function(expression_data, groups, reference_cond, compare_cond,
@@ -378,7 +378,9 @@ logfc_MA_plot <- function(expression_data, groups, reference_cond, compare_cond,
   ave_expression$fac <- abs(as.numeric(ave_expression$logfc))
   outlier_rank <- order(ave_expression$fac, decreasing = TRUE)
   most_interesting <- outlier_rank[seq(len=num_names)]
-  ave_expression$delabel[most_interesting] <- ave_expression$gene_name[most_interesting]
+  if (num_names > 0){
+    ave_expression$delabel[most_interesting] <- ave_expression$gene_name[most_interesting]
+  }
   
   # Include requested genes in the plot.
   if (! is.null(genes_to_show)){
@@ -416,6 +418,49 @@ logfc_MA_plot <- function(expression_data, groups, reference_cond, compare_cond,
     theme(legend.position = 'none')
   
   return(plt)
+}
+
+#' Get the Log Fold Change Between Groups
+#' 
+#' @param expression_data A dataframe contianing gene expression data.
+#' 
+#' @param groups A character vector containing the treatment groups which each 
+#'  data column in expression_data belongs to.
+#'  
+#' @param reference_cond The string name of the reference condition. Genes 
+#'  marked as down regulated are enriched in this condition.
+#'    
+#' @param compare_cond The string name of the comparison condition. Genes marked
+#'  as up regulted are enriched in this condition.
+#'  
+#' 
+#' 
+#' 
+get_logfc_df <- function(expression_data, groups, reference_cond, compare_cond,
+                   logfc_threshold, n_info_cols=1, filter=TRUE){
+  
+  # Extract average expression.
+  ref_cols <- which(groups == reference_cond) + n_info_cols
+  mean_ref_expr <- rowSums(expression_data[ref_cols]) / 
+    rep(length(ref_cols), nrow(expression_data))
+  
+  compare_cols <- which(groups == compare_cond) + n_info_cols
+  mean_compare_expr <- rowSums(expression_data[compare_cols]) / 
+    rep(length(compare_cols), nrow(expression_data))
+  
+  ave_expression <- data.frame(gene_name=expression_data$gene_name,
+                               ref_exp=mean_ref_expr, 
+                               comp_exp=mean_compare_expr)
+  
+  ave_expression$logfc <- log2(mean_compare_expr / mean_ref_expr)
+  ave_expression$logFC <- ave_expression$logfc
+  
+  if (filter){
+    infs <- ave_expression$logfc == -Inf | ave_expression$logfc == Inf
+    ave_expression <- ave_expression[!infs,]
+  }
+  
+  return(ave_expression)
 }
 
 
@@ -859,7 +904,9 @@ volcano <- function(de_gene_list, logfc_threshold, sig_threshold, reference_cond
   de_gene_data$fac <- abs(as.numeric(de_gene_data$logFC)) * - log2(as.numeric(de_gene_data$adj.P.Val))
   outlier_rank <- order(de_gene_data$fac, decreasing = TRUE)
   most_interesting <- outlier_rank[seq(1, num_names)]
-  de_gene_data$delabel[most_interesting] <- de_gene_data$gene_name[most_interesting]
+  if (num_names > 0){
+    de_gene_data$delabel[most_interesting] <- de_gene_data$gene_name[most_interesting]
+  }
   
   # Include requested genes in the plot.
   if (! is.null(genes_to_show)){
