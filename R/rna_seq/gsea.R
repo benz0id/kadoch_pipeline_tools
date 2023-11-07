@@ -102,8 +102,8 @@ get_matching_file <- function(dir, patt){
 
 
 
-get_gsea_results <- function(ref_condition, compare_cond, genesets){
-  analysis_path <- get_analysis_path(ref_condition, compare_cond, genesets)
+get_gsea_results <- function(ref_condition, compare_cond, genesets, gsea_out_dir = 'gsea_out'){
+  analysis_path <- get_analysis_path(ref_condition, compare_cond, genesets, parent_dir=gsea_out_dir)
   
   # Extract results by combining positively and negatively enriched genes.
   pos_path <- get_matching_file(analysis_path, 'gsea_report_for_na_pos.*.tsv')
@@ -222,7 +222,7 @@ get_all_gsea_results <- function(gsea_out_dir='gsea_out',
         
         all_gsea_results[[gs_dir]][[analysis_name]] <- get_gsea_results(components[1],
                                                        components[2],
-                                                       components[3])
+                                                       components[3], gsea_out_dir=gsea_out_dir)
         
         n_res <- nrow(all_gsea_results[[gs_dir]][[analysis_name]])
         
@@ -237,7 +237,8 @@ get_all_gsea_results <- function(gsea_out_dir='gsea_out',
         
         all_gsea_results[[gs_dir]][[analysis_name]] <- get_gsea_results(components[1],
                                                                         components[2],
-                                                                        components[3])
+                                                                        components[3],
+                                                                        gsea_out_dir=gsea_out_dir)
         n_res <- nrow(all_gsea_results[[gs_dir]][[analysis_name]])
         
         cat(paste('|\t|--\t', analysis_name, '\t - ', n_res, '\n', collapse=''))
@@ -295,12 +296,17 @@ get_all_gsea_results <- function(gsea_out_dir='gsea_out',
 #' @return Length 3 named character vector with components equal to  <ref_cond>, 
 #' <compare_cond>, and <geneset>.
 #' 
-partition_comparison_name <- function(gsea_result_name){
-  s1 <- unlist(strsplit(gsea_result_name, '.Gsea'))
-  s2 <- unlist(strsplit(s1[1], '_'))
-  genesets <- s2[length(s2)]
+partition_comparison_name <- function(gsea_result_name, geneset=TRUE){
+  if (geneset){
+    s1 <- unlist(strsplit(gsea_result_name, '.Gsea'))
+    s2 <- unlist(strsplit(s1[1], '_'))
+    genesets <- s2[length(s2)]
+    s3 <- paste0(s2[-length(s2)], collapse='_')
+  } else {
+    s3 <- gsea_result_name
+    genesets <- NA
+  }
   
-  s3 <- paste0(s2[-length(s2)], collapse='_')
   s4 <- unlist(strsplit(s3, '_vs_'))
   ref_cond <- s4[1]
   compare_cond <- s4[2]
@@ -782,7 +788,7 @@ bubble_lattice_plot <- function(all_results,
     comparison_results <- all_results[[genesets]]
     
     for (comparison in names(comparison_results)){
-      parts <- partition_comparison_name(comparison)
+      parts <- partition_comparison_name(comparison, geneset=FALSE)
       reference <- parts[['reference_cond']]
       compare <- parts[['compare_cond']]
       
@@ -816,6 +822,11 @@ bubble_lattice_plot <- function(all_results,
   colnames(formatted_results) <- c("DataSet", "GeneSet", "NES", "isSig")
   
   formatted_results$NES <- as.numeric(formatted_results$NES)
+  
+  
+  formatted_results$DataSet <- factor(formatted_results$DataSet, 
+                                      levels=unique(formatted_results$DataSet),
+                                      ordered=TRUE)
   
   library(colorspace)
   library(RColorBrewer)
