@@ -175,6 +175,8 @@ class PathManager:
         self.project_dir = working_dir
         self.configure_required_dirs()
 
+        print(__file__)
+
     def add_basic_info(self, sequencing_results_name: str,
                        sample_sheet_name: str) -> None:
         """
