@@ -424,6 +424,7 @@ class PeakPCAAnalyser:
         ncol = len(counts_files)
 
         counts_array = np.zeros((nrow, ncol), dtype=float)
+        sites = np.empty(nrow, dtype=str)
 
         parsed_col_names = []
 
@@ -459,6 +460,12 @@ class PeakPCAAnalyser:
 
                 contig, start, stop, count = vals
                 counts_array[j, i] = int(count)
+
+                site = f'{contig}:{start}-{stop}'
+
+                if not sites[j]:
+                    sites[j] = site
+
 
         # Normalise to cpms if bam files are provided.
         if bams_to_normalise_to:
