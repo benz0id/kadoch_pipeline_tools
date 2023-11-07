@@ -5,6 +5,8 @@ from datetime import datetime
 from pathlib import Path
 import logging
 from typing import List, Union
+from constants.data_paths import PIPELINE_BACKUP_DIR
+
 
 
 def quotes(s: Union[str, Path]) -> str:
@@ -174,8 +176,38 @@ class PathManager:
         self.verbose = verbose
         self.project_dir = working_dir
         self.configure_required_dirs()
+        self.backup_scripts()
 
-        print(__file__)
+    def backup_scripts(self) -> None:
+        """
+        Copies a backup of all scripts in the working directory to the backup
+        directory.
+        :return:
+        """
+        types_to_backup = [
+            'Rmd',
+            'R',
+            'sh',
+            'py'
+        ]
+
+        files = os.listdir(self.project_dir)
+        for file in files:
+            filepath = self.project_dir / file
+            filetype = file.split('.')[-1]
+
+            p1 = filepath.parent
+            p2 = p1.parent
+
+            out_dir = self.make(PIPELINE_BACKUP_DIR / p2)
+            out_dir = self.make(out_dir / p1)
+
+            if filetype in types_to_backup:
+                shutil.copy(filepath, out_dir / file)
+
+
+
+
 
     def add_basic_info(self, sequencing_results_name: str,
                        sample_sheet_name: str) -> None:
