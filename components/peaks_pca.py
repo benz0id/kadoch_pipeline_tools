@@ -130,7 +130,7 @@ def generate_pca_plot(counts_matrix_path: Path,
         if colour_groups != None:
             kwargs['hue'] = 'labels'
             kwargs['palette'] = \
-                sns.color_palette('colorblind',
+                sns.color_palette('bright',
                                   len(pcdf['labels']))
         if shape_groups != None:
             kwargs["style"] = 'reps'
@@ -138,8 +138,8 @@ def generate_pca_plot(counts_matrix_path: Path,
         ax = sns.scatterplot(**kwargs)
 
         ax.set(title=title,
-               xlabel='PC%d:%.2f%%' % (1, props[i]),
-               ylabel='PC%d:%.2f%%' % (2, props[j])
+               xlabel=f'PC{i + 1}:{props[i]: .2f}',
+               ylabel=f'PC{j + 1}:{props[j]: .2f}'
                )
         filename = ''.join(['pc', str(i + 1), '_vs_', 'pc',
                             str(j + 1) + '.svg'])
