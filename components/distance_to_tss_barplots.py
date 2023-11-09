@@ -107,10 +107,10 @@ class DistanceToTSS:
 
         os.chdir(temp_dir.parent)
         cmd = cmdify("perl $soft/getDistanceToTSSmatrix.pl",
-                     str(temp_dir) + '/',
+                     '"', str(temp_dir) + '/"',
                      tmpfile_name,
                      "\n",
-                     'mv', tmpfile_name, distance_to_tss_tsv)
+                     'mv', temp_dir / tmpfile_name, distance_to_tss_tsv)
         self._jobs.execute_lazy(cmd)
         self._jobs.execute_lazy(cmdify('rm -r', temp_dir))
 
