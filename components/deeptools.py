@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import List, Callable
 
-from utils.fetch_files import get_unique_filename
+from utils.fetch_files import get_unique_filename, outpath_to_dirname
 from utils.job_formatter import JobBuilder, ExecParams, Runtime
 from utils.job_manager import JobManager
 from utils.path_manager import cmdify, PathManager
@@ -46,22 +46,20 @@ def generate_bed_matrix(beds: List[Path], bigwigs: List[Path],
                            builder=builder)
 
     one_core = ExecParams(max_runtime=Runtime(0, 0, 30),
-                           num_cores=1,
-                           ram_per_core=1048,
-                           builder=builder)
-
-    to_remove = []
+                          num_cores=1,
+                          ram_per_core=1048,
+                          builder=builder)
 
     matrix_files = []
+
+    tmp_dir = path_manager.purgeable_files_dir / outpath_to_dirname(out_path)
 
     # Calculate submatrices.
     start_array()
     for i, bedfile in enumerate(beds):
         matrix_files.append([])
         for j, bigwig in enumerate(bigwigs):
-            tmp = path_manager.purgeable_files_dir / (get_unique_filename() + 'tmp.gz')
-            to_remove.append(tmp)
-
+            tmp = tmp_dir / f'{j}.{i}.tmp.gz'
             cmd = cmdify(
                 "computeMatrix",
                 "reference-point",
@@ -97,8 +95,7 @@ def generate_bed_matrix(beds: List[Path], bigwigs: List[Path],
             cols.append(col[0])
             continue
 
-        tmp_col = path_manager.purgeable_files_dir / (
-                    get_unique_filename() + '.gz')
+        tmp_col = tmp_dir / (f'col_{i}.gz')
 
         cmd = cmdify(
             "computeMatrixOperations rbind",
@@ -108,7 +105,6 @@ def generate_bed_matrix(beds: List[Path], bigwigs: List[Path],
         jobs.execute(cmd, one_core)
         cols.append(tmp_col)
 
-        to_remove.append(tmp_col)
     stop_array()
 
     # Combine rows.
@@ -120,6 +116,3 @@ def generate_bed_matrix(beds: List[Path], bigwigs: List[Path],
     )
     stop_array()
     jobs.execute(cmd, one_core)
-
-
-

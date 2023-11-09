@@ -3,7 +3,8 @@ from copy import copy
 from pathlib import Path
 from typing import Callable, List, Dict
 
-from utils.fetch_files import get_matching_files, get_unique_filename
+from utils.fetch_files import get_matching_files, get_unique_filename, \
+    outpath_to_dirname
 from utils.job_formatter import ExecParams
 from utils.job_manager import JobManager
 from utils.path_manager import PathManager, cmdify
@@ -96,7 +97,7 @@ class DistanceToTSS:
             the distance to the nearest TSS for each bed in
             <nearest_gene_beds_dir>.
         """
-        temp_dir = self._paths.purgeable_files_dir / get_unique_filename()
+        temp_dir = self._paths.purgeable_files_dir / outpath_to_dirname(distance_to_tss_tsv)
         self._jobs.execute_lazy(cmdify('mkdir', temp_dir))
         self._jobs.execute_lazy(cmdify('cp', *nearest_gene_beds, temp_dir))
 

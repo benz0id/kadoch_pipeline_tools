@@ -173,3 +173,12 @@ def get_unique_filename() -> str:
     return str(uuid.uuid4())
 
 
+def outpath_to_dirname(path: Path) -> str:
+    """
+    Create a name for an output directory based on some filepath.
+    :param path: Path to a file.
+    :return:
+    """
+    return str(path).replace('/', '.')
+
+
