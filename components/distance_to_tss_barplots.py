@@ -86,8 +86,7 @@ class DistanceToTSS:
         return [out_dir / out_file.name for out_file in out_files]
 
     def make_distance_to_tss_tsv(self, nearest_gene_beds: List[Path],
-                                 distance_to_tss_tsv: Path,
-                                 tmpfile_name: str = None) -> None:
+                                 distance_to_tss_tsv: Path) -> None:
         """
         Creates a distance to TSS tsv containing the distance to TSS stats
         for each of the beds in nearest_gene_beds_dir.
@@ -101,13 +100,8 @@ class DistanceToTSS:
         self._jobs.execute_lazy(cmdify('mkdir', temp_dir))
         self._jobs.execute_lazy(cmdify('cp', *nearest_gene_beds, temp_dir))
 
-        if not tmpfile_name:
-            tmpfile_name = distance_to_tss_tsv.name + '.tmp'
         cmd = cmdify("perl $soft/getDistanceToTSSmatrix.pl",
-                     str(temp_dir) + '/',
-                     tmpfile_name,
-                     "\n",
-                     'mv', temp_dir / tmpfile_name, distance_to_tss_tsv)
+                     str(temp_dir) + '/', distance_to_tss_tsv)
         self._jobs.execute_lazy(cmd)
 
     def generate_tss_barplot(self, bed_to_bar_name: Dict[Path, str],
