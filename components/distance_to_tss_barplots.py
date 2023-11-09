@@ -75,12 +75,10 @@ class DistanceToTSS:
         beds = get_matching_files(beds_dir, [".*\.bed$"], paths=True)
         out_files = [beds_dir / (str(bed)[:-4] + ".nearestGene.txt")
                      for bed in beds]
-        os.chdir(beds_dir.parent)
         cmd = cmdify("perl $soft/addNearestGeneToBED.pl",
                      "$soft/hg19.ensembl.genebody.protein_coding.txt",
                      str(beds_dir) + '/')
         self._jobs.execute_lazy(cmd, self._med_job)
-        os.chdir(self._paths.project_dir)
 
         self._jobs.execute_lazy(cmdify('mv', *out_files, out_dir))
 
@@ -104,8 +102,6 @@ class DistanceToTSS:
 
         if not tmpfile_name:
             tmpfile_name = distance_to_tss_tsv.name + '.tmp'
-
-        os.chdir(temp_dir.parent)
         cmd = cmdify("perl $soft/getDistanceToTSSmatrix.pl",
                      '"', str(temp_dir) + '/"',
                      tmpfile_name,
@@ -113,8 +109,6 @@ class DistanceToTSS:
                      'mv', temp_dir / tmpfile_name, distance_to_tss_tsv)
         self._jobs.execute_lazy(cmd)
         self._jobs.execute_lazy(cmdify('rm -r', temp_dir))
-
-        os.chdir(self._paths.project_dir)
 
     def generate_tss_barplot(self, bed_to_bar_name: Dict[Path, str],
                              storage_dir: Path,
