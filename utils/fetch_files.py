@@ -177,8 +177,12 @@ def outpath_to_dirname(path: Path) -> str:
     """
     Create a name for an output directory based on some filepath.
     :param path: Path to a file.
-    :return:
+    :return: A unique directory name based on the input <path>
     """
-    return str(path).replace('/', '.')
+    out = str(path).replace('/', '.')
+
+    if len(out) > 255:
+        raise ValueError("Directory names cannot exceed 255 characters.")
+    return out
 
 
