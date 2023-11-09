@@ -104,7 +104,7 @@ class DistanceToTSS:
         if not tmpfile_name:
             tmpfile_name = distance_to_tss_tsv.name + '.tmp'
         cmd = cmdify("perl $soft/getDistanceToTSSmatrix.pl",
-                     '"', str(temp_dir) + '/"',
+                     str(temp_dir) + '/',
                      tmpfile_name,
                      "\n",
                      'mv', temp_dir / tmpfile_name, distance_to_tss_tsv)
