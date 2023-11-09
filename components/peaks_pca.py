@@ -114,7 +114,10 @@ def generate_pca_plot(counts_matrix_path: Path,
         pcdf['reps'] = shape_groups
 
     if verbose:
-        print(pcdf.iloc[:,-3:])
+        print(pcdf.iloc[:, -3:])
+
+    logger.info((f'PCA Dataframe: for {counts_matrix_path}:' + '\n' +
+                 str(pcdf)))
 
     props = pca.explained_variance_ratio_ * 100
 
