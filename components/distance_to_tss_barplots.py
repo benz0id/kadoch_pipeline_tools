@@ -108,7 +108,6 @@ class DistanceToTSS:
                      "\n",
                      'mv', temp_dir / tmpfile_name, distance_to_tss_tsv)
         self._jobs.execute_lazy(cmd)
-        self._jobs.execute_lazy(cmdify('rm -r', temp_dir))
 
     def generate_tss_barplot(self, bed_to_bar_name: Dict[Path, str],
                              storage_dir: Path,
