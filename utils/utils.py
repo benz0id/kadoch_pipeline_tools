@@ -1,6 +1,6 @@
 from copy import copy
 from pathlib import Path
-from typing import List, Dict, Union, Any
+from typing import List, Dict, Union, Any, Tuple
 
 from sample_sheet import SampleSheet
 
@@ -410,6 +410,51 @@ class ExperimentalDesign:
                 raise ValueError("Could not find match for" + str(file))
 
         return groups
+
+    def subset_design(self, matching: List[Tuple[int, str]] = None,
+                      not_matching: List[Tuple[int, str]] = None,
+                      include_default: bool = False):
+        """
+        Returns a subset of this design with the containing or not containing,
+        the given strings at the positions given in <matching> and
+        <not_matching>, respectively.
+        :param matching: After splitting each condition by '_', must contain
+            at least one of <str> at position <int> in order to be included.
+        :param not_matching: After splitting each condition by '_', must not
+            contain any of <str> at position <int> in order to be included.
+        :param include_default: Whether samples should be included by default.
+        :return: A design with the selected samples.
+        """
+
+        if not matching:
+            matching = []
+
+        if not not_matching:
+            not_matching = []
+
+        to_inc = []
+
+        for sample in self._samples:
+            cond = self.get_condition(sample)
+            components = cond.split('_')
+            inc = include_default
+
+            for i, s in matching:
+                if s in components[i]:
+                    inc = True
+
+            for i, s in not_matching:
+                if s in components[i]:
+                    inc = False
+
+            if inc:
+                to_inc.append(sample)
+
+        to_rem = set(self._samples) - set(to_inc)
+        subset = copy(self)
+        for sample in to_rem:
+            subset.remove_sample(sample)
+        return subset
 
     def find_in_files(self, files: List[Path],
                       samples: List[str] = None,
