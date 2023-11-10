@@ -131,6 +131,9 @@ class DistanceToTSS:
         distance_to_tss_tsv = storage_dir / 'distance_to_tss.tsv'
         self.make_distance_to_tss_tsv(aug_beds, distance_to_tss_tsv)
 
+        with open(distance_to_tss_tsv, 'r') as infile:
+            lines = infile.readlines()[1:]
+
         if not figure_out_path:
             figure_out_path = storage_dir / 'out.svg'
         print(*bed_to_bar_name.values())

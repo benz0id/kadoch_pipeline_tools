@@ -7,7 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Union
 
-from utils.path_manager import cmdify
+from utils.path_manager import cmdify, PathManager
 
 logger = logging.getLogger(__name__)
 
@@ -184,5 +184,37 @@ def outpath_to_dirname(path: Path) -> str:
     if len(out) > 255:
         raise ValueError("Directory names cannot exceed 255 characters.")
     return out
+
+
+def extract_figs(org_dir: Path, new_dir: Path, path_manager: PathManager,
+                 filetypes: List[str] = None, cmds: List[str] = None) -> List[str]:
+    """
+    Copy all figures of <filetypes> from <org_dir> to a mirror directory in <new_dir>.
+    :param org_dir: The original directory.
+    :param new_dir: The new directory to be created. Will have the exact same
+        file structure as org_dir, but containing only files with one of
+        <filetypes>.
+    :param path_manager: Path manager to aid with directory creation.
+    :param filetypes: The filetypes to copy.
+    :param cmds: Used for passing commands recursively. Can be ignored.
+    :return:
+    """
+    if not filetypes:
+        filetypes = ['pdf', 'svg', 'tiff', 'png', 'jpg', 'jpeg']
+    if not cmds:
+        cmds = []
+
+    for f in os.listdir(org_dir):
+        sub_org = org_dir / f
+        ext = f.split('.')[-1]
+
+        if sub_org.is_dir():
+            sub_new = new_dir / f
+            extract_figs(sub_org, sub_new, path_manager, filetypes, cmds)
+        elif ext in filetypes:
+            new_dir = path_manager.make(new_dir)
+            cmds.extend(copy_to_cmds(new_dir, [sub_org]))
+
+    return cmds
 
 
