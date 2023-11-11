@@ -428,7 +428,7 @@ class PeakPCAAnalyser:
         ncol = len(counts_files)
 
         counts_array = np.zeros((nrow, ncol), dtype=float)
-        sites = np.empty(nrow, dtype=str)
+        sites = [''] * nrow
         site_lens = np.zeros(nrow, dtype=float)
 
         parsed_col_names = []
