@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 def merge_fastqs_grouped(grouped_fastqs: List[List[Path]],
                          group_conditions: List[str], group_reps: List[str],
                          out_dir: Path,
+                         tail_string: str = None,
                          verbose: bool = False) -> Tuple[List[str], List[Path]]:
     """
     For each group of fastq files in <grouped_fastqs>, combine all fastqs in
@@ -28,6 +29,9 @@ def merge_fastqs_grouped(grouped_fastqs: List[List[Path]],
         that group.
     :param out_dir: The directory into which the combined fastqs will be
         placed.
+
+    :param tail: The string to append after the read string. Often '001' or '004'.
+    
     :return: A list of commands that would result in the creation of fastqs in
         the <out_dir> and a list of the resultant filepaths.
     """
@@ -47,6 +51,11 @@ def merge_fastqs_grouped(grouped_fastqs: List[List[Path]],
 
     i = 1
     get_pe_identifier = {}
+
+    if not tail_string:
+            tail_str = ''
+    else:
+        tail_str = '_' + tail_string
 
     for group, condition, rep in group_info:
         if (condition, rep) not in get_pe_identifier:
@@ -83,7 +92,7 @@ def merge_fastqs_grouped(grouped_fastqs: List[List[Path]],
         read_dirs = [str(f).split('.')[0].split('_')[-2] for f in group]
 
         out_filename = '0MERGED0_' + '-'.join(samples) + '_' + \
-                       condition + rep_str + id_str + read_str + \
+                       condition + rep_str + id_str + read_str + tail_str +\
                        '.fastq.gz'
         if verbose:
             print(samples_names, read_dirs, str(condition), str(rep), '\t->\t',

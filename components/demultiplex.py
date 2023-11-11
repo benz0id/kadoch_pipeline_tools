@@ -36,7 +36,7 @@ def demult_and_fastqc(sample_sheet: Path, sequencing_results: Path,
         only contain raw output fastqs if this return is to be valid.
     """
 
-    model = get_model_from_sample_sheet(sample_sheet)
+    design = get_model_from_sample_sheet(sample_sheet)
 
     demult = Demultiplexer(path_manager)
     heavy_job = ExecParams(max_runtime=(0, 1, 0), num_cores=16,
@@ -53,7 +53,7 @@ def demult_and_fastqc(sample_sheet: Path, sequencing_results: Path,
     jobs_manager.execute_lazy(cmd, heavy_job)
 
     # === FastQC ===
-    fastqs = get_matching_files(path_manager.fastqs_dir, model.get_samples(),
+    fastqs = get_matching_files(path_manager.fastqs_dir, design.get_samples(),
                                 ['Undetermined'], containing=True, paths=True)
 
     qc = FastQC()
