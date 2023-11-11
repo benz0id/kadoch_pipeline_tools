@@ -371,7 +371,8 @@ class PeakPCAAnalyser:
                            matrix_out_path: Path,
                            counts_names: List[str] = None,
                            bams_to_normalise_to: List[Path] = None,
-                           add_sites_col: bool = False) -> np.array:
+                           add_sites_col: bool = False,
+                           normalise_by_site_len: bool = False) -> np.array:
         """
         Aggreagates all the counts in the given counts files into a single
         matrix
@@ -428,6 +429,7 @@ class PeakPCAAnalyser:
 
         counts_array = np.zeros((nrow, ncol), dtype=float)
         sites = np.empty(nrow, dtype=str)
+        site_lens = np.zeros(nrow, dtype=float)
 
         parsed_col_names = []
 
@@ -468,8 +470,9 @@ class PeakPCAAnalyser:
 
                 if not sites[j]:
                     sites[j] = site
+                    site_lens[j] = abs(stop - start)
 
-        # Normalise to cpms if bam files are provided.
+        # Normalize to RPMs if bam files are provided.
         if bams_to_normalise_to:
             norm_factors = self.get_number_of_mapped_reads(parsed_col_names,
                                                            bams_to_normalise_to)
@@ -477,6 +480,11 @@ class PeakPCAAnalyser:
                 fac = norm_factors[col]
                 column = counts_array[:, col]
                 counts_array[:, col] = column / fac * 10 ** 6
+
+        # Normalize to RPKMs.
+        if normalise_by_site_len:
+            site_len_factors = 1 / site_lens * 1000
+            counts_array = (counts_array.T / site_len_factors).T
 
         # Write out matrix
         with open(matrix_out_path, 'w') as outfile:
@@ -549,7 +557,8 @@ class PeakPCAAnalyser:
                        counts_files=counts_files,
                        matrix_out_path=matrix_path,
                        bams_to_normalise_to=bams_to_normalise_to,
-                       add_sites_col=True)
+                       add_sites_col=True,
+                       normalise_by_site_len=True)
         self._jobs.execute_lazy(pj)
 
         args = (matrix_path, experimental_design, analysis_dir, 4)
