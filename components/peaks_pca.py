@@ -470,7 +470,7 @@ class PeakPCAAnalyser:
 
                 if not sites[j]:
                     sites[j] = site
-                    site_lens[j] = abs(stop - start)
+                    site_lens[j] = abs(int(stop) - int(start))
 
         # Normalize to RPMs if bam files are provided.
         if bams_to_normalise_to:
