@@ -370,8 +370,8 @@ class PeakPCAAnalyser:
     def make_counts_matrix(self, counts_files: List[Path],
                            matrix_out_path: Path,
                            counts_names: List[str] = None,
-                           bams_to_normalise_to: List[
-                               Path] = None) -> np.array:
+                           bams_to_normalise_to: List[Path] = None,
+                           add_sites_col: bool = False) -> np.array:
         """
         Aggreagates all the counts in the given counts files into a single
         matrix
@@ -469,7 +469,6 @@ class PeakPCAAnalyser:
                 if not sites[j]:
                     sites[j] = site
 
-
         # Normalise to cpms if bam files are provided.
         if bams_to_normalise_to:
             norm_factors = self.get_number_of_mapped_reads(parsed_col_names,
@@ -479,12 +478,19 @@ class PeakPCAAnalyser:
                 column = counts_array[:, col]
                 counts_array[:, col] = column / fac * 10 ** 6
 
+        # Write out matrix
         with open(matrix_out_path, 'w') as outfile:
+
+            if add_sites_col:
+                parsed_col_names.insert(0, 'Sites')
             outfile.write('\t'.join(parsed_col_names) + '\n')
 
             for row_num in range(nrow):
-                outfile.write('\t'.join(
-                    [str(val) for val in counts_array[row_num, :]]) + '\n')
+                row = [str(val) for val in counts_array[row_num, :]]
+                if add_sites_col:
+                    row.insert(0, sites[row_num])
+
+                outfile.write('\t'.join(row) + '\n')
         if failed:
             raise ValueError("Counts files of invalid lengths.")
         return counts_array
@@ -542,12 +548,13 @@ class PeakPCAAnalyser:
         pj = PythonJob('make ' + str(matrix_path), [], self.make_counts_matrix,
                        counts_files=counts_files,
                        matrix_out_path=matrix_path,
-                       bams_to_normalise_to=bams_to_normalise_to)
+                       bams_to_normalise_to=bams_to_normalise_to,
+                       add_sites_col=True)
         self._jobs.execute_lazy(pj)
 
         args = (matrix_path, experimental_design, analysis_dir, 4)
         pj = PythonJob('Generate PCA figures' + str(args[-2:]), [],
-                       generate_pca_plot, *args)
+                       generate_pca_plot, *args, n_info_cols=1)
         self._jobs.execute_lazy(pj)
 
         self._idx_stats = old_idx
