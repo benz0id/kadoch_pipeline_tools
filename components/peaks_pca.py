@@ -310,7 +310,8 @@ class PeakPCAAnalyser:
 
     def bam_to_bed(self, bams: List[Path], out_dir: Path,
                    filter_pe: bool = True, sort: bool = True,
-                   threads: int = 1, mem: int = 1048) -> \
+                   threads: int = 1, mem: int = 1048,
+                   paired_end: bool = True) -> \
             Tuple[List[str], List[Path]]:
         """
         Convert the given bam files into bed files. Place these files into
@@ -326,6 +327,7 @@ class PeakPCAAnalyser:
         files.
         :param threads: The number of threads to spawn when parallelizing.
         :param mem: Max memory usage to use, in MB.
+        :param paired_end: Whether to expect paired end input.
         :return: Commands to create beds, paths to created beds.
         """
         out_beds = []
@@ -333,12 +335,18 @@ class PeakPCAAnalyser:
 
         sort_str = ''
         filter_arg = ''
+        pe_str = ''
         if sort:
             # Half of total memory, divided among threads.
             mem_per = mem / 2 / threads
             sort_str = f'| samtools sort -@ {threads} -m {mem_per}M -nu'
         if filter_pe:
             filter_arg = '-f 0x2'
+        if paired_end:
+            pe_str = '-bedpe'
+
+        if filter_pe and not paired_end:
+            raise ValueError('Requested unnecessary paired-end filter.')
 
         for bam in bams:
             out_bed_path = out_dir / (bam.name[:-4] + '.bed')
@@ -346,7 +354,7 @@ class PeakPCAAnalyser:
             cmd = cmdify(
                 'samtools view -bu', filter_arg, bam,
                 sort_str,
-                '| bedtools bamtobedpe -i stdin',
+                '| bedtools bamtobed', pe_str, '-i stdin',
                 '>', out_bed_path
             )
 
