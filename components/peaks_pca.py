@@ -4,7 +4,7 @@ import os
 import subprocess
 from copy import copy
 from pathlib import Path
-from typing import List, Callable
+from typing import List, Callable, Tuple
 
 import numpy as np
 import qnorm as qnorm
@@ -19,7 +19,6 @@ from utils.path_manager import PathManager, cmdify
 from constants.data_paths import HG19_IDXSTATS
 from utils.utils import ExperimentalDesign
 from operator import itemgetter
-import colorcet as cc
 
 import seaborn as sns
 import pandas as pd
@@ -134,16 +133,16 @@ def generate_pca_plot(counts_matrix_path: Path,
         if colour_groups != None:
             kwargs['hue'] = 'labels'
             kwargs['palette'] = \
-                sns.color_palette(cc.glasbey,
-                                  n_colors=len(pcdf['labels']))
+                sns.color_palette('bright',
+                                  len(pcdf['labels']))
         if shape_groups != None:
             kwargs["style"] = 'reps'
 
         ax = sns.scatterplot(**kwargs)
 
         ax.set(title=title,
-               xlabel=f'PC{i + 1}:{props[i]: .2f}%',
-               ylabel=f'PC{j + 1}:{props[j]: .2f}%'
+               xlabel=f'PC{i + 1}:{props[i]: .2f}',
+               ylabel=f'PC{j + 1}:{props[j]: .2f}'
                )
         filename = ''.join(['pc', str(i + 1), '_vs_', 'pc',
                             str(j + 1) + '.svg'])
@@ -308,6 +307,53 @@ class PeakPCAAnalyser:
 
         return [out_dir / count_file_name
                 for count_file_name in new_count_names]
+
+    def bam_to_bed(self, bams: List[Path], out_dir: Path,
+                   filter_pe: bool = True, sort: bool = True,
+                   threads: int = 1, mem: int = 1048) -> \
+            Tuple[List[str], List[Path]]:
+        """
+        Convert the given bam files into bed files. Place these files into
+        <out dir>.
+
+
+        Sorting will require significant ram and cpu usage.
+
+        :param bams: A list of valid bam files.
+        :param out_dir:
+        :param filter_pe: Remove improperly paired reads.
+        :param sort: Whether to sort bam files before converting them to bed
+        files.
+        :param threads: The number of threads to spawn when parallelizing.
+        :param mem: Max memory usage to use.
+        :return: Commands to create beds, paths to created beds.
+        """
+        out_beds = []
+        cmds = []
+
+        sort_str = ''
+        filter_arg = ''
+        if sort:
+            # Half of total memory, divided among threads.
+            mem_per = mem / 2 / threads
+            sort_str = f'| samtools sort -@ {threads} -m {mem_per} -nu'
+        if filter_pe:
+            filter_arg = '-f 0x2'
+
+        for bam in bams:
+            out_bed_path = out_dir / (bam.name[:-4] + '.bed')
+
+            cmd = cmdify(
+                'samtools view -bu', filter_arg, bam,
+                sort_str,
+                '| bedtools bamtobedpe -i stdin',
+                '>', out_bed_path
+            )
+
+            out_beds.append(out_bed_path)
+            cmds.append(cmd)
+
+        return cmds, out_beds
 
     def get_number_of_mapped_reads(self, sample_names: List[str],
                                    bamfiles: List[Path]) \
@@ -568,8 +614,6 @@ class PeakPCAAnalyser:
         self._jobs.execute_lazy(pj)
 
         self._idx_stats = old_idx
-
-        return matrix_path
 
 
 

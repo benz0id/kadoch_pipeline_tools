@@ -1,0 +1,84 @@
+sel /4:1027,1033,1034,1036
+sel add /X:82
+label sel residues text "{0.label_one_letter_code}{0.number}" color white bgColor grey height 0.4
+style sel stick
+color sel byhetero
+sel clear
+save "/Users/btudorpr/Desktop/grace struct stuff/lab_model_muts/WT.png" supersample 3
+swapaa /4:1027 Glu rotLib Dunbrack
+color /4:1027 byhetero
+sel /4:1027,1033,1034,1036 /X:82
+label sel residues text "{0.label_one_letter_code}{0.number}" color white bgColor grey height 0.4
+style sel stick
+color sel byhetero
+sel clear
+save "/Users/btudorpr/Desktop/grace struct stuff/lab_model_muts/K1027E.png" supersample 3
+open "/Users/btudorpr/Desktop/grace struct stuff/lab_sesh.cxs"
+swapaa /4:1033 Glu rotLib Dunbrack
+color /4:1033 byhetero
+sel /4:1027,1033,1034,1036 /X:82
+label sel residues text "{0.label_one_letter_code}{0.number}" color white bgColor grey height 0.4
+style sel stick
+color sel byhetero
+sel clear
+save "/Users/btudorpr/Desktop/grace struct stuff/lab_model_muts/K1033E.png" supersample 3
+open "/Users/btudorpr/Desktop/grace struct stuff/lab_sesh.cxs"
+swapaa /4:1036 Asp rotLib Dunbrack
+color /4:1036 byhetero
+sel /4:1027,1033,1034,1036 /X:82
+label sel residues text "{0.label_one_letter_code}{0.number}" color white bgColor grey height 0.4
+style sel stick
+color sel byhetero
+sel clear
+save "/Users/btudorpr/Desktop/grace struct stuff/lab_model_muts/M1036D.png" supersample 3
+open "/Users/btudorpr/Desktop/grace struct stuff/lab_sesh.cxs"
+swapaa /4:1036 Lys rotLib Dunbrack
+color /4:1036 byhetero
+sel /4:1027,1033,1034,1036 /X:82
+label sel residues text "{0.label_one_letter_code}{0.number}" color white bgColor grey height 0.4
+style sel stick
+color sel byhetero
+sel clear
+save "/Users/btudorpr/Desktop/grace struct stuff/lab_model_muts/M1036K.png" supersample 3
+open "/Users/btudorpr/Desktop/grace struct stuff/lab_sesh.cxs"
+swapaa /4:1036 Asn rotLib Dunbrack
+color /4:1036 byhetero
+sel /4:1027,1033,1034,1036 /X:82
+label sel residues text "{0.label_one_letter_code}{0.number}" color white bgColor grey height 0.4
+style sel stick
+color sel byhetero
+sel clear
+save "/Users/btudorpr/Desktop/grace struct stuff/lab_model_muts/M1036N.png" supersample 3
+open "/Users/btudorpr/Desktop/grace struct stuff/lab_sesh.cxs"
+swapaa /4:1034 Asp rotLib Dunbrack
+color /4:1034 byhetero
+sel /4:1027,1033,1034,1036 /X:82
+label sel residues text "{0.label_one_letter_code}{0.number}" color white bgColor grey height 0.4
+style sel stick
+color sel byhetero
+sel clear
+save "/Users/btudorpr/Desktop/grace struct stuff/lab_model_muts/T1034D.png" supersample 3
+open "/Users/btudorpr/Desktop/grace struct stuff/lab_sesh.cxs"
+swapaa /4:1034 Val rotLib Dunbrack
+color /4:1034 byhetero
+sel /4:1027,1033,1034,1036 /X:82
+label sel residues text "{0.label_one_letter_code}{0.number}" color white bgColor grey height 0.4
+style sel stick
+color sel byhetero
+sel clear
+save "/Users/btudorpr/Desktop/grace struct stuff/lab_model_muts/T1034V.png" supersample 3
+open "/Users/btudorpr/Desktop/grace struct stuff/lab_sesh.cxs"
+sel
+sel hide atoms
+swapaa /4:1034 ALA rotLib Dunbrack
+swapaa /4:1035 ALA rotLib Dunbrack
+swapaa /4:1036 ALA rotLib Dunbrack
+color /4:1034,1035,1036 byhetero
+sel /4:1034,1035,1036 /X:82
+label sel residues text "{0.label_one_letter_code}{0.number}" color white bgColor grey height 0.4
+style sel stick
+color sel byhetero
+sel show atoms
+sel clear
+save "/Users/btudorpr/Desktop/grace struct stuff/lab_model_muts/T1034V.png" supersample 3
+open "/Users/btudorpr/Desktop/grace struct stuff/lab_sesh.cxs"
