@@ -338,7 +338,7 @@ class PeakPCAAnalyser:
         pe_str = ''
         if sort:
             # Half of total memory, divided among threads.
-            mem_per = mem / 2 / threads
+            mem_per = int(mem / 2 / threads)
             sort_str = f'| samtools sort -@ {threads} -m {mem_per:d}M -nu'
         if filter_pe:
             filter_arg = '-f 0x2'
