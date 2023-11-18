@@ -52,7 +52,7 @@ def generate_bed_matrix(beds: List[Path], bigwigs: List[Path],
 
     matrix_files = []
 
-    tmp_dir = path_manager.purgeable_files_dir / outpath_to_dirname(out_path)
+    tmp_dir = path_manager.make(path_manager.purgeable_files_dir / outpath_to_dirname(out_path))
 
     # Calculate submatrices.
     start_array()
@@ -80,7 +80,7 @@ def generate_bed_matrix(beds: List[Path], bigwigs: List[Path],
                 '--sampleLabel', "'" + column_names[j] + "'",
                 '-o', tmp
             )
-            jobs.execute(cmd, four_core)
+            jobs.execute_lazy(cmd, four_core)
             matrix_files[i].append(tmp)
     stop_array()
 
@@ -102,7 +102,7 @@ def generate_bed_matrix(beds: List[Path], bigwigs: List[Path],
             '-m', *col,
             '-o', tmp_col
         )
-        jobs.execute(cmd, one_core)
+        jobs.execute_lazy(cmd, one_core)
         cols.append(tmp_col)
 
     stop_array()
@@ -115,4 +115,4 @@ def generate_bed_matrix(beds: List[Path], bigwigs: List[Path],
         '-o', out_path
     )
     stop_array()
-    jobs.execute(cmd, one_core)
+    jobs.execute_lazy(cmd, one_core)

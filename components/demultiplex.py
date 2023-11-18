@@ -54,7 +54,7 @@ def demult_and_fastqc(sample_sheet: Path, sequencing_results: Path,
 
     # === FastQC ===
     fastqs = get_matching_files(path_manager.fastqs_dir, design.get_samples(),
-                                ['Undetermined'], containing=True, paths=True)
+                                ['Undetermined'], under_delim=True, paths=True)
 
     qc = FastQC()
     jobs = qc.fast_qc_arrayed(fastqs,

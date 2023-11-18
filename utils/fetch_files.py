@@ -1,5 +1,6 @@
 import logging
 import os
+import sys
 import re
 import uuid
 from copy import copy
@@ -17,7 +18,11 @@ def get_matching_strs(strs: List[str],
                       matching: Regexes,
                       not_matching: Regexes = None,
                       containing: bool = False,
+                      under_delim: bool = False,
                       verbose: bool = False,
+                      filetype: str = None,
+                      n: int = None,
+                      one_to_one: bool = False,
                       inds: bool = False) -> Union[List[str], List[int]]:
     """
     Gets all strings in <strs> that match any of <matching> and none of
@@ -27,10 +32,14 @@ def get_matching_strs(strs: List[str],
     :param not_matching: String(s) representing regular expressions.
     :param containing: Check whether a match to regexes exists in a substring
      of each of <strs>, rather than an exact match.
+    :param under_delim: All matching strings must be wrapped contained between '_',
+       or at the start or end of the string. For use with filenames with elements
+       seperated by '_'.
     :param verbose: Whether to print information regarding the process to the
      console.
     :param inds: Whether to return the indecies of the matches rather than the
         actual matches themselves.
+    :param n: Fails unless exactly <n> matches are found.
     :return: All strings in <strs> matching <matching> and not matching
     <not_matching>.
     """
@@ -41,17 +50,32 @@ def get_matching_strs(strs: List[str],
         not_matching = [not_matching]
     if not isinstance(matching, list):
         matching = [matching]
+    
+    # Only needed if one-to-one mapping is required.
+    inds_matches = [False for _ in matching]
+
+    if under_delim:
+        matching = ['(^|_)' + regex + '(_|$)' for regex in matching]
+        not_matching = ['.*' + regex + '.*' for regex in not_matching]
 
     # Change regexes to search for matching substring.
-    if containing:
+    if containing or under_delim:
         matching = ['.*' + regex + '.*' for regex in matching]
         not_matching = ['.*' + regex + '.*' for regex in not_matching]
+
+    if filetype:
+        for i in range(len(matching)):
+            matching[i] = matching[i] + '.*' + filetype + '$'
 
     valid = []
     # Find all matching strings.
     for s in strs:
         matches = [re.match(reg, s) for reg in matching]
         matches_wanted_re = any(matches)
+
+        for i, match in enumerate(matches):
+            if one_to_one and match and inds_matches[i]:
+                raise RuntimeError(f"One-to-one mapping not found. Multiple matches found for {matching[i]}.")
 
         matches = [re.match(reg, s) for reg in not_matching]
         matches_not_wanted_re = any(matches)
@@ -79,26 +103,39 @@ def get_matching_strs(strs: List[str],
             vald_inds.append(ind)
         valid = vald_inds
 
+    if n is not None and len(valid) != n:
+        logger.debug(s)
+        print(s, file=sys.stderr)
+        raise RuntimeError(f'Unexpected number of files found. \n\tExpected: {n} \n\tFound: {len(valid)}')
+
     return valid
 
 
 def get_matching_files(directory: Path,
                        matching: Regexes,
                        not_matching: Regexes = None,
+                       filetype: str = None,
                        containing: bool = False,
+                       under_delim: bool = False,
                        paths: bool = False,
+                       n: int = None,
+                       one_to_one: bool = False,
                        verbose: bool = False) -> Union[List[str], List[Path]]:
     """
     Gets all filenames in the given <directory> that match any of <matching>
     and none of <not_matching>.
     :param directory: The directory to be searched.
     :param matching: String(s) representing regular expressions.
-    :param not_matching: String(s) representing regular expressions.
     :param paths: Whether to convert all
+    :param not_matching: String(s) representing regular expressions.
     :param containing: Check whether a match to regexes exists in a substring
      of each of <strs>, rather than an exact match.
+    :param under_delim: All matching strings must be wrapped contained between '_',
+        or at the start or end of the string. For use with filenames with elements
+        seperated by '_'.
     :param verbose: Whether to print information regarding the process to the
      console.
+    :param n: Fails unless exactly <n> matches are found.
     :return: All strings in <strs> matching <matching> and not matching
     <not_matching>.
     """
@@ -110,8 +147,12 @@ def get_matching_files(directory: Path,
     matching_files = get_matching_strs(os.listdir(directory),
                                        matching,
                                        not_matching,
-                                       containing,
-                                       verbose)
+                                       containing=containing,
+                                       under_delim=under_delim,
+                                       verbose=verbose,
+                                       filetype=filetype,
+                                       n=n,
+                                       one_to_one=one_to_one)
 
     if paths:
         matching_files = [Path(directory / match)
@@ -187,7 +228,8 @@ def outpath_to_dirname(path: Path) -> str:
 
 
 def extract_figs(org_dir: Path, new_dir: Path, path_manager: PathManager,
-                 filetypes: List[str] = None, cmds: List[str] = None) -> List[str]:
+                 filetypes: List[str] = None, cmds: List[str] = None,
+                 depth: int = 0, verbose: bool = False) -> List[str]:
     """
     Copy all figures of <filetypes> from <org_dir> to a mirror directory in <new_dir>.
     :param org_dir: The original directory.
@@ -201,8 +243,11 @@ def extract_figs(org_dir: Path, new_dir: Path, path_manager: PathManager,
     """
     if not filetypes:
         filetypes = ['pdf', 'svg', 'tiff', 'png', 'jpg', 'jpeg']
-    if not cmds:
+    if cmds is None:
         cmds = []
+
+    if verbose:
+                print('\t' * depth, org_dir.name)
 
     for f in os.listdir(org_dir):
         sub_org = org_dir / f
@@ -210,8 +255,10 @@ def extract_figs(org_dir: Path, new_dir: Path, path_manager: PathManager,
 
         if sub_org.is_dir():
             sub_new = new_dir / f
-            extract_figs(sub_org, sub_new, path_manager, filetypes, cmds)
+            extract_figs(sub_org, sub_new, path_manager, filetypes, cmds, depth + 1, verbose)
         elif ext in filetypes:
+            if verbose:
+                print('\t' * depth, sub_org.name)
             new_dir = path_manager.make(new_dir)
             cmds.extend(copy_to_cmds(new_dir, [sub_org]))
 

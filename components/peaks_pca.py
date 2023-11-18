@@ -19,6 +19,7 @@ from utils.path_manager import PathManager, cmdify
 from constants.data_paths import HG19_IDXSTATS
 from utils.utils import ExperimentalDesign
 from operator import itemgetter
+import colorcet as cc
 
 import seaborn as sns
 import pandas as pd
@@ -133,16 +134,16 @@ def generate_pca_plot(counts_matrix_path: Path,
         if colour_groups != None:
             kwargs['hue'] = 'labels'
             kwargs['palette'] = \
-                sns.color_palette('bright',
-                                  len(pcdf['labels']))
+                sns.color_palette(cc.glasbey,
+                                  n_colors=len(pcdf['labels']))
         if shape_groups != None:
             kwargs["style"] = 'reps'
 
         ax = sns.scatterplot(**kwargs)
 
         ax.set(title=title,
-               xlabel=f'PC{i + 1}:{props[i]: .2f}',
-               ylabel=f'PC{j + 1}:{props[j]: .2f}'
+               xlabel=f'PC{i + 1}:{props[i]: .2f}%',
+               ylabel=f'PC{j + 1}:{props[j]: .2f}%'
                )
         filename = ''.join(['pc', str(i + 1), '_vs_', 'pc',
                             str(j + 1) + '.svg'])
@@ -567,6 +568,8 @@ class PeakPCAAnalyser:
         self._jobs.execute_lazy(pj)
 
         self._idx_stats = old_idx
+
+        return matrix_path
 
 
 
