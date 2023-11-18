@@ -358,9 +358,9 @@ class PeakPCAAnalyser:
                 'samtools view -bu', filter_arg, bam,
                 sort_str,
                 '| bedtools bamtobed', pe_str, '-i stdin',
-                "| awk -v OFS='\t' {'print $1,$2,$6'}",
-                '>', tmp_pe_bed, '\n'
-                '| bedtools sort -i', tmp_pe_bed, '-faidx', self._idx_stats,
+                "| awk -v OFS='\t' {'print $1,$2,$6,$8,$9'}",
+                '>', tmp_pe_bed, '\n',
+                'bedtools sort -i', tmp_pe_bed, '-faidx', self._idx_stats,
                 '>', out_bed_path
             )
 
