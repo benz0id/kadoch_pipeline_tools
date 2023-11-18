@@ -11,7 +11,7 @@ import qnorm as qnorm
 from scipy.stats import stats
 
 from utils.cache_manager import CacheManager
-from utils.fetch_files import get_unique_filename
+from utils.fetch_files import get_unique_filename, outpath_to_dirname
 from sklearn.preprocessing import StandardScaler
 from utils.job_formatter import ExecParams, PythonJob
 from utils.job_manager import JobManager
@@ -256,22 +256,20 @@ class PeakPCAAnalyser:
                    '>', common_peak_out
                    ))
 
-    def generate_counts(self, bedfile: Path, bamfiles: List[Path],
+    def generate_counts(self, bedfile: Path, read_files: List[Path],
                         out_dir: Path, out_count_names: List[str] = None) \
             -> List[Path]:
         """
-        Gets the number of reads in each bamfile in <bamfiles> that lie at each
-        peak in bedfile in bedfiles.
+        Gets the number of reads in each read_files in <read_files> that lie at each
+        peak in bedfile in <bedfiles>.
 
         === Input Data Assumptions ===
-        The input bedfile and bamfiles must be sorted.
-        All input bamfiles have unique characters preceding the first '.'.
+        The input bedfile and read files must be sorted.
+        All input read files have unique characters preceding the first '.'.
 
-        :param genome_index: The genome index for use in when running the
-            intersection.
         :param bedfile: A sorted bedfile.
-        :param bamfiles: Some number of bam files aligned to the same genome
-            as the given bedfile.
+        :param read_files: Some number of bam or bed files aligned to the same
+            genome as the given bedfile.
         :param out_dir: The directory into which the counts files will be
         placed.
         :return: The paths to the output counts files.
@@ -279,22 +277,23 @@ class PeakPCAAnalyser:
 
         self._start_job_array()
         new_count_names = []
-        for i, bamfile in enumerate(bamfiles):
+        for i, read_file in enumerate(read_files):
 
             if out_count_names:
                 count_file_name = out_count_names[i]
             else:
-                count_file_name = bamfile.name.split('.')[0] + '.cnt'
+                count_file_name = read_file.name.split('.')[0] + '.cnt'
 
             if count_file_name in new_count_names:
                 raise ValueError('Count file collision detected, '
-                                 'please check the format of you input bams '
+                                 'please check the format of you input read files '
                                  'or explicitly state count file names.')
+
             self._jobs.execute_lazy(
                 cmdify(
                     'bedtools intersect',
                     '-a', bedfile,
-                    '-b', bamfile,
+                    '-b', read_file,
                     '-g', self._idx_stats,
                     '-c',
                     '-sorted',
@@ -333,6 +332,9 @@ class PeakPCAAnalyser:
         out_beds = []
         cmds = []
 
+        old_idx = self._idx_stats
+        self.update_genome_index(bams[0])
+
         sort_str = ''
         filter_arg = ''
         pe_str = ''
@@ -350,21 +352,26 @@ class PeakPCAAnalyser:
 
         for bam in bams:
             out_bed_path = out_dir / (bam.name[:-4] + '.bed')
+            tmp_pe_bed = self._files.purgeable_files_dir / outpath_to_dirname(out_bed_path)
 
             cmd = cmdify(
                 'samtools view -bu', filter_arg, bam,
                 sort_str,
                 '| bedtools bamtobed', pe_str, '-i stdin',
+                "| awk -v OFS='\t' {'print $1,$2,$6'}",
+                '>', tmp_pe_bed, '\n'
+                '| bedtools sort -i', tmp_pe_bed, '-faidx', self._idx_stats,
                 '>', out_bed_path
             )
 
             out_beds.append(out_bed_path)
             cmds.append(cmd)
+        self._idx_stats = old_idx
 
         return cmds, out_beds
 
     def get_number_of_mapped_reads(self, sample_names: List[str],
-                                   bamfiles: List[Path]) \
+                                   read_files: List[Path]) \
             -> List[int]:
         """
         Gets the reads that mapped in for each sample in <sample names>
@@ -372,48 +379,60 @@ class PeakPCAAnalyser:
         in <bamfiles>.
 
         :param sample_names: The names of a given number of samples.
-        :param bamfiles: The bamfiles generated for each of those samples
-        :return: The number of reads in each bamfile, ordered by the
+        :param read_files: The read_files generated for each of those samples
+        :return: The number of reads in each read_files, ordered by the
             <sample_names>.
         """
 
+        ft = read_files[0].name.split('.')[-1]
+        for file in read_files:
+            if not file.name.split('.')[-1] == ft:
+                raise ValueError('All read files must be of the same type.')
+
         # Construct map from each count file to the bam file with a
         # matching name, ensuring a 1:1 mapping.
-        count_to_bam_map = {}
+        count_to_read_map = {}
         for col_name in sample_names:
-            matching_bam = None
+            matching_read = None
 
-            for bam in bamfiles:
-                if col_name in bam.name and matching_bam:
+            for read in read_files:
+                if col_name in read.name and matching_read:
                     raise ValueError(
-                        "Detected multiple bams with sample names matching"
+                        "Detected multiple reads with sample names matching"
                         " a count file name.\n\t" + '\n\t'.join([
-                            str(col_name), bam.name, matching_bam.name
+                            str(col_name), read.name, matching_read.name
                         ]))
-                elif col_name in bam.name:
-                    matching_bam = bam
+                elif col_name in read.name:
+                    matching_read = read
 
-            if not matching_bam:
+            if not matching_read:
                 raise ValueError(
-                    "The given bam files do not contain a matching name "
+                    "The given read files do not contain a matching name "
                     "for " + str(col_name))
             else:
-                count_to_bam_map[col_name] = matching_bam
+                count_to_read_map[col_name] = matching_read
+
+        if ft == 'bam':
+            cmd = 'samtools', 'view', '-c'
+        elif ft == 'bed':
+            cmd = 'wc', '-l'
+        else:
+            raise ValueError("Unrecognised filetype.")
 
         norm_factors = []
         for i, col_name in enumerate(sample_names):
-            bamfile = count_to_bam_map[col_name]
-            logger.info('Calculating library size for ' + bamfile.name)
-            result = subprocess.run(['samtools', 'view', '-c', str(bamfile)],
+            readfile = count_to_read_map[col_name]
+            logger.info('Calculating library size for ' + readfile.name)
+            result = subprocess.run([*cmd, str(readfile)],
                                     stdout=subprocess.PIPE)
             n_reads = int(result.stdout.decode('utf-8').split(' ')[0])
             norm_factors.append(n_reads)
 
         s = 'Normalisation info:\n'
         for counts_file, norm_factor in zip(sample_names, norm_factors):
-            bam_file = count_to_bam_map[counts_file]
+            read_file = count_to_read_map[counts_file]
             s += ('\t' + counts_file + '\t' +
-                  bam_file.name + '\t' +
+                  read_file.name + '\t' +
                   str(norm_factor) + '\n')
 
         logger.info(s)
@@ -425,7 +444,7 @@ class PeakPCAAnalyser:
     def make_counts_matrix(self, counts_files: List[Path],
                            matrix_out_path: Path,
                            counts_names: List[str] = None,
-                           bams_to_normalise_to: List[Path] = None,
+                           reads_to_normalise_to: List[Path] = None,
                            add_sites_col: bool = False,
                            normalise_by_site_len: bool = False) -> np.array:
         """
@@ -473,7 +492,7 @@ class PeakPCAAnalyser:
             bed file.
         :param matrix_out_path: The path to the matrix tsv file to create.
         :param counts_names: The name of each column in the counts_files array.
-        :param bams_to_normalise_to: A list of bamfiles with names matching
+        :param reads_to_normalise_to: A list of bamfiles with names matching
             the names of each counts file or the supplied counts names.
         :return:
         """
@@ -528,9 +547,9 @@ class PeakPCAAnalyser:
                     site_lens[j] = abs(int(stop) - int(start))
 
         # Normalize to RPMs if bam files are provided.
-        if bams_to_normalise_to:
+        if reads_to_normalise_to:
             norm_factors = self.get_number_of_mapped_reads(parsed_col_names,
-                                                           bams_to_normalise_to)
+                                                           reads_to_normalise_to)
             for col in range(len(parsed_col_names)):
                 fac = norm_factors[col]
                 column = counts_array[:, col]
@@ -562,7 +581,7 @@ class PeakPCAAnalyser:
                              threshold: int) -> None:
         pass
 
-    def do_peaks_pca_analysis(self, beds: List[Path], bams: List[Path],
+    def do_peaks_pca_analysis(self, beds: List[Path], reads: List[Path],
                               analysis_dir: Path,
                               experimental_design: ExperimentalDesign = None,
                               normalise_by_counts: bool = True) -> None:
@@ -572,17 +591,23 @@ class PeakPCAAnalyser:
 
 
         :param experimental_design: The design of this experiment.
-        :param normalise_by_counts:
+        :param normalise_by_counts: Whether to normalise by library size.
         :param beds: A list of bedfiles, to find common peaks on and generate
             PCA plots for.
-        :param bams: A list of bam files, to aggregate counts from. Must all be
-            sorted by position using the same genome.
+        :param reads: A list of read files, either beds or bams, to aggregate
+            counts from. Must all be sorted by position using the same genome.
         :param analysis_dir: The directory in which to place results and
             intermediary files.
         """
 
-        old_idx = self._idx_stats
-        self.update_genome_index(bams[0])
+        ft = reads[0].name.split('.')[-1]
+        for file in reads:
+            if not file.name.split('.')[-1] == ft:
+                raise ValueError('All read files must be of the same type.')
+
+        if ft == 'bam':
+            old_idx = self._idx_stats
+            self.update_genome_index(reads[0])
 
         if not analysis_dir.exists():
             self._jobs.execute(cmdify('mkdir', analysis_dir))
@@ -594,24 +619,24 @@ class PeakPCAAnalyser:
         if not counts_dir.exists():
             self._jobs.execute(cmdify('mkdir', counts_dir))
 
-        counts_files = self.generate_counts(common_peaks_path, bams,
+        counts_files = self.generate_counts(common_peaks_path, reads,
                                             counts_dir)
         counts_files = sorted(counts_files,
                               key=lambda x: str(x).split('_')[1])
 
         if not normalise_by_counts:
             matrix_path = analysis_dir / 'merged_counts_matrix.tsv'
-            bams_to_normalise_to = []
+            reads_to_normalise_to = []
         else:
             matrix_path = analysis_dir / 'merged_counts_matrix_normalized.tsv'
-            bams_to_normalise_to = bams
+            reads_to_normalise_to = reads
 
         counts_files = experimental_design.align_to_samples(counts_files)
 
         pj = PythonJob('make ' + str(matrix_path), [], self.make_counts_matrix,
                        counts_files=counts_files,
                        matrix_out_path=matrix_path,
-                       bams_to_normalise_to=bams_to_normalise_to,
+                       reads_to_normalise_to=reads_to_normalise_to,
                        add_sites_col=True,
                        normalise_by_site_len=True)
         self._jobs.execute_lazy(pj)
