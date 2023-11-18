@@ -331,10 +331,6 @@ class PeakPCAAnalyser:
         """
         out_beds = []
         cmds = []
-
-        old_idx = self._idx_stats
-        self.update_genome_index(bams[0])
-
         sort_str = ''
         filter_arg = ''
         pe_str = ''
@@ -358,15 +354,14 @@ class PeakPCAAnalyser:
                 'samtools view -bu', filter_arg, bam,
                 sort_str,
                 '| bedtools bamtobed', pe_str, '-i stdin',
-                "| awk -v OFS='\t' {'print $1,$2,$6,$8,$9'}",
+                "| awk -v OFS='\t' {'print $1,$2,$6,$7,$8,$9'}",
                 '>', tmp_pe_bed, '\n',
-                'bedtools sort -i', tmp_pe_bed, '-faidx', self._idx_stats,
+                'sort-bed --max-mem', f'{mem}M', tmp_pe_bed,
                 '>', out_bed_path
             )
 
             out_beds.append(out_bed_path)
             cmds.append(cmd)
-        self._idx_stats = old_idx
 
         return cmds, out_beds
 
