@@ -364,7 +364,7 @@ class PeakPCAAnalyser:
                 'cat', tmp_pe_bed,
                 "| awk -v OFS='\t' {'print $1,$2,$6,$7,$8,$9'}",
                 '>', tmp_unsorted_bed, '\n',
-                'sort-bed --max-mem', f'{mem}M', tmp_pe_bed,
+                'sort-bed --max-mem', f'{mem}M', tmp_unsorted_bed,
                 '>', out_bed_path
             )
 
