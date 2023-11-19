@@ -330,6 +330,9 @@ class PeakPCAAnalyser:
         :return: Commands to create beds, paths to created beds.
         """
 
+        old_idx_stats = self._idx_stats
+        self.update_genome_index(bams[0])
+
         out_beds = []
         cmds = []
         sort_str = ''
@@ -364,12 +367,18 @@ class PeakPCAAnalyser:
                 'cat', tmp_pe_bed,
                 "| awk -v OFS='\t' {'print $1,$2,$6,$7,$8,$9'}",
                 '>', tmp_unsorted_bed, '\n',
-                'sort-bed --max-mem', f'{mem}M', tmp_unsorted_bed,
+                'bedtools sortbed ', tmp_unsorted_bed, '-faidx', self._idx_stats,
                 '>', out_bed_path
             )
 
+            # Old sortbed. Less likely to fail due to memory issues, but does
+            # not use faidx.
+            # 'sort-bed --max-mem', f'{sort_mem}M', tmp_unsorted_bed,
+
             out_beds.append(out_bed_path)
             cmds.append(cmd)
+
+        self._idx_stats = old_idx_stats
 
         return cmds, out_beds
 
