@@ -360,7 +360,7 @@ class PeakPCAAnalyser:
                 'samtools view -bu', filter_arg, bam,
                 sort_str,
                 '| bedtools bamtobed', pe_str, '-i stdin',
-                '>', tmp_pe_bed,
+                '>', tmp_pe_bed, '\n'
                 'cat', tmp_pe_bed,
                 "| awk -v OFS='\t' {'print $1,$2,$6,$7,$8,$9'}",
                 '>', tmp_unsorted_bed, '\n',
