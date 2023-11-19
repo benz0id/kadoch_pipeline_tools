@@ -347,6 +347,8 @@ class PeakPCAAnalyser:
         if filter_pe and not paired_end:
             raise ValueError('Requested unnecessary paired-end filter.')
 
+        sort_mem = int(mem * 3 / 4)
+
         for bam in bams:
             out_bed_path = out_dir / (bam.name[:-4] + '.bed')
             tmp_pe_bed = self._files.purgeable_files_dir / outpath_to_dirname(out_bed_path)
