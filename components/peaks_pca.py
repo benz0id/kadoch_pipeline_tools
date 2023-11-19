@@ -329,6 +329,7 @@ class PeakPCAAnalyser:
         :param paired_end: Whether to expect paired end input.
         :return: Commands to create beds, paths to created beds.
         """
+
         out_beds = []
         cmds = []
         sort_str = ''
