@@ -351,14 +351,19 @@ class PeakPCAAnalyser:
 
         for bam in bams:
             out_bed_path = out_dir / (bam.name[:-4] + '.bed')
-            tmp_pe_bed = self._files.purgeable_files_dir / outpath_to_dirname(out_bed_path)
+            tmp_pe_bed = self._files.purgeable_files_dir / \
+                         (outpath_to_dirname(out_bed_path)[:-4] + '.bedpe')
+            tmp_unsorted_bed = self._files.purgeable_files_dir / \
+            (outpath_to_dirname(out_bed_path)[:-4] + '.unsorted.bed')
 
             cmd = cmdify(
                 'samtools view -bu', filter_arg, bam,
                 sort_str,
                 '| bedtools bamtobed', pe_str, '-i stdin',
+                '>', tmp_pe_bed,
+                'cat', tmp_pe_bed,
                 "| awk -v OFS='\t' {'print $1,$2,$6,$7,$8,$9'}",
-                '>', tmp_pe_bed, '\n',
+                '>', tmp_unsorted_bed, '\n',
                 'sort-bed --max-mem', f'{mem}M', tmp_pe_bed,
                 '>', out_bed_path
             )
