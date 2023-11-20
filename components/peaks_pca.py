@@ -8,6 +8,7 @@ from typing import List, Callable, Tuple
 
 import numpy as np
 import qnorm as qnorm
+from pandas import unique
 from scipy.stats import stats
 
 from utils.cache_manager import CacheManager
@@ -130,12 +131,11 @@ def generate_pca_plot(counts_matrix_path: Path,
             "y": 'principal component ' + str(j + 1)
         }
 
-        if colour_groups != None:
+        if colour_groups is not None:
             kwargs['hue'] = 'labels'
             kwargs['palette'] = \
-                sns.color_palette('bright',
-                                  len(pcdf['labels']))
-        if shape_groups != None:
+                sns.color_palette('bright', len(unique(pcdf['labels'])))
+        if shape_groups is not None:
             kwargs["style"] = 'reps'
 
         ax = sns.scatterplot(**kwargs)
@@ -596,7 +596,7 @@ class PeakPCAAnalyser:
     def do_peaks_pca_analysis(self, beds: List[Path], reads: List[Path],
                               analysis_dir: Path,
                               experimental_design: ExperimentalDesign = None,
-                              normalise_by_counts: bool = True) -> None:
+                              normalise_by_counts: bool = True) -> Path:
         """
         Performs PCA analysis on the given bedfiles, placing results and
         intermediary files in <analysis_dir>.
@@ -659,6 +659,8 @@ class PeakPCAAnalyser:
         self._jobs.execute_lazy(pj)
         if ft == 'bam':
             self._idx_stats = old_idx
+
+        return matrix_path
 
 
 
