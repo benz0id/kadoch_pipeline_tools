@@ -657,8 +657,8 @@ class PeakPCAAnalyser:
         pj = PythonJob('Generate PCA figures' + str(args[-2:]), [],
                        generate_pca_plot, *args, n_info_cols=1)
         self._jobs.execute_lazy(pj)
-
-        self._idx_stats = old_idx
+        if ft == 'bam':
+            self._idx_stats = old_idx
 
 
 
