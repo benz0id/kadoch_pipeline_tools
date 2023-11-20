@@ -360,14 +360,14 @@ class PeakPCAAnalyser:
             (outpath_to_dirname(out_bed_path)[:-4] + '.unsorted.bed')
 
             cmd = cmdify(
-                'samtools view -bu', filter_arg, bam,
+                '# samtools view -bu', filter_arg, bam,
                 sort_str,
                 '| bedtools bamtobed', pe_str, '-i stdin',
                 '>', tmp_pe_bed, '\n'
-                'cat', tmp_pe_bed,
+                '# cat', tmp_pe_bed,
                 "| awk -v OFS='\t' {'print $1,$2,$6,$7,$8,$9'}",
                 '>', tmp_unsorted_bed, '\n',
-                'bedtools sortbed ', tmp_unsorted_bed, '-faidx', self._idx_stats,
+                'bedtools sort -i ', tmp_unsorted_bed, '-faidx', self._idx_stats,
                 '>', out_bed_path
             )
 
