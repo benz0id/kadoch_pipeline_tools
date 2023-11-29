@@ -21,24 +21,30 @@ def fetch_ref_seqs(ids: Union[Path, List[str]], outfile: Path,
     cmd = cmdify(f"esearch -db {db} -query",
                  f"\"{organism}[Organism] AND refseq[Filter] AND")
 
+    if id_type == 'hgnc':
+        to_add = "[Gene Name]\""
+    else:
+        raise ValueError("Unrecognised id_type: " + id_type)
+
+    cmd += ' ( '
+
     if isinstance(ids, Path):
         with open(ids, 'r') as infile:
             for line in infile.readlines():
                 if not line.strip():
                     continue
-                cmd += ' ' + line.strip()
+                cmd += ' OR ' + line.strip() + to_add
 
     elif isinstance(ids, list):
         for line in ids:
             if not line.strip():
                 continue
-            cmd += ' ' + line.strip()
-
+            cmd += ' OR ' + line.strip() + to_add
     else:
         raise ValueError("Unrecognised input type")
 
-    if id_type == 'hgnc':
-        cmd += "[Gene Name]\""
+    cmd += ' ) '
+
 
     cmd += ' ' + cmdify('| efetch -format fasta',
                         '>', outfile)
