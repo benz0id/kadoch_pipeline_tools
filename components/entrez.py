@@ -47,4 +47,3 @@ def fetch_ref_seqs(ids: Union[Path, List[str]], outfile: Path,
 
 
 
-
