@@ -22,7 +22,7 @@ def fetch_ref_seqs(ids: Union[Path, List[str]], outfile: Path,
                  f"\"{organism}[Organism] AND refseq[Filter] AND")
 
     if id_type == 'hgnc':
-        to_add = "[Gene Name]\""
+        to_add = "[Gene Name]"
     else:
         raise ValueError("Unrecognised id_type: " + id_type)
 
@@ -43,7 +43,7 @@ def fetch_ref_seqs(ids: Union[Path, List[str]], outfile: Path,
     else:
         raise ValueError("Unrecognised input type")
 
-    cmd += ' ) '
+    cmd += ' )" '
 
 
     cmd += ' ' + cmdify('| efetch -format fasta',
