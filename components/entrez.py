@@ -23,6 +23,8 @@ def fetch_ref_seqs(ids: Union[Path, List[str]], outfile: Path,
 
     if id_type == 'hgnc':
         to_add = "[Gene Name]"
+    elif id_type == 'acc':
+        to_add = "[Accession]"
     else:
         raise ValueError("Unrecognised id_type: " + id_type)
 
