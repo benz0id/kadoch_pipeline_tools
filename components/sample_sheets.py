@@ -8,7 +8,7 @@ from utils.utils import ExperimentalDesign
 
 NUM_EXPECTED_SPACER = 4
 
-MINIMUM_DIFF = 2
+MINIMUM_DIFF = 0
 
 logger = logging.getLogger(__name__)
 
