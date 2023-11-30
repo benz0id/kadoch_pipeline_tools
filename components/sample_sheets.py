@@ -12,9 +12,9 @@ MINIMUM_DIFF = 2
 
 logger = logging.getLogger(__name__)
 
-"""
+
 def test_for_collision(s1: str, s2: str, num_diff: int) -> bool:
-    ""
+    """
     Ensure sure that s1 and s2 differ by at more than <num_diff> nucleotides.
     :param s1: The first sequence.
     :param s2: The second sequence.
@@ -22,7 +22,7 @@ def test_for_collision(s1: str, s2: str, num_diff: int) -> bool:
     :param num_diff: Minimum number of nucleotide differences - 1.
     :return: Whether there are less than or equal to <num_diff> differences
         between <s1> and <s2>.
-    ""
+    """
 
     assert len(s1) == len(s2)
     num_eq = 0
@@ -33,58 +33,64 @@ def test_for_collision(s1: str, s2: str, num_diff: int) -> bool:
 
 
 def find_collisions(sample_sheet_path: Path) -> None:
-    ""
+    """
     Reports all instances where there are index collisions.
-    :param sample_sheet: The path to the sample sheet to be checked for error.
+    :param sample_sheet_path: The path to the sample sheet to be checked for error.
     :return: None
-    ""
+    """
     sample_sheet = SampleSheet(sample_sheet_path)
-    
-    samples = sorted(sample_sheet.samples, key=lambda x: x.sample_id.split('_')[1])
+
+    samples = sorted(sample_sheet.samples,
+                     key=lambda x: x.sample_id.split('_')[1])
     sample_names = [sample.sample_id.split('_')[1]
                     for sample in samples]
 
     def get_collisions(indexes: List[str]) -> List[Tuple[int, int]]:
-
-        # Dict[(index1, index2):(seq1, seq2)
         collisions = []
         for i, index1 in enumerate(indexes):
             for j, index2 in enumerate(indexes[i + 1:]):
                 if test_for_collision(index1, index2, MINIMUM_DIFF):
                     collisions.append((i, j))
         return collisions
-    
-    if sample_sheet.is_paired_end:
-        i5_indices = [sample.index2 for sample in samples]
-        i5_collisions = get_collisions(i5_indices)
 
-        i7_indices = [sample.index1 for sample in samples]
-        i7_collisions = get_collisions(i7_indices)
-        
-    
-    bars = ''
-    for k, bp in enumerate(index1):
-        if bp == index2[k]:
-            bars += '|'
-        else:
-            bars += ' '
+    def format_collisions(indexes: List[str], samples: List[str],
+                          collisions: List[Tuple[int, int]]) -> str:
+        rtrn = ''
+        for i, j in collisions:
+            index1 = indexes[i]
+            index2 = indexes[j]
 
-    if verbose:
-        print(sample_1, '-', sample_2,
-              '\n\t', index1,
-              '\n\t', bars,
-              '\n\t', index2)
+            sample1 = samples[i]
+            sample2 = sample1[j]
+
+            bars = ''
+            for k, bp in enumerate(index1):
+                if bp == index2[k]:
+                    bars += '|'
+                else:
+                    bars += ' '
+
+            s = ' '.join([sample1, '-', sample2,
+                          '\n\t', index1,
+                          '\n\t', bars,
+                          '\n\t', index2, '\n\n'])
+
+            rtrn += s
+
+        return rtrn
+
     if sample_sheet.is_paired_end:
         i5_indices = [sample.index2 for sample in sample_sheet.samples]
         if get_collisions(i5_indices):
             print('=== i5 Collisions ===')
-            get_collisions(i5_indices, verbose=True)
+            print(format_collisions(i5_indices, sample_names,
+                                    get_collisions(i5_indices)))
 
     i7_indices = [sample.index2 for sample in sample_sheet.samples]
     if get_collisions(i7_indices):
         print('=== i7 Collisions ===')
-        get_collisions(i7_indices, verbose=True)
-"""
+        print(format_collisions(i7_indices, sample_names,
+                                get_collisions(i7_indices)))
 
 
 def apply_basic_formatting(sample_sheet_path: Path, directory: Path = None,
@@ -283,6 +289,6 @@ def fix_sample_sheet(sample_sheet_path: Path,
                                directory=directory,
                                verbose=verbose)
 
-    # find_collisions(pruned_sample_sheet)
+    find_collisions(pruned_sample_sheet)
 
     return pruned_sample_sheet
