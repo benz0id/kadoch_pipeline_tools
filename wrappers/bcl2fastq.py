@@ -77,7 +77,9 @@ class Demultiplexer(ProgramWrapper):
                             sample_sheet_path: Path, output_dir: Path,
                             num_cores, reports_dir: Path = None,
                             stats_dir: Path = None, io_cores: int = 4,
-                            allow_mismatches: bool = True) -> str:
+                            allow_mismatches: bool = True,
+                            add_sample_sheet_specifier: bool = True
+                            ) -> str:
         """
         Demultiplexes the sequencing data at <sequencing_dir>, outputting fastqs, stats, and reports to
         <output_dir>.
@@ -97,6 +99,8 @@ class Demultiplexer(ProgramWrapper):
         :param num_cores: The number of cores to use for processing bcl data.
         :param allow_mismatches: Allow single base mismatches between indexing
             primers and reads. Will fail if there are barcode collisions.
+        :param add_sample_sheet_specifier: Whether to add sample sheet-specific
+            directory name to the given report and stats dirs.
         :return: A job that will execute the demultiplexing procedure as
             described.
         """
@@ -105,11 +109,20 @@ class Demultiplexer(ProgramWrapper):
 
         optionals = []
         if reports_dir:
+            if add_sample_sheet_specifier:
+                reports_dir = reports_dir / \
+                              sample_sheet_path.name.split('.')[0]
             optionals.extend(['--reports-dir', reports_dir])
+
         if stats_dir:
+            if add_sample_sheet_specifier:
+                stats_dir = stats_dir / \
+                            sample_sheet_path.name.split('.')[0]
             optionals.extend(['--stats-dir', stats_dir])
+
         if allow_mismatches:
             optionals.extend(["--barcode-mismatches \"1,1\""])
+
         else:
             optionals.extend(["--barcode-mismatches \"0,0\""])
 

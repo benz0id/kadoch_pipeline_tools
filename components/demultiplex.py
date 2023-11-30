@@ -35,6 +35,7 @@ def demult_and_fastqc(sample_sheet: Path, sequencing_results: Path,
         without completing the jobs currently in the array.
     :param allow_mismatches: Whether to include bases that are mismatched at a
         single.
+        specifier to the output sample sheets.
     :return: A list of fastqfiles produces by demultiplexing. Directory must 
         only contain raw output fastqs if this return is to be valid.
     """
@@ -54,7 +55,7 @@ def demult_and_fastqc(sample_sheet: Path, sequencing_results: Path,
         path_manager.fastqs_dir, heavy_job.num_cores,
         reports_dir=path_manager.demult_stats / 'Reports',
         stats_dir=path_manager.demult_stats / 'Stats',
-    allow_mismatches=allow_mismatches)
+        allow_mismatches=allow_mismatches)
     jobs_manager.execute_lazy(cmd, heavy_job)
 
     # === FastQC ===
