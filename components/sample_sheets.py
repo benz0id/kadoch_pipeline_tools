@@ -61,7 +61,7 @@ def find_collisions(sample_sheet_path: Path) -> None:
             index2 = indexes[j]
 
             sample1 = samples[i]
-            sample2 = sample1[j]
+            sample2 = samples[j]
 
             bars = ''
             for k, bp in enumerate(index1):
