@@ -19,17 +19,19 @@ def test_for_collision(s1: str, s2: str, num_diff: int) -> bool:
     :param s1: The first sequence.
     :param s2: The second sequence.
         len(s1) == len(s2)
-    :param num_diff: Minimum number of nucleotide differences - 1.
+    :param num_diff: Minimum number of nucleotide differences.
     :return: Whether there are less than or equal to <num_diff> differences
         between <s1> and <s2>.
     """
 
     assert len(s1) == len(s2)
     num_eq = 0
+    max_num_eq = len(s1) - num_diff
+
     for i in range(len(s1)):
         if s1[i] == s2[i]:
             num_eq += 1
-    return num_eq >= len(s1) - num_diff
+    return num_eq >= max_num_eq
 
 
 def find_collisions(sample_sheet_path: Path) -> None:
@@ -50,7 +52,7 @@ def find_collisions(sample_sheet_path: Path) -> None:
         for i, index1 in enumerate(indexes):
             for j, index2 in enumerate(indexes[i + 1:]):
                 if test_for_collision(index1, index2, MINIMUM_DIFF):
-                    collisions.append((i, j))
+                    collisions.append((i, 1 + i + j))
         return collisions
 
     def format_collisions(indexes: List[str], samples: List[str],
