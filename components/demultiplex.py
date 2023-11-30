@@ -13,7 +13,8 @@ from utils.utils import ExperimentalDesign, get_model_from_sample_sheet, combine
 def demult_and_fastqc(sample_sheet: Path, sequencing_results: Path,
                       builder: JobBuilder, path_manager: PathManager,
                       jobs_manager: JobManager, start_array: Callable,
-                      drop_array: Callable) -> List[Path]:
+                      drop_array: Callable, allow_mismatches: bool = True) \
+        -> List[Path]:
     """
     Run generic demultiplexing and fastqc pipeline. Return paths to the
     resultant fastqs.
@@ -32,6 +33,8 @@ def demult_and_fastqc(sample_sheet: Path, sequencing_results: Path,
         starting.
     :param drop_array: Command to call to signify that the program can continue
         without completing the jobs currently in the array.
+    :param allow_mismatches: Whether to include bases that are mismatched at a
+        single.
     :return: A list of fastqfiles produces by demultiplexing. Directory must 
         only contain raw output fastqs if this return is to be valid.
     """
@@ -45,11 +48,13 @@ def demult_and_fastqc(sample_sheet: Path, sequencing_results: Path,
                         builder=builder, wait=False)
 
     # === Demultiplex ===
+
     cmd = demult.get_demultiplex_cmd(
         sequencing_results, sample_sheet,
         path_manager.fastqs_dir, heavy_job.num_cores,
         reports_dir=path_manager.demult_stats / 'Reports',
-        stats_dir=path_manager.demult_stats / 'Stats')
+        stats_dir=path_manager.demult_stats / 'Stats',
+    allow_mismatches=allow_mismatches)
     jobs_manager.execute_lazy(cmd, heavy_job)
 
     # === FastQC ===

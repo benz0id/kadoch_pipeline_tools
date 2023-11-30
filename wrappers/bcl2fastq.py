@@ -76,8 +76,8 @@ class Demultiplexer(ProgramWrapper):
     def get_demultiplex_cmd(self, sequencing_dir: Path,
                             sample_sheet_path: Path, output_dir: Path,
                             num_cores, reports_dir: Path = None,
-                            stats_dir: Path = None, io_cores: int = 4
-                            ) -> str:
+                            stats_dir: Path = None, io_cores: int = 4,
+                            allow_mismatches: bool = True) -> str:
         """
         Demultiplexes the sequencing data at <sequencing_dir>, outputting fastqs, stats, and reports to
         <output_dir>.
@@ -95,7 +95,10 @@ class Demultiplexer(ProgramWrapper):
         :param output_dir: The directory into which raw fastqs will be placed,
             alongside run reports and stats.
         :param num_cores: The number of cores to use for processing bcl data.
-        :return: A job that will execute the demultiplexing procedure as described.
+        :param allow_mismatches: Allow single base mismatches between indexing
+            primers and reads. Will fail if there are barcode collisions.
+        :return: A job that will execute the demultiplexing procedure as
+            described.
         """
 
         io_cores = min([io_cores, num_cores])
@@ -105,6 +108,10 @@ class Demultiplexer(ProgramWrapper):
             optionals.extend(['--reports-dir', reports_dir])
         if stats_dir:
             optionals.extend(['--stats-dir', stats_dir])
+        if allow_mismatches:
+            optionals.extend(["--barcode-mismatches \"1,1\""])
+        else:
+            optionals.extend(["--barcode-mismatches \"0,0\""])
 
         cmd = cmdify(
             progs.bcl2fastq,
@@ -116,7 +123,6 @@ class Demultiplexer(ProgramWrapper):
             '--sample-sheet', sample_sheet_path,
             # "--ignore-missing-bcls",
             "--no-lane-splitting",
-            "--barcode-mismatches \"1,1\"",
             *optionals
         )
         return cmd
