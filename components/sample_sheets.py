@@ -86,7 +86,7 @@ def find_collisions(sample_sheet_path: Path) -> None:
             print(format_collisions(i5_indices, sample_names,
                                     get_collisions(i5_indices)))
 
-    i7_indices = [sample.index2 for sample in sample_sheet.samples]
+    i7_indices = [sample.index1 for sample in sample_sheet.samples]
     if get_collisions(i7_indices):
         print(i7_indices)
         print(get_collisions(i7_indices))
