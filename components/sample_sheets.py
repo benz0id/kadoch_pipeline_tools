@@ -8,7 +8,7 @@ from utils.utils import ExperimentalDesign
 
 NUM_EXPECTED_SPACER = 4
 
-MINIMUM_DIFF = 0
+MINIMUM_DIFF = 2
 
 logger = logging.getLogger(__name__)
 
@@ -88,6 +88,7 @@ def find_collisions(sample_sheet_path: Path) -> None:
 
     i7_indices = [sample.index2 for sample in sample_sheet.samples]
     if get_collisions(i7_indices):
+        print(get_collisions(i7_indices))
         print('=== i7 Collisions ===')
         print(format_collisions(i7_indices, sample_names,
                                 get_collisions(i7_indices)))
