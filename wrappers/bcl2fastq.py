@@ -109,12 +109,14 @@ class Demultiplexer(ProgramWrapper):
 
         optionals = []
         if reports_dir:
+            self._pm.make(reports_dir)
             if add_sample_sheet_specifier:
                 reports_dir = reports_dir / \
                               sample_sheet_path.name.split('.')[0]
             optionals.extend(['--reports-dir', reports_dir])
 
         if stats_dir:
+            self._pm.make(stats_dir)
             if add_sample_sheet_specifier:
                 stats_dir = stats_dir / \
                             sample_sheet_path.name.split('.')[0]
