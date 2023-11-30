@@ -34,7 +34,7 @@ def test_for_collision(s1: str, s2: str, num_diff: int) -> bool:
     return num_eq >= max_num_eq
 
 
-def find_collisions(sample_sheet_path: Path) -> None:
+def find_collisions(sample_sheet_path: Path) -> bool:
     """
     Reports all instances where there are index collisions.
     :param sample_sheet_path: The path to the sample sheet to be checked for error.
@@ -89,12 +89,11 @@ def find_collisions(sample_sheet_path: Path) -> None:
                                     get_collisions(i5_indices)))
 
     i7_indices = [sample.index for sample in sample_sheet.samples]
-    print(i7_indices)
     if get_collisions(i7_indices):
-        print(get_collisions(i7_indices))
         print('=== i7 Collisions ===')
         print(format_collisions(i7_indices, sample_names,
                                 get_collisions(i7_indices)))
+    return bool
 
 
 def apply_basic_formatting(sample_sheet_path: Path, directory: Path = None,
