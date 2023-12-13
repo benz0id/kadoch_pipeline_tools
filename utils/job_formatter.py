@@ -79,7 +79,13 @@ class JobBuilder:
     """
 
     def prepare_job(self, cmd: str, exec_params: Any) -> Job:
-        return Job(cmd)
+        # Add lines to load the required modules.
+        load_line = 'module load '
+        for requirement in exec_params.get_requirements():
+            load_line += f'{requirement}/{exec_params.get_requirements()[requirement]} '
+        load_line += '\n'
+
+        return Job(load_line + cmd)
 
 
 @dataclass
