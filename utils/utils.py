@@ -217,7 +217,7 @@ class ExperimentalDesign:
 
         for sample in self._samples:
 
-            if sample.sample_name not in samples:
+            if samples and sample.sample_name not in samples:
                 continue
 
             sample_attrs = sample.get_attrs()
