@@ -247,7 +247,7 @@ class ExperimentalDesign:
 
                 sample_attrs[attr] = pruned_val
 
-    def query(self, filters: Dict[str: Any],
+    def query(self, filters: Dict[str, Any],
               rtrn_attr: str) -> List[Any]:
         """
         Returns <rtrn_attr> from each sample matching <filters>.
