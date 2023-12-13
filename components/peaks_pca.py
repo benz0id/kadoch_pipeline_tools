@@ -231,7 +231,7 @@ class PeakPCAAnalyser:
             "| awk -v OFS='\t' {'print $1,$2'}",
             "| sed '$ d'"
             '>', idx_stats
-        ))
+        ), self._light_job)
 
         self._idx_stats = idx_stats
 
