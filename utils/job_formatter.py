@@ -75,14 +75,15 @@ class PythonJob(Job):
 class JobBuilder:
     """
     === Description ===
-    A simple job builder that merely creates jobs to be run directly from the command line.
+    A simple job builder that creates jobs to be run directly from the
+    command line.
     """
 
     def prepare_job(self, cmd: str, exec_params: Any) -> Job:
         # Add lines to load the required modules.
         load_line = 'module load '
         for requirement in exec_params.get_requirements():
-            load_line += f'{requirement}/{exec_params.get_requirements()[requirement]} '
+            load_line += f'{requirement}/{exec_params.get_requirements()[requirement]}'
         load_line += '\n'
 
         return Job(load_line + cmd)
