@@ -182,6 +182,7 @@ class ExperimentalDesign:
             condition/treatment under which it was generated.
         """
         cond_counts = {}
+        self._samples = []
 
         for sample in sample_to_condition:
             condition = sample_to_condition[sample]
