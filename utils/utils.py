@@ -793,7 +793,7 @@ class TargetedDesign(ExperimentalDesign):
         for sample in self._samples:
             if sample.sample_name == sample_name:
                 self._samples.remove(sample)
-                break
+                return
         raise ValueError(f'{sample_name} not found in list of samples.')
 
 
