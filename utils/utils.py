@@ -71,6 +71,24 @@ class Sample:
             'replicate': self.replicate
         }
 
+    def update_attrs(self, attrs: Dict[str, Any]) -> None:
+
+        for attr in attrs:
+            val = attrs[attr]
+
+            if val is None:
+                continue
+
+            match attr:
+                case "sample_name":
+                    self.sample_name = val
+                case "condition":
+                    self.condition = val
+                case "replicate":
+                    self.replicate = val
+                case _:
+                    raise ValueError(f"Unrecognised input type {attr}.")
+
 
 class TargetedSample(Sample):
     """
@@ -119,6 +137,28 @@ class TargetedSample(Sample):
             'target': self.target,
             'treatment': self.treatment
         }
+
+    def update_attrs(self, attrs: Dict[str, Any]) -> None:
+
+        for attr in attrs:
+            val = attrs[attr]
+
+            if val is None:
+                continue
+
+            match attr:
+                case "sample_name":
+                    self.sample_name = val
+                case "condition":
+                    self.condition = val
+                case "replicate":
+                    self.replicate = val
+                case "target":
+                    self.target = val
+                case "treatment":
+                    self.treatment = val
+                case _:
+                    raise ValueError(f"Unrecognised input type {attr}.")
 
 
 def args_to_filters(**kwargs) -> Dict[str, Any]:
@@ -247,6 +287,7 @@ class ExperimentalDesign:
                     pruned_val = pruned_val[:-1]
 
                 sample_attrs[attr] = pruned_val
+            sample.update_attrs(sample_attrs)
 
     def query(self, filters: Dict[str, Any],
               rtrn_attr: str) -> List[Any]:
