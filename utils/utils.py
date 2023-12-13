@@ -353,7 +353,7 @@ class ExperimentalDesign:
     def get_condition(self, sample_name: str) -> str:
         for sample in self._samples:
             if sample.sample_name == sample_name:
-                return sample.sample_name
+                return sample.condition
 
     def get_ordered_conditions(self) -> List[str]:
         return [sample.condition for sample in self._samples]
