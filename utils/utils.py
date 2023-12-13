@@ -1,3 +1,4 @@
+import dataclasses
 from copy import copy
 from pathlib import Path
 from typing import List, Dict, Union, Any, Tuple
@@ -29,6 +30,134 @@ def combine_cmds(cmds: List[str], num_per: int) -> List[str]:
     return combined_cmds
 
 
+@dataclasses.dataclass
+class Sample:
+    """
+    === Description ===
+    Stores attributes found in all samples.
+
+    === Public Attributes ===
+    sample_name: The ID of the sample. Usually the experimenters initials
+        followed by the protocol and then the sample number.
+    condition: All information regarding the conditions used to generate this
+        sample.
+    replicate: The replicate number of this sample.
+    """
+    sample_name: str
+    condition: str
+    replicate: int
+
+    def __init__(self, sample_name: str, condition: str,
+                 replicate: int) -> None:
+        """
+        :param sample_name: The ID of the sample. Usually the experimenters
+            initials followed by the protocol and then the sample number.
+        :param condition: All information regarding the conditions used to
+            generate this sample.
+        :param replicate: The replicate number of this sample.
+        """
+        self.sample_name = sample_name
+        self.condition = condition
+        self.replicate = replicate
+
+    def get_attrs(self) -> Dict[str, Any]:
+        """
+        Return all of this sample's attributes.
+        :return:
+        """
+        return {
+            'sample_name': self.sample_name,
+            'condition': self.condition,
+            'replicate': self.replicate
+        }
+
+
+class TargetedSample(Sample):
+    """
+    === Description ===
+    Stores attributes found in samples for targeted experiments.
+        e.g. (ChIP, CUT&RUN)
+
+    === Public Attributes ===
+    sample_name: The ID of the sample. Usually the experimenters initials
+        followed by the protocol and then the sample number.
+    condition: All information regarding the conditions used to generate this
+        sample.
+    replicate: The replicate number of this sample.
+    target: The target of interest. Usually a protein.
+    treatment: The treatment applied to the sample.
+    """
+
+    sample_name: str
+    condition: str
+    replicate: int
+    target: str
+    treatment: str
+
+    def __init__(self, sample_name: str, condition: str, replicate: int,
+                 target: str, treatment: str) -> None:
+        """
+        :param sample_name: The ID of the sample. Usually the experimenters
+            initials followed by the protocol and then the sample number.
+        :param condition: All information regarding the conditions used to
+            generate this sample.
+        :param replicate: The replicate number of this sample.
+        """
+        super().__init__(sample_name, condition, replicate)
+        self.target = target
+        self.treatment = treatment
+
+    def get_attrs(self) -> Dict[str, Any]:
+        """
+        Return all of this sample's attributes.
+        :return:
+        """
+        return {
+            'sample_name': self.sample_name,
+            'condition': self.condition,
+            'replicate': self.replicate,
+            'target': self.target,
+            'treatment': self.treatment
+        }
+
+
+def args_to_filters(**kwargs) -> Dict[str, Any]:
+    """
+    Converts a dictionary of arguments into a dictionary or filters.
+    Used to adapt old implementation to new implementation.
+    :param kwargs:
+    :return:
+    """
+
+    # Add more as needed.
+    valid_filtering_arguments = [
+        'sample_name',
+        'condition',
+        'replicate',
+        'target',
+        'treatment'
+    ]
+
+    # Convert to filters.
+    filters = {}
+    for arg in kwargs:
+        if kwargs[arg] is None:
+            continue
+
+        val = kwargs[arg]
+
+        if arg == 'sample':
+            arg = 'sample_name'
+
+        # Old convention was plural - new convention is singular
+        if arg[-1] == 's':
+            arg = arg[:-1]
+
+        filters[arg] = val
+
+    return filters
+
+
 class ExperimentalDesign:
     """
     === Description ===
@@ -42,136 +171,194 @@ class ExperimentalDesign:
         under it.
     conditions: The conditions in the experiments.
     """
-
-    _samples: List[str]
-    _sample_to_condition: Dict[str, str]
-    _sample_to_rep_number: Dict[str, int]
-    _sample_to_sample_id: Dict[str, str]
-    _condition_to_samples: Dict[str, List[str]]
-    _conditions: List[str]
+    _samples: List[Sample]
 
     def __init__(self, sample_to_condition: Dict[str, str],
-                 sample_to_rep_number: Dict[str, int] = None,
-                 sample_to_sample_id: Dict[str, str] = None) -> None:
+                 sample_to_rep_number: Dict[str, int] = None) -> None:
         """
         Initialises this experimental design using the given sample to
         condition mapping.
         :param sample_to_condition: Maps a given sample to the
             condition/treatment under which it was generated.
         """
-        self._samples = sorted(sample_to_condition.keys())
-        self._sample_to_condition = copy(sample_to_condition)
-        self._condition_to_samples = {}
-        self._sample_to_sample_id = sample_to_sample_id
+        cond_counts = {}
 
-        # Invert sample_to_condition dict.
-        for condition in self._sample_to_condition.values():
-            self._condition_to_samples[condition] = []
-            for sample in self._samples:
-                if self._sample_to_condition[sample] == condition:
-                    self._condition_to_samples[condition].append(sample)
+        for sample in sample_to_condition:
+            condition = sample_to_condition[sample]
 
-        self._conditions = list(self._condition_to_samples.keys())[:]
+            # Manually assign replicate numbers if replicates aren't provided.
+            if sample_to_rep_number:
+                rep_num = sample_to_rep_number[sample]
+            else:
+                if condition in cond_counts:
+                    cond_counts[condition] += 1
+                    rep_num = cond_counts[condition]
+                else:
+                    cond_counts[condition] = 1
+                    rep_num = cond_counts[condition]
 
-        # Arbitrarily assign rep numbers if none are given.
-        if not sample_to_rep_number:
-            self._sample_to_rep_number = {}
-            for cond in self._condition_to_samples:
-                cts_sorted = sorted(self._condition_to_samples[cond])
-                for i, sample in enumerate(cts_sorted):
-                    self._sample_to_rep_number[sample] = i + 1
-        else:
-            self._sample_to_rep_number = copy(sample_to_rep_number)
+            sample = Sample(sample, condition, rep_num)
+            self._samples.append(sample)
 
-    def remove_str(self, s: str, samples: List[str] = None, pos=None) -> None:
+    def remove_str(self, s: str, samples: List[str] = None, pos: int = None,
+                   attrs: List[str] = None) -> None:
         """
         Removes the given string from all attributes associated with the
         given samples.
         :param s: The string to be removed
         :param samples: The samples to remove the given string from. All
             samples by default.
-        :param pos: Only remove <s> if it occurs at <pos> after splitting by '_'.
+        :param pos: Only remove <s> if it occurs at <pos> after splitting by
+        '_'.
+        :param attrs: A list of all the attributes to modify. All attributes by
+        default.
         """
-        if not samples:
-            samples = self._samples
 
-        conditions = []
-        for sample in samples:
-            conditions.append(self._sample_to_condition[sample])
+        for sample in self._samples:
 
-        while conditions:
-            condition = conditions.pop()
-            while condition in conditions:
-                conditions.remove(condition)
-
-            if pos is not None:
-                components = condition.split('_')
-                if s == components[pos]:
-                    components.pop(pos)
-                pruned_condition = '_'.join(components)
-            else:
-                pruned_condition = condition.replace(s, '')
-                pruned_condition = pruned_condition.replace('__', '_')
-
-            if pruned_condition[0] == '_':
-                pruned_condition = pruned_condition[1:]
-
-            if pruned_condition[-1] == '_':
-                pruned_condition = pruned_condition[:-1]
-
-            if pruned_condition in self._conditions:
+            if sample.sample_name not in samples:
                 continue
-            else:
-                print(condition, pruned_condition)
-                for sample in self._condition_to_samples[condition]:
-                    self._sample_to_condition[sample] = pruned_condition
 
-                ind = self._conditions.index(condition)
-                self._conditions.remove(condition)
-                self._conditions.insert(ind, pruned_condition)
+            sample_attrs = sample.get_attrs()
 
-                self._condition_to_samples[pruned_condition] = \
-                    self._condition_to_samples[condition]
+            for attr in sample_attrs:
+                val = sample_attrs[attr]
 
-                self._condition_to_samples.pop(condition)
+                if attrs and attr not in attrs:
+                    continue
 
-    def get_condition(self, sample: str) -> str:
-        return self._sample_to_condition[sample]
+                if not isinstance(val, str):
+                    continue
+
+                if pos is not None:
+                    components = val.split('_')
+                    if s == components[pos]:
+                        components.pop(pos)
+                    pruned_val = '_'.join(components)
+                else:
+                    pruned_val = val.replace(s, '')
+                    pruned_val = pruned_val.replace('__', '_')
+
+                if pruned_val[0] == '_':
+                    pruned_val = pruned_val[1:]
+
+                if pruned_val[-1] == '_':
+                    pruned_val = pruned_val[:-1]
+
+                sample_attrs[attr] = pruned_val
+
+    def query(self, filters: Dict[str: Any],
+              rtrn_attr: str) -> List[Any]:
+        """
+        Returns <rtrn_attr> from each sample matching <filters>.
+        :param filters: A dictionary mapping attribute names to one or more
+            allowable values as a list.
+        :param rtrn_attr: The attribute to return from all samples matching
+            <filters>.
+        :return: A list of attributes of type <rtrn_attrs>.
+        """
+        filters = copy(filters)
+        for filter in filters:
+            if not isinstance(filters[filter], list):
+                filters[filter] = [filters[filter]]
+
+        valid_samples = []
+
+        for sample in self._samples:
+            attrs = sample.get_attrs()
+            valid = True
+
+            for attr in filters:
+
+                if attr not in attrs:
+                    allowable = ', '.join(list(attrs.keys()))
+                    raise ValueError(
+                        f'Received unexpected attribute {attr}. '
+                        f'Allowble attributes include {allowable}.')
+
+                allowable_vals = filters[attr]
+                sample_val = attrs[attr]
+                if sample_val not in allowable_vals:
+                    valid = False
+                    break
+
+            if valid:
+                valid_samples.append(sample)
+
+        return_attrs = []
+        for sample in valid_samples:
+            attrs = sample.get_attrs()
+
+            if rtrn_attr not in attrs:
+                allowable = ', '.join(list(attrs.keys()))
+                raise ValueError(
+                    f'Received unexpected return attribute {rtrn_attr}. '
+                    f'Allowble attributes include {allowable}.')
+
+            return_attrs.append(attrs[return_attrs])
+        return return_attrs
+
+    def find_in_files(self, files: List[Path],
+                      samples: List[str] = None,
+                      conditions: List[str] = None,
+                      reps: List[int] = None,
+                      marks: List[str] = None,
+                      treatments: List[str] = None,
+                      num_expected: int = None) -> List[Path]:
+
+        filters = args_to_filters(
+            samples=samples,
+            conditions=conditions,
+            reps=reps,
+            marks=marks,
+            treatments=treatments
+        )
+
+        valid_samples = self.query(filters, 'sample_name')
+        valid_files = []
+
+        for file in files:
+            sample_name = file.name.split('_')[1]
+
+            if sample_name not in [sample.sample_name for sample in self._samples]:
+                raise ValueError(
+                    f'{sample_name} in {file.name} is not a valid sample.')
+
+            if sample_name in valid_samples:
+                valid_files.append(file)
+
+        if num_expected and len(valid_files) != num_expected:
+            f_str = '\t\n' + '\t\n'.join([f.name for f in valid_files])
+            raise ValueError(f"Unexpected number of files found,"
+                             f" {len(valid_files)} != {num_expected} {f_str}")
+
+        return valid_files
 
     def get_samples(self, conditions: List[str] = None,
                     reps: List[int] = None,
                     num_expected: int = None) -> List[str]:
+        filters = {}
 
-        matching_samples = []
-        for sample in self._samples:
+        if conditions:
+            filters['condition'] = conditions
+        if reps:
+            filters['reps'] = reps
 
-            if conditions and \
-                    self._sample_to_condition[sample] not in conditions:
-                continue
-            if reps and \
-                    self._sample_to_rep_number[sample] not in reps:
-                continue
-            matching_samples.append(sample)
-
-        if num_expected and len(matching_samples) != num_expected:
-            f_str = '\t\n' + '\t\n'.join([s + ' - ' + self._sample_to_condition[s]
-                                          for s in matching_samples])
-            raise ValueError(f"Unexpected number of files found,"
-                             f" {len(matching_samples)} != {num_expected} {f_str}")
-
-        return matching_samples
+        return self.query(filters, 'sample_name')
 
     def get_conditions(self) -> List[str]:
-        return copy(self._conditions)
+        return list(set([sample.condition for sample in self._samples]))
 
-    def get_sample_id(self, sample: str) -> str:
-        return self._sample_to_sample_id[sample]
+    def get_condition(self, sample_name: str) -> str:
+        for sample in self._samples:
+            if sample.sample_name == sample_name:
+                return sample.sample_name
 
     def get_ordered_conditions(self) -> List[str]:
-        return [self.get_condition(sample) for sample in self._samples]
+        return [sample.condition for sample in self._samples]
 
     def get_ordered_reps(self) -> List[int]:
-        return [self.get_rep_num(sample) for sample in self._samples]
+        return [self.get_rep_num(sample.sample_name) for sample in self._samples]
 
     def get_sample_descs(self) -> List[str]:
         """
@@ -183,15 +370,15 @@ class ExperimentalDesign:
 
         # If there are no replicates, just return to which group each sample
         # belongs.
-        if len(set(self._sample_to_rep_number.values())) == 1:
+        if len(set([sample.replicate for sample in self._samples])) == 1:
             for sample in self._samples:
-                descs.append(self._sample_to_condition[sample])
+                descs.append(sample.condition)
             return descs
         # Append replicate number to end of description.
         else:
             for sample in self._samples:
-                cond = self._sample_to_condition[sample]
-                rep = self.get_rep_num(sample)
+                cond = sample.condition
+                rep = sample.replicate
                 descs.append(cond + '_Rep' + str(rep))
             return descs
 
@@ -204,7 +391,7 @@ class ExperimentalDesign:
         :param to_align: A list of sample_strs each containing sample names.
         :return: The same list, ordered in the same way as samples.
         """
-        return align_to_strs(to_align, self._samples)
+        return align_to_strs(to_align, [sample.sample_name for sample in self._samples])
 
     def merge_reps(self):
         """
@@ -214,11 +401,9 @@ class ExperimentalDesign:
 
         sample_to_condition = {}
         sample_to_rep_number = {}
-        sample_to_sample_id = {}
 
-        for condition in self._conditions:
+        for condition in self.get_conditions():
             samples = sorted(self.get_samples(conditions=[condition]))
-            date_string = self._sample_to_sample_id[samples[0]][:8]
 
             # Split sample that have already been merged to maintain order.
             s_split = []
@@ -228,17 +413,16 @@ class ExperimentalDesign:
 
             samples.sort()
             merged_sample_name = '-'.join(samples)
-            merged_id = f'{date_string}_{merged_sample_name}_{condition}'
             sample_to_condition[merged_sample_name] = condition
             sample_to_rep_number[merged_sample_name] = 0
-            sample_to_sample_id[merged_sample_name] = merged_id
 
         return ExperimentalDesign(sample_to_condition,
-                                  sample_to_rep_number,
-                                  sample_to_sample_id)
+                                  sample_to_rep_number)
 
-    def get_rep_num(self, sample: str) -> int:
-        return self._sample_to_rep_number[sample]
+    def get_rep_num(self, targ_sample_name: str) -> int:
+        for sample in self._samples:
+            if sample.sample_name == targ_sample_name:
+                return sample.replicate
 
     def remove_condition(self, conditions: Union[str, List[str]]) -> None:
         """
@@ -249,35 +433,34 @@ class ExperimentalDesign:
 
         if isinstance(conditions, str):
             conditions = [conditions]
+        to_rem = []
+        for sample in self._samples:
+            if sample.condition in conditions:
+                to_rem.append(sample)
 
-        for condition in conditions:
-            samples = self.get_samples(conditions=conditions)
-            for sample in samples:
-                self.remove_sample(sample)
+        for sample in to_rem:
+            self._samples.remove(sample)
 
-            del self._condition_to_samples[condition]
-            self._conditions.remove(condition)
-
-    def remove_sample(self, sample: str) -> None:
-        self._samples.remove(sample)
-        del self._sample_to_condition[sample]
-        del self._sample_to_rep_number[sample]
-        del self._sample_to_sample_id[sample]
+    def remove_sample(self, sample_name: str) -> None:
+        for sample in self._samples:
+            if sample.sample_name == sample_name:
+                self._samples.remove(sample)
+                return
+        raise ValueError(f'{sample_name} not found.')
 
     def __str__(self) -> str:
         def pretty_dict(dic: Dict[str, Any]) -> str:
             s = ''
             for sample in self._samples:
-                s += '\t' + sample + ': ' + str(dic[sample]) + '\n'
+                s += '\t' + sample.sample_name + ': ' + \
+                     str(dic[sample.sample_name]) + '\n'
             return s
 
         return \
-            f'=== Sample: Sample ID ===\n' \
-            f'{pretty_dict(self._sample_to_sample_id)}\n' \
             f'=== Sample: Condition ===\n' \
-            f'{pretty_dict(self._sample_to_condition)}\n' \
+            f'{pretty_dict({sample.sample_name: sample.condition for sample in self._samples})}\n' \
             f'=== Sample: Replicate ===\n' \
-            f'{pretty_dict(self._sample_to_rep_number)}\n'
+            f'{pretty_dict({sample.sample_name: sample.replicate for sample in self._samples})}\n'
 
     def get_invalid_sample_inds(self, strs: List[str],
                                 fail_on_duplication: bool = True) -> List[int]:
@@ -290,7 +473,7 @@ class ExperimentalDesign:
         :return: The indices of all invalid <strs>
         """
 
-        samples = copy(self._samples)
+        samples = [sample.sample_name for sample in self._samples]
         seen_samples = []
         invalid_samples = []
 
@@ -380,7 +563,8 @@ class ExperimentalDesign:
         :return: Files grouped by the merged sample they belong to.
         """
 
-        sample_groups = [sample.split('-') for sample in self._samples]
+        sample_groups = [sample.sample_name.split('-')
+                         for sample in self._samples]
         groups = [[] for _ in range(len(sample_groups))]
 
         for file in files:
@@ -435,8 +619,7 @@ class ExperimentalDesign:
         to_inc = []
 
         for sample in self._samples:
-            cond = self.get_condition(sample)
-            components = cond.split('_')
+            components = sample.condition.split('_')
             inc = include_default
 
             for i, s in matching:
@@ -453,51 +636,33 @@ class ExperimentalDesign:
         to_rem = set(self._samples) - set(to_inc)
         subset = copy(self)
         for sample in to_rem:
-            subset.remove_sample(sample)
+            subset.remove_sample(sample.sample_name)
         return subset
-
-    def find_in_files(self, files: List[Path],
-                      samples: List[str] = None,
-                      conditions: List[str] = None,
-                      reps: List[int] = None,
-                      num_expected: int = None) -> List[Path]:
-        valid_files = []
-        for file in files:
-            sample = file.name.split('_')[1]
-
-            if sample not in self._samples:
-                raise ValueError(
-                    f'{sample} in {file.name} is not a valid sample.')
-
-            cond = self._sample_to_condition[sample]
-            rep = self._sample_to_rep_number[sample]
-
-            valid_sample = not samples or sample in samples
-            valid_cond = not conditions or cond in conditions
-            valid_rep = not reps or rep in reps
-
-            if valid_rep and valid_cond and valid_sample:
-                valid_files.append(file)
-
-        if num_expected and len(valid_files) != num_expected:
-            f_str = '\t\n' + '\t\n'.join([f.name for f in valid_files])
-            raise ValueError(f"Unexpected number of files found,"
-                             f" {len(valid_files)} != {num_expected} {f_str}")
-        return valid_files
 
 
 class TargetedDesign(ExperimentalDesign):
 
+    _samples: List[TargetedSample]
+
     def __init__(self, sample_to_condition: Dict[str, str],
                  sample_to_mark: Dict[str, str],
                  sample_to_treatment: Dict[str, str],
-                 sample_to_rep_number: Dict[str, int] = None,
-                 sample_to_sample_id: Dict[str, str] = None) -> None:
-        super().__init__(sample_to_condition, sample_to_rep_number,
-                         sample_to_sample_id)
+                 sample_to_rep_number: Dict[str, int] = None) -> None:
+        super().__init__(sample_to_condition, sample_to_rep_number)
 
-        self._sample_to_mark = copy(sample_to_mark)
-        self._sample_to_treatment = copy(sample_to_treatment)
+        # Convert Normal Samples to Targeted Samples
+        targeted_samples = []
+        for sample in self._samples:
+            sample_name = sample.sample_name
+            condition = sample.condition
+            replicate = sample.replicate
+            mark = sample_to_mark[sample_name]
+            treatment = sample_to_treatment[sample_name]
+            targeted_sample = TargetedSample(sample_name, condition, replicate,
+                                             mark, treatment)
+            targeted_samples.append(targeted_sample)
+
+        self._samples = targeted_samples
 
     def get_samples(self, conditions: List[str] = None,
                     marks: List[str] = None,
@@ -505,35 +670,43 @@ class TargetedDesign(ExperimentalDesign):
                     reps: List[int] = None,
                     num_expected: int = None) -> List[str]:
 
-        matching_samples = []
-        for sample in super().get_samples(conditions=conditions, reps=reps):
-            if marks and self._sample_to_mark[sample] not in marks:
-                continue
-            if treatments and self._sample_to_treatment[
-                                     sample] not in treatments:
-                continue
-            matching_samples.append(sample)
+        filters = args_to_filters(
+            conditions=conditions,
+            marks=marks,
+            treatments=treatments,
+            reps=reps
+        )
 
-        if num_expected and len(matching_samples) != num_expected:
-            f_str = '\t\n' + '\t\n'.join([s + ' - ' + self._sample_to_condition[s]
-                                          for s in matching_samples])
+        res = self.query(filters, 'sample_name')
+
+        if num_expected and len(res) != num_expected:
+            f_str = '\t\n' + '\t\n'.join(
+                [s + ' - ' + self.get_condition(s)
+                 for s in res])
             raise ValueError(f"Unexpected number of files found,"
-                             f" {len(matching_samples)} != {num_expected} {f_str}")
+                             f" {len(res)} != {num_expected} {f_str}")
 
-        return matching_samples
+        return res
 
-    def get_mark(self, sample: str) -> str:
-        return self._sample_to_mark[sample]
+    def get_mark(self, sample_name: str) -> str:
+        for sample in self._samples:
+            if sample.sample_name == sample_name:
+                return sample.target
+
+    def get_target(self, sample_name: str) -> str:
+        for sample in self._samples:
+            if sample.sample_name == sample_name:
+                return sample.target
 
     def get_file_to_control(self, files: List[Path],
                             control_id: str = 'IgG') -> Dict[Path, Path]:
         file_to_control = {}
         for bam in files:
-            sample = bam.name.split('_')[1]
+            sample_name = bam.name.split('_')[1]
 
-            if self.get_mark(sample) == control_id:
+            if self.get_mark(sample_name) == control_id:
                 continue
-            treatment = self.get_treatment(sample)
+            treatment = self.get_treatment(sample_name)
             control = self.find_in_files(files,
                                          treatments=[treatment],
                                          marks=[control_id],
@@ -547,70 +720,39 @@ class TargetedDesign(ExperimentalDesign):
             samples = self.get_samples()
         return [self.get_mark(sample) for sample in samples]
 
-    def get_treatment(self, sample: str) -> str:
-        return self._sample_to_treatment[sample]
+    def get_treatment(self, sample_name: str) -> str:
+        for sample in self._samples:
+            if sample.sample_name == sample_name:
+                return sample.treatment
 
     def get_treatments(self, samples: List[str] = None) -> List[str]:
         if not samples:
             samples = self.get_samples()
         return [self.get_treatment(sample) for sample in samples]
 
-    def find_in_files(self, files: List[Path],
-                      samples: List[str] = None,
-                      conditions: List[str] = None,
-                      reps: List[int] = None,
-                      marks: List[str] = None,
-                      treatments: List[str] = None,
-                      num_expected: int = None) -> List[Path]:
-        valid_files = []
-
-        super_valid = super().find_in_files(files=files, samples=samples,
-                                            conditions=conditions, reps=reps)
-        for file in super_valid:
-            sample = file.name.split('_')[1]
-
-            if sample not in self._samples:
-                raise ValueError(
-                    f'{sample} in {file.name} is not a valid sample.')
-            mark = self.get_mark(sample)
-            treat = self.get_treatment(sample)
-
-            valid_mark = not marks or mark in marks
-            valid_treat = not treatments or treat in treatments
-
-            if valid_mark and valid_treat:
-                valid_files.append(file)
-
-        if num_expected and len(valid_files) != num_expected:
-            f_str = '\t\n' + '\t\n'.join([f.name for f in valid_files])
-            raise ValueError(f"Unexpected number of files found,"
-                             f" {len(valid_files)} != {num_expected} {f_str}")
-
-        return valid_files
-
     def __str__(self) -> str:
         def pretty_dict(dic: Dict[str, Any]) -> str:
             s = ''
             for sample in self._samples:
-                s += '\t' + sample + ': ' + str(dic[sample]) + '\n'
+                s += '\t' + sample.sample_name + ': ' + str(dic[sample.sample_name]) + '\n'
             return s
 
         return \
-            f'=== Sample: Sample ID ===\n' \
-            f'{pretty_dict(self._sample_to_sample_id)}\n' \
             f'=== Sample: Condition ===\n' \
-            f'{pretty_dict(self._sample_to_condition)}\n' \
+            f'{pretty_dict({sample.sample_name: sample.condition for sample in self._samples})}\n' \
             f'=== Sample: Replicate ===\n' \
-            f'{pretty_dict(self._sample_to_rep_number)}\n' \
+            f'{pretty_dict({sample.sample_name: sample.replicate for sample in self._samples})}\n' \
             f'=== Sample: Mark ===\n' \
-            f'{pretty_dict(self._sample_to_mark)}\n' \
+            f'{pretty_dict({sample.sample_name: sample.target for sample in self._samples})}\n' \
             f'=== Sample: Treatment ===\n' \
-            f'{pretty_dict(self._sample_to_treatment)}\n'
+            f'{pretty_dict({sample.sample_name: sample.treatment for sample in self._samples})}\n'
 
-    def remove_sample(self, sample: str) -> None:
-        super().remove_sample(sample)
-        del self._sample_to_mark[sample]
-        del self._sample_to_treatment[sample]
+    def remove_sample(self, sample_name: str) -> None:
+        for sample in self._samples:
+            if sample.sample_name == sample_name:
+                self._samples.remove(sample)
+                break
+        raise ValueError(f'{sample_name} not found in list of samples.')
 
 
 def convert_to_targeted(design: ExperimentalDesign, mark_slice: slice,
@@ -630,7 +772,6 @@ def convert_to_targeted(design: ExperimentalDesign, mark_slice: slice,
     sample_to_rep_num = {}
     sample_to_mark = {}
     sample_to_treat = {}
-    sample_to_sample_id = {}
 
     def add(dic, key, val) -> None:
         if key in dic:
@@ -643,19 +784,18 @@ def convert_to_targeted(design: ExperimentalDesign, mark_slice: slice,
         sample_to_cond[sample] = cond
         add(cond_to_samples, cond, sample)
         sample_to_rep_num[sample] = design.get_rep_num(sample)
+
         mark = '_'.join(cond.split('_')[mark_slice])
         treat = '_'.join(cond.split('_')[treatment_slice])
+
         print(cond.split('_'), mark, treat)
         sample_to_mark[sample] = mark
         sample_to_treat[sample] = treat
 
-        sample_to_sample_id[sample] = design.get_sample_id(sample)
-
     return TargetedDesign(sample_to_cond,
                           sample_to_mark,
                           sample_to_treat,
-                          sample_to_rep_num,
-                          sample_to_sample_id)
+                          sample_to_rep_num)
 
 
 def combine_runs(*runs: ExperimentalDesign) -> ExperimentalDesign:
@@ -704,8 +844,7 @@ def combine_runs(*runs: ExperimentalDesign) -> ExperimentalDesign:
         sample_to_sample_id[sample] = sample_id
 
     return ExperimentalDesign(sample_to_condition,
-                              sample_to_rep_number,
-                              sample_to_sample_id)
+                              sample_to_rep_number)
 
 
 def write_samples_file(filenames: List[Union[Path, str]],
@@ -789,8 +928,7 @@ def get_model_from_sample_sheet(sample_sheet: Path,
         print(len(sample_to_sample_id), sample_to_sample_id, '\n')
 
     return ExperimentalDesign(sample_to_condition,
-                              sample_to_rep_number,
-                              sample_to_sample_id)
+                              sample_to_rep_number)
 
 
 def align_to_strs(to_align: Union[List[str], List[Path]],

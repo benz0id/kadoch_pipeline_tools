@@ -7,7 +7,12 @@ import logging
 from typing import List, Union
 from constants.data_paths import PIPELINE_BACKUP_DIR
 
-
+EXECUTABLES_TO_SAVE = [
+            'Rmd',
+            'R',
+            'sh',
+            'py'
+        ]
 
 def quotes(s: Union[str, Path]) -> str:
     """
@@ -184,27 +189,23 @@ class PathManager:
         directory.
         :return:
         """
-        types_to_backup = [
-            'Rmd',
-            'R',
-            'sh',
-            'py'
-        ]
 
+        time_str = datetime.now().strftime("%m-%d-%Y_%I:%M:%S_%p")
         files = os.listdir(self.project_dir)
         for file in files:
             filepath = self.project_dir / file
-            filetype = file.split('.')[-1]
+            filetype = '.'.join(file.split('.')[1:])
+            raw_filename = file.split('.')[0]
 
             p1 = filepath.parent
             p2 = p1.parent
 
             out_dir = self.make(PIPELINE_BACKUP_DIR / p2.name)
             out_dir = self.make(out_dir / p1.name)
+            out_name = raw_filename + time_str + '.' + filetype
 
-            if filetype in types_to_backup:
-                shutil.copy(filepath, out_dir / file)
-
+            if filetype in EXECUTABLES_TO_SAVE:
+                shutil.copy(filepath, out_dir / out_name)
 
     def add_basic_info(self, sequencing_results_name: str,
                        sample_sheet_name: str) -> None:
@@ -293,20 +294,24 @@ class PathManager:
         self.safe_make(self.demult_stats)
 
         self.move_logs_to_archive()
-        self.pipeline_backup()
+        self.local_pipeline_backup()
         self.configure_logging()
 
-    def pipeline_backup(self) -> None:
+    def local_pipeline_backup(self) -> None:
         """
         Make a backup of all python files in project directory.
         :return:
         """
-        time_str = datetime.now().strftime("%m-%d-%Y_%I:%M:%S_%p.py")
+        
+        time_str = datetime.now().strftime("%m-%d-%Y_%I:%M:%S_%p")
         for filename in os.listdir(self.project_dir):
-            if '.py' in filename:
-                os.system(cmdify(
-                    'cp', self.project_dir / filename,
-                          self.general_archive / (filename[-3] + time_str)))
+            filetype = str(filename).split('.')[-1]
+            for ident in EXECUTABLES_TO_SAVE:
+                if filetype == ident:
+                    os.system(cmdify(
+                        'cp', self.project_dir / filename,
+                              self.general_archive /
+                              (filename[-3] + time_str + '.' + filetype)))
 
     def move_logs_to_archive(self) -> None:
         """
