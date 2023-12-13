@@ -673,12 +673,13 @@ class ExperimentalDesign:
                     inc = False
 
             if inc:
-                to_inc.append(sample)
+                to_inc.append(sample.sample_name)
 
-        to_rem = set(self._samples) - set(to_inc)
+        to_rem = set([sample.sample_name
+                      for sample in self._samples]) - set(to_inc)
         subset = copy(self)
-        for sample in to_rem:
-            subset.remove_sample(sample.sample_name)
+        for sample_name in to_rem:
+            subset.remove_sample(sample_name)
         return subset
 
 
