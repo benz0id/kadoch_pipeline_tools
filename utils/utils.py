@@ -189,6 +189,9 @@ def args_to_filters(**kwargs) -> Dict[str, Any]:
         if arg == 'sample':
             arg = 'sample_name'
 
+        if arg == 'marks' or arg == 'mark':
+            arg = 'target'
+
         # Old convention was plural - new convention is singular
         if arg[-1] == 's':
             arg = arg[:-1]
@@ -867,7 +870,6 @@ def combine_runs(*runs: ExperimentalDesign) -> ExperimentalDesign:
 
     sample_to_condition = {}
     sample_to_rep_number = {}
-    sample_to_sample_id = {}
 
     for cond, rep in cond_rep_to_samples:
         samples = cond_rep_to_samples[(cond, rep)]
@@ -880,11 +882,9 @@ def combine_runs(*runs: ExperimentalDesign) -> ExperimentalDesign:
 
         samples.sort()
         sample = '-'.join(samples)
-        sample_id = '_'.join(['0MERGED0', sample, cond, 'Rep' + str(rep)])
 
         sample_to_condition[sample] = cond
         sample_to_rep_number[sample] = rep
-        sample_to_sample_id[sample] = sample_id
 
     return ExperimentalDesign(sample_to_condition,
                               sample_to_rep_number)
