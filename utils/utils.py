@@ -296,7 +296,7 @@ class ExperimentalDesign:
                     f'Received unexpected return attribute {rtrn_attr}. '
                     f'Allowble attributes include {allowable}.')
 
-            return_attrs.append(attrs[return_attrs])
+            return_attrs.append(attrs[rtrn_attr])
         return return_attrs
 
     def find_in_files(self, files: List[Path],
