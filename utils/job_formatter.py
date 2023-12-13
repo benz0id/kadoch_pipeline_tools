@@ -84,7 +84,7 @@ class JobBuilder:
         if len(exec_params.get_requirements()) != 0:
             load_line = 'module load '
             for requirement in exec_params.get_requirements():
-                load_line += f'{requirement}/{exec_params.get_requirements()[requirement]}'
+                load_line += f'{requirement}/{exec_params.get_requirements()[requirement]} '
             load_line += '\n'
         else:
             load_line = ''
