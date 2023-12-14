@@ -457,7 +457,7 @@ class ExperimentalDesign:
             treatments=treatments
         )
 
-        valid_samples = self.query(filters, 'sample_name')
+        valid_samples = self.query('sample_name', filters)
         valid_files = []
 
         for file in files:
@@ -488,7 +488,7 @@ class ExperimentalDesign:
         if reps:
             filters['reps'] = reps
 
-        return self.query(filters, 'sample_name')
+        return self.query('sample_name', filters)
 
     def get_conditions(self) -> List[str]:
         return list(set([sample.condition for sample in self._samples]))
@@ -826,7 +826,7 @@ class TargetedDesign(ExperimentalDesign):
             reps=reps
         )
 
-        res = self.query(filters, 'sample_name')
+        res = self.query('sample_name', filters)
 
         if num_expected and len(res) != num_expected:
             f_str = '\t\n' + '\t\n'.join(
