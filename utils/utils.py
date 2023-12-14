@@ -132,12 +132,12 @@ class Sample:
         """
         self._condition_order = condition_order
 
-    def __le__(self, other) -> bool:
-        if not '_condition_order' in self.__dict__:
-            return self.sample_name <= other.sample_name
+    def __lt__(self, other) -> bool:
+        if '_condition_order' not in self.__dict__:
+            return self.sample_name < other.sample_name
 
         assert self._condition_order == other._condition_order
-        return self._condition_order.index(self.condition) <= \
+        return self._condition_order.index(self.condition) < \
             self._condition_order.index(other.condition)
 
 
@@ -206,10 +206,10 @@ class TargetedSample(Sample):
         """
         self._treatment_order = treatment_order
 
-    def __le__(self, other) -> bool:
+    def __lt__(self, other) -> bool:
         if '_target_order' not in self.__dict__ or \
                 '_treatment_order' not in self.__dict__:
-            return self.sample_name <= other.sample_name
+            return self.sample_name < other.sample_name
 
         assert self._target_order == other._target_order
         assert self._treatment_order == other._treatment_order
@@ -229,7 +229,7 @@ class TargetedSample(Sample):
         else:
             raise ValueError(f"{self._precedence} is not a valid precedence.")
 
-        return self_treat + self_targ <= other_treat + other_targ
+        return self_treat + self_targ < other_treat + other_targ
 
 
 def args_to_filters(**kwargs) -> Dict[str, Any]:
