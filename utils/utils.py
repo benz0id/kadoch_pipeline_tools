@@ -649,7 +649,7 @@ class TargetedDesign(ExperimentalDesign):
             mark = sample_to_mark[sample_name]
             treatment = sample_to_treatment[sample_name]
             targeted_sample = Sample(sample_name, condition, replicate,
-                                     mark=mark, treatment=treatment)
+                                     target=mark, treatment=treatment)
             targeted_samples.append(targeted_sample)
 
         self._samples = targeted_samples
