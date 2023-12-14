@@ -69,6 +69,7 @@ def get_matching_strs(strs: List[str],
     # Keep track of regexes that already have a match. Only needed if
     # one-to-one mapping is required.
     inds_matches = [False for _ in matching]
+    ordered_return = ['' for _ in matching]
 
     # Find all matching strings.
     for s in strs:
@@ -92,12 +93,19 @@ def get_matching_strs(strs: List[str],
         # Ensure that the added string does not match any of the previously
         # matched regexes.
         for i, match in enumerate(valid_matches):
+            mi = matching[i]
             if one_to_one and match and inds_matches[i]:
                 raise RuntimeError(f"One-to-one mapping not found. Multiple "
-                                   f"matches found for {matching[i]}.")
+                                   f"matches found for {mi}.")
+            if one_to_one and match:
+                ordered_return[i] = s
 
         inds_matches = [(inds_matches[i] or valid_matches[i])
                         for i in range(len(inds_matches))]
+
+    if one_to_one:
+        assert sorted(valid) == sorted(ordered_return)
+        valid = ordered_return
 
     s = ' '.join([
         '\nSearching for matches in \n\t', '\n\t'.join(strs),
