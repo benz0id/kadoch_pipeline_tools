@@ -30,6 +30,12 @@ def combine_cmds(cmds: List[str], num_per: int) -> List[str]:
     return combined_cmds
 
 
+MANDATORY_SAMPLE_FIELDS = ['sample_name', 'condition', 'replicate']
+TARGETED_SAMPLE_FIELDS = ['target', 'treatment']
+KNOWN_OPTIONAL_FIELDS = ['bam', 'bai', 'bed', 'narrow_peak', 'broad_peak',
+                         'bw', 'big_wig']
+
+
 @dataclasses.dataclass
 class Sample:
     """
@@ -47,8 +53,17 @@ class Sample:
     condition: str
     replicate: int
 
+    target: str
+    treatment: str
+
+    bam: Path
+    bai: Path
+    bed: Path
+    narrow_peak: Path
+    broad_peak: Path
+
     def __init__(self, sample_name: str, condition: str,
-                 replicate: int) -> None:
+                 replicate: int, **kwargs) -> None:
         """
         :param sample_name: The ID of the sample. Usually the experimenters
             initials followed by the protocol and then the sample number.
@@ -60,16 +75,15 @@ class Sample:
         self.condition = condition
         self.replicate = replicate
 
+        for arg in kwargs:
+            self.__dict__[arg] = kwargs[arg]
+
     def get_attrs(self) -> Dict[str, Any]:
         """
         Return all of this sample's attributes.
         :return:
         """
-        return {
-            'sample_name': self.sample_name,
-            'condition': self.condition,
-            'replicate': self.replicate
-        }
+        return self.__dict__
 
     def update_attrs(self, attrs: Dict[str, Any]) -> None:
 
@@ -79,86 +93,8 @@ class Sample:
             if val is None:
                 continue
 
-            match attr:
-                case "sample_name":
-                    self.sample_name = val
-                case "condition":
-                    self.condition = val
-                case "replicate":
-                    self.replicate = val
-                case _:
-                    raise ValueError(f"Unrecognised input type {attr}.")
-
-
-class TargetedSample(Sample):
-    """
-    === Description ===
-    Stores attributes found in samples for targeted experiments.
-        e.g. (ChIP, CUT&RUN)
-
-    === Public Attributes ===
-    sample_name: The ID of the sample. Usually the experimenters initials
-        followed by the protocol and then the sample number.
-    condition: All information regarding the conditions used to generate this
-        sample.
-    replicate: The replicate number of this sample.
-    target: The target of interest. Usually a protein.
-    treatment: The treatment applied to the sample.
-    """
-
-    sample_name: str
-    condition: str
-    replicate: int
-    target: str
-    treatment: str
-
-    def __init__(self, sample_name: str, condition: str, replicate: int,
-                 target: str, treatment: str) -> None:
-        """
-        :param sample_name: The ID of the sample. Usually the experimenters
-            initials followed by the protocol and then the sample number.
-        :param condition: All information regarding the conditions used to
-            generate this sample.
-        :param replicate: The replicate number of this sample.
-        """
-        super().__init__(sample_name, condition, replicate)
-        self.target = target
-        self.treatment = treatment
-
-    def get_attrs(self) -> Dict[str, Any]:
-        """
-        Return all of this sample's attributes.
-        :return:
-        """
-        return {
-            'sample_name': self.sample_name,
-            'condition': self.condition,
-            'replicate': self.replicate,
-            'target': self.target,
-            'treatment': self.treatment
-        }
-
-    def update_attrs(self, attrs: Dict[str, Any]) -> None:
-
-        for attr in attrs:
-            val = attrs[attr]
-
-            if val is None:
-                continue
-
-            match attr:
-                case "sample_name":
-                    self.sample_name = val
-                case "condition":
-                    self.condition = val
-                case "replicate":
-                    self.replicate = val
-                case "target":
-                    self.target = val
-                case "treatment":
-                    self.treatment = val
-                case _:
-                    raise ValueError(f"Unrecognised input type {attr}.")
+            if attr not in self.__dict__:
+                raise ValueError(f'Unrecognised attribute: {attr}')
 
 
 def args_to_filters(**kwargs) -> Dict[str, Any]:
@@ -177,6 +113,7 @@ def args_to_filters(**kwargs) -> Dict[str, Any]:
         'target',
         'treatment'
     ]
+    kas = ', '.join(valid_filtering_arguments)
 
     # Convert to filters.
     filters = {}
@@ -195,6 +132,11 @@ def args_to_filters(**kwargs) -> Dict[str, Any]:
         # Old convention was plural - new convention is singular
         if arg[-1] == 's':
             arg = arg[:-1]
+
+        if arg not in valid_filtering_arguments:
+            raise ValueError(f'Adapter function received unsupported '
+                             f'sample attribute {arg}, known attributes '
+                             f'include {kas}.')
 
         filters[arg] = val
 
@@ -365,7 +307,8 @@ class ExperimentalDesign:
         for file in files:
             sample_name = file.name.split('_')[1]
 
-            if sample_name not in [sample.sample_name for sample in self._samples]:
+            if sample_name not in [sample.sample_name for sample in
+                                   self._samples]:
                 raise ValueError(
                     f'{sample_name} in {file.name} is not a valid sample.')
 
@@ -403,7 +346,8 @@ class ExperimentalDesign:
         return [sample.condition for sample in self._samples]
 
     def get_ordered_reps(self) -> List[int]:
-        return [self.get_rep_num(sample.sample_name) for sample in self._samples]
+        return [self.get_rep_num(sample.sample_name) for sample in
+                self._samples]
 
     def get_sample_descs(self) -> List[str]:
         """
@@ -436,7 +380,8 @@ class ExperimentalDesign:
         :param to_align: A list of sample_strs each containing sample names.
         :return: The same list, ordered in the same way as samples.
         """
-        return align_to_strs(to_align, [sample.sample_name for sample in self._samples])
+        return align_to_strs(to_align,
+                             [sample.sample_name for sample in self._samples])
 
     def merge_reps(self):
         """
@@ -687,8 +632,7 @@ class ExperimentalDesign:
 
 
 class TargetedDesign(ExperimentalDesign):
-
-    _samples: List[TargetedSample]
+    _samples: List[Sample]
 
     def __init__(self, sample_to_condition: Dict[str, str],
                  sample_to_mark: Dict[str, str],
@@ -704,8 +648,8 @@ class TargetedDesign(ExperimentalDesign):
             replicate = sample.replicate
             mark = sample_to_mark[sample_name]
             treatment = sample_to_treatment[sample_name]
-            targeted_sample = TargetedSample(sample_name, condition, replicate,
-                                             mark, treatment)
+            targeted_sample = Sample(sample_name, condition, replicate,
+                                     mark=mark, treatment=treatment)
             targeted_samples.append(targeted_sample)
 
         self._samples = targeted_samples
@@ -780,7 +724,8 @@ class TargetedDesign(ExperimentalDesign):
         def pretty_dict(dic: Dict[str, Any]) -> str:
             s = ''
             for sample in self._samples:
-                s += '\t' + sample.sample_name + ': ' + str(dic[sample.sample_name]) + '\n'
+                s += '\t' + sample.sample_name + ': ' + str(
+                    dic[sample.sample_name]) + '\n'
             return s
 
         return \

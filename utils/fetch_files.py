@@ -73,15 +73,29 @@ def get_matching_strs(strs: List[str],
         matches = [re.match(reg, s) for reg in matching]
         matches_wanted_re = any(matches)
 
-        for i, match in enumerate(matches):
-            if one_to_one and match and inds_matches[i]:
-                raise RuntimeError(f"One-to-one mapping not found. Multiple matches found for {matching[i]}.")
-
         matches = [re.match(reg, s) for reg in not_matching]
         matches_not_wanted_re = any(matches)
 
-        if matches_wanted_re and not matches_not_wanted_re:
-            valid.append(s)
+        if not (matches_wanted_re and not matches_not_wanted_re):
+            continue
+
+        valid.append(s)
+
+        # Ensure that the added string did not match multiple regexes.
+        if one_to_one and sum(matches) != 1:
+            RuntimeError(
+                f"One-to-one mapping not found. Multiple matches found "
+                f"for {s}.")
+
+        # Ensure that the added string does not match any of the previously
+        # matched regexes.
+        for i, match in enumerate(matches):
+            if one_to_one and match and inds_matches[i]:
+                raise RuntimeError(f"One-to-one mapping not found. Multiple "
+                                   f"matches found for {matching[i]}.")
+
+        inds_matches = [inds_matches[i] or matches[i]
+                        for i in range(len(inds_matches))]
 
     s = ' '.join([
         '\nSearching for matches in \n\t', '\n\t'.join(strs),
