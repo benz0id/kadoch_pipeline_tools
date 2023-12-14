@@ -70,10 +70,10 @@ def get_matching_strs(strs: List[str],
     valid = []
     # Find all matching strings.
     for s in strs:
-        matches = [re.match(reg, s) for reg in matching]
+        matches = [bool(re.match(reg, s)) for reg in matching]
         matches_wanted_re = any(matches)
 
-        matches = [re.match(reg, s) for reg in not_matching]
+        matches = [bool(re.match(reg, s)) for reg in not_matching]
         matches_not_wanted_re = any(matches)
 
         if not matches_wanted_re or matches_not_wanted_re:
@@ -82,8 +82,6 @@ def get_matching_strs(strs: List[str],
         valid.append(s)
 
         # Ensure that the added string did not match multiple regexes.
-        print(matches)
-        print(sum(matches))
         if one_to_one and sum(matches) != 1:
             RuntimeError(
                 f"One-to-one mapping not found. Multiple matches found "
