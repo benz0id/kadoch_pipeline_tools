@@ -391,13 +391,16 @@ class ExperimentalDesign:
             sample.update_attrs(sample_attrs)
 
     def query(self, get: str,
-              filters: Dict[str, Any] = None) -> List[Any]:
+              filters: Dict[str, Any] = None,
+              sort: bool = True) -> List[Any]:
         """
         Returns <rtrn_attr> from each sample matching <filters>.
         :param filters: A dictionary mapping attribute names to one or more
             allowable values as a list.
         :param get: The attribute to return from all samples matching
             <filters>.
+        :param sort: Sort the samples before extracting the attributes of
+            interest.
         :return: A list of attributes of type <rtrn_attrs>.
         """
 
@@ -431,6 +434,9 @@ class ExperimentalDesign:
 
             if valid:
                 valid_samples.append(sample)
+
+        if sort:
+            valid_samples.sort()
 
         return_attrs = []
         for sample in valid_samples:
