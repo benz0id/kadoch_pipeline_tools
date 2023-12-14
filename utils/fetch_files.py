@@ -50,9 +50,6 @@ def get_matching_strs(strs: List[str],
         not_matching = [not_matching]
     if not isinstance(matching, list):
         matching = [matching]
-    
-    # Only needed if one-to-one mapping is required.
-    inds_matches = [False for _ in matching]
 
     if under_delim:
         matching = ['(^|_)' + regex + '(_|$)' for regex in matching]
@@ -68,13 +65,18 @@ def get_matching_strs(strs: List[str],
             matching[i] = matching[i] + '.*' + filetype + '$'
 
     valid = []
+
+    # Keep track of regexes that already have a match. Only needed if
+    # one-to-one mapping is required.
+    inds_matches = [False for _ in matching]
+
     # Find all matching strings.
     for s in strs:
-        matches = [bool(re.match(reg, s)) for reg in matching]
-        matches_wanted_re = any(matches)
+        valid_matches = [bool(re.match(reg, s)) for reg in matching]
+        matches_wanted_re = any(valid_matches)
 
-        matches = [bool(re.match(reg, s)) for reg in not_matching]
-        matches_not_wanted_re = any(matches)
+        invalid_matches = [bool(re.match(reg, s)) for reg in not_matching]
+        matches_not_wanted_re = any(invalid_matches)
 
         if not matches_wanted_re or matches_not_wanted_re:
             continue
@@ -82,19 +84,19 @@ def get_matching_strs(strs: List[str],
         valid.append(s)
 
         # Ensure that the added string did not match multiple regexes.
-        if one_to_one and sum(matches) != 1:
+        if one_to_one and sum(valid_matches) != 1:
             RuntimeError(
                 f"One-to-one mapping not found. Multiple matches found "
                 f"for {s}.")
 
         # Ensure that the added string does not match any of the previously
         # matched regexes.
-        for i, match in enumerate(matches):
+        for i, match in enumerate(valid_matches):
             if one_to_one and match and inds_matches[i]:
                 raise RuntimeError(f"One-to-one mapping not found. Multiple "
                                    f"matches found for {matching[i]}.")
 
-        inds_matches = [inds_matches[i] or matches[i]
+        inds_matches = [(inds_matches[i] or valid_matches[i])
                         for i in range(len(inds_matches))]
 
     s = ' '.join([
