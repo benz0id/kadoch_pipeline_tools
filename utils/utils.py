@@ -221,11 +221,11 @@ class TargetedSample(Sample):
         other_treat = self._treatment_order.index(other.treatment)
 
         if self._precedence == 'target':
-            self_targ *= len(self._target_order)
-            other_targ *= len(self._target_order)
+            self_targ = self_targ * len(self._treatment_order)
+            other_targ = other_targ * len(self._treatment_order)
         elif self._precedence == 'treatment':
-            self_treat *= len(self._treatment_order)
-            other_treat *= len(self._treatment_order)
+            self_treat = self_treat * len(self._target_order)
+            other_treat = other_treat * len(self._target_order)
         else:
             raise ValueError(f"{self._precedence} is not a valid precedence.")
 
