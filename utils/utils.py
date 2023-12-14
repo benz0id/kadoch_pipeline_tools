@@ -810,6 +810,8 @@ class ExperimentalDesign:
             if cond not in self._condition_order:
                 self._condition_order.append(cond)
 
+        rtrn.set_condition_order(rtrn._condition_order)
+
         return rtrn
 
 
@@ -988,6 +990,14 @@ class TargetedDesign(ExperimentalDesign):
         for cond in other._treatment_order:
             if cond not in self._treatment_order:
                 self._treatment_order.append(cond)
+
+        for cond in other._condition_order:
+            if cond not in self._condition_order:
+                self._condition_order.append(cond)
+
+        rtrn.set_condition_order(rtrn._condition_order)
+        rtrn.set_treatment_order(rtrn._treatment_order)
+        rtrn.set_target_order(rtrn._target_order)
 
         return rtrn
 
