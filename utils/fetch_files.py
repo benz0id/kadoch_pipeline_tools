@@ -104,6 +104,11 @@ def get_matching_strs(strs: List[str],
                         for i in range(len(inds_matches))]
 
     if one_to_one:
+        for i, s in enumerate(ordered_return):
+            if not s:
+                RuntimeError(f"One-to-one mapping not found. No "
+                             f"matches found for {matching[i]}.")
+
         assert sorted(valid) == sorted(ordered_return)
         valid = ordered_return
 
