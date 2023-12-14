@@ -69,6 +69,7 @@ class PythonJob(Job):
         if 'run_async' in kwargs and kwargs['run_async']:
             self._run_async = True
             self._thread = Thread(target=to_execute, args=args, kwargs=kwargs)
+            del kwargs['run_async']
         else:
             self._run_async = False
 
