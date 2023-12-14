@@ -633,8 +633,13 @@ class PeakPCAAnalyser:
 
         counts_files = self.generate_counts(common_peaks_path, reads,
                                             counts_dir)
-        counts_files = sorted(counts_files,
-                              key=lambda x: str(x).split('_')[1])
+
+        def get_pos(f) -> int:
+            sample = str(f.name).split('_')[1]
+            assert sample in experimental_design.get_samples()
+            return experimental_design.get_samples().index(sample)
+
+        counts_files = sorted(counts_files, key=get_pos)
 
         if not normalise_by_counts:
             matrix_path = analysis_dir / 'merged_counts_matrix.tsv'
