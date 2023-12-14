@@ -1,4 +1,5 @@
 import dataclasses
+import sys
 from copy import copy
 from pathlib import Path
 from typing import List, Dict, Union, Any, Tuple
@@ -9,6 +10,28 @@ from sample_sheet import SampleSheet
 class DesignError(Exception):
     pass
 
+
+def check_one_to_one(a: List[str], b: List[str], name: str) -> None:
+    """
+    Checks whether a and b have a one to one mapping.
+    :param a: A list of strings.
+    :param b: A list of strings
+    :param name: Common feature between the mappings.
+    :return:
+    """
+    unrepresented = copy(a)
+    # All conditions in this sample must be represented in this condition.
+    for s in b:
+        if s not in a:
+            raise ValueError(f'{s} not in the provided '
+                             f'{name} order list.')
+        if s in unrepresented:
+            unrepresented.remove(s)
+
+    if unrepresented:
+        unrepr_str = ', '.join(unrepresented)
+        print(f'The following conditions were not found in this '
+              f'design: {unrepr_str}', file=sys.stderr)
 
 def combine_cmds(cmds: List[str], num_per: int) -> List[str]:
     """
@@ -52,6 +75,8 @@ class Sample:
     sample_name: str
     condition: str
     replicate: int
+
+    _condition_order: List[str]
 
     target: str
     treatment: str
@@ -98,6 +123,113 @@ class Sample:
 
     def __eq__(self, other) -> bool:
         return self.sample_name == other.sample_name
+
+    def set_condition_order(self, condition_order: List[str]) -> None:
+        """
+        Sets the order of the conditions for internal ordering comparisons.
+        :param condition_order: 
+        :return: 
+        """
+        self._condition_order = condition_order
+
+    def __le__(self, other) -> bool:
+        if not '_condition_order' in self.__dict__:
+            return self.sample_name <= other.sample_name
+
+        assert self._condition_order == other._condition_order
+        return self._condition_order.index(self.condition) <= \
+            self._condition_order.index(other.condition)
+
+
+class TargetedSample(Sample):
+    """
+    === Description ===
+    Stores attributes of targeted samples which target a certain mark, e.g.
+    CUT&RUN, ChIP.
+
+    === Public Attributes ===
+    sample_name: The ID of the sample. Usually the experimenters initials
+        followed by the protocol and then the sample number.
+    condition: All information regarding the conditions used to generate this
+        sample.
+    replicate: The replicate number of this sample.
+    target: The target of this sample.
+    treatment: The treatment applied to this Sample. The same as
+            <condition> in a generic sample.
+
+
+    === Private Attributes ===
+    precedence: Whether to sort first by target or treatment.
+    target_order: A list of targets, in the order into which they should be
+        sorted.
+    treatment_order: A list of treatments, in the order into which they should
+        be sorted.
+    """
+    target: str
+    treatment: str
+
+    _precedence: str
+    _target_order: List[str]
+    _treatment_order: List[str]
+
+    def __init__(self, sample_name: str, condition: str, replicate: int,
+                 target: str, treatment: str, **kwargs) -> None:
+        """
+        :param sample_name: The name of this sample.
+        :param condition: The condition under which this sample was generated.
+            Includes both the target/mark and the treatement applied.
+        :param replicate: The replicate of this sample.
+        :param target: The target of this sample.
+        :param treatment: The treatment applied to this Sample. The same as
+            <condition> in a generic sample.
+        :param kwargs: All other attributes of this sample.
+        """
+        super().__init__(sample_name, condition, replicate, **kwargs)
+        self.target = target
+        self.treatment = treatment
+
+        self._precedence = 'treatment'
+
+    def set_target_order(self, target_order: List[str]) -> None:
+        """
+        Sets the order of the conditions for internal ordering comparisons.
+        :param target_order:
+        :return: 
+        """
+        self._target_order = target_order
+
+    def set_treatment_order(self, treatment_order: List[str]) -> None:
+        """
+        Sets the order of the conditions for internal ordering comparisons.
+        :param treatment_order: 
+        :return: 
+        """
+        self._treatment_order = treatment_order
+
+    def __le__(self, other) -> bool:
+        if '_target_order' not in self.__dict__ or \
+                '_treatment_order' not in self.__dict__:
+            return self.sample_name <= other.sample_name
+
+        assert self._target_order == other._target_order
+        assert self._treatment_order == other._treatment_order
+
+        self_targ = self._target_order.index(self.target)
+        self_treat = self._treatment_order.index(self.treatment)
+
+        other_targ = self._target_order.index(other.target)
+        other_treat = self._treatment_order.index(other.treatment)
+
+        if self._precedence == 'target':
+            self_targ *= len(self._target_order)
+            other_targ *= len(self._target_order)
+        elif self._precedence == 'treatment':
+            self_treat *= len(self._treatment_order)
+            other_treat *= len(self._treatment_order)
+        else:
+            raise ValueError(f"{self._precedence} is not a valid precedence.")
+
+        return self_treat + self_targ <= other_treat + other_targ
 
 
 def args_to_filters(**kwargs) -> Dict[str, Any]:
@@ -160,6 +292,7 @@ class ExperimentalDesign:
     conditions: The conditions in the experiments.
     """
     _samples: List[Sample]
+    _condition_order: List[str]
 
     def __init__(self, sample_to_condition: Dict[str, str],
                  sample_to_rep_number: Dict[str, int] = None) -> None:
@@ -188,6 +321,26 @@ class ExperimentalDesign:
 
             sample = Sample(sample, condition, rep_num)
             self._samples.append(sample)
+
+    def set_condition_order(self, condition_order: List[str]) -> None:
+        """
+        Sets the order in which to sort the samples in this design.
+        :param condition_order: The order of the sample conditions. Must 
+            contain conditions for all samples.
+        :return:
+        """
+
+        check_one_to_one(condition_order,
+                         [sample.condition for sample in self._samples],
+                         'condition')
+
+        self._condition_order = condition_order
+
+        for sample in self._samples:
+            sample.set_condition_order(condition_order)
+
+    def sort_samples(self) -> None:
+        self._samples.sort()
 
     def remove_str(self, s: str, samples: List[str] = None, pos: int = None,
                    attrs: List[str] = None) -> None:
@@ -635,7 +788,10 @@ class ExperimentalDesign:
 
 
 class TargetedDesign(ExperimentalDesign):
-    _samples: List[Sample]
+
+    _samples: List[TargetedSample]
+    _target_order: List[str]
+    _treatment_order: List[str]
 
     def __init__(self, sample_to_condition: Dict[str, str],
                  sample_to_mark: Dict[str, str],
@@ -651,8 +807,8 @@ class TargetedDesign(ExperimentalDesign):
             replicate = sample.replicate
             mark = sample_to_mark[sample_name]
             treatment = sample_to_treatment[sample_name]
-            targeted_sample = Sample(sample_name, condition, replicate,
-                                     target=mark, treatment=treatment)
+            targeted_sample = TargetedSample(sample_name, condition, replicate,
+                                             target=mark, treatment=treatment)
             targeted_samples.append(targeted_sample)
 
         self._samples = targeted_samples
@@ -680,6 +836,37 @@ class TargetedDesign(ExperimentalDesign):
                              f" {len(res)} != {num_expected} {f_str}")
 
         return res
+
+    def set_target_order(self, target_order: List[str]) -> None:
+        """
+        Sets the order in which to sort the samples in this design.
+        :param target_order: The order of the sample targets. Must 
+            contain targets for all samples.
+        :return:
+        """
+        check_one_to_one(target_order,
+                         [sample.target for sample in self._samples],
+                         'target')
+
+        self._target_order = target_order
+
+        for sample in self._samples:
+            sample.set_target_order(target_order)
+
+    def set_treatment_order(self, treatment_order: List[str]) -> None:
+        """
+        Sets the order in which to sort the samples in this design.
+        :param treatment_order: The order of the sample treatments. Must 
+            contain treatments for all samples.
+        :return:
+        """
+        check_one_to_one(treatment_order,
+                         [sample.treatment for sample in self._samples],
+                         'treatment')
+        self._treatment_order = treatment_order
+
+        for sample in self._samples:
+            sample.set_treatment_order(treatment_order)
 
     def get_mark(self, sample_name: str) -> str:
         for sample in self._samples:
