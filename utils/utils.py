@@ -400,6 +400,10 @@ class ExperimentalDesign:
             <filters>.
         :return: A list of attributes of type <rtrn_attrs>.
         """
+
+        if filters is None:
+            filters = {}
+
         filters = copy(filters)
         for filter in filters:
             if not isinstance(filters[filter], list):
