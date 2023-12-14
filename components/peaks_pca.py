@@ -38,7 +38,7 @@ MAX_PCA_DIMS = 5
 def generate_pca_plot(counts_matrix_path: Path,
                       design: ExperimentalDesign,
                       out_filepath: Path, dims: int = 3,
-                      n_info_cols: int = 0, sample_ids: bool = False,
+                      n_info_cols: int = 1, sample_ids: bool = False,
                       samples: List[str] = None,
                       colour_groups: List[str] = 'by_condition',
                       shape_groups: List[str] = 'by_rep',
