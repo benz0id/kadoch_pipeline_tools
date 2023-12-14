@@ -96,6 +96,9 @@ class Sample:
             if attr not in self.__dict__:
                 raise ValueError(f'Unrecognised attribute: {attr}')
 
+    def __eq__(self, other) -> bool:
+        return self.sample_name == other.sample_name
+
 
 def args_to_filters(**kwargs) -> Dict[str, Any]:
     """
