@@ -1,6 +1,6 @@
 import dataclasses
 import sys
-from copy import copy
+from copy import copy, deepcopy
 from pathlib import Path
 from typing import List, Dict, Union, Any, Tuple
 
@@ -802,7 +802,7 @@ class ExperimentalDesign:
         if type(self) != type(other):
             raise ValueError('Addition not defined between these classes.')
 
-        rtrn = copy(self)
+        rtrn = deepcopy(self)
 
         rtrn._samples.extend(other._samples)
 
@@ -977,7 +977,7 @@ class TargetedDesign(ExperimentalDesign):
         if type(self) != type(other):
             raise ValueError('Addition not defined between these classes.')
 
-        rtrn = copy(self)
+        rtrn = deepcopy(self)
 
         rtrn._samples.extend(other._samples)
 
