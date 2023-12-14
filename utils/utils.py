@@ -187,7 +187,7 @@ class TargetedSample(Sample):
         super().__init__(sample_name, condition, replicate, **kwargs)
         self.target = target
         self.treatment = treatment
-
+        self._condition_order = []
         self._precedence = 'treatment'
 
     def set_target_order(self, target_order: List[str]) -> None:
@@ -790,6 +790,29 @@ class ExperimentalDesign:
             subset.remove_sample(sample_name)
         return subset
 
+    def __add__(self, other):
+        """
+        Returns an experimental design containing samples from both
+        experimental designs. Resets condition orders if they are not
+        identical.
+        :param other: Another experimental design.
+        :return:
+        """
+
+        if type(self) != type(other):
+            raise ValueError('Addition not defined between these classes.')
+
+        rtrn = copy(self)
+
+        rtrn._samples.extend(other._samples)
+
+        for cond in other._condition_order:
+            if cond not in self._condition_order:
+                self._condition_order.append(cond)
+
+        return rtrn
+
+
 
 class TargetedDesign(ExperimentalDesign):
 
@@ -814,6 +837,9 @@ class TargetedDesign(ExperimentalDesign):
             targeted_sample = TargetedSample(sample_name, condition, replicate,
                                              target=mark, treatment=treatment)
             targeted_samples.append(targeted_sample)
+
+        self._target_order = []
+        self._treatment_order = []
 
         self._samples = targeted_samples
 
@@ -938,6 +964,32 @@ class TargetedDesign(ExperimentalDesign):
                 self._samples.remove(sample)
                 return
         raise ValueError(f'{sample_name} not found in list of samples.')
+
+    def __add__(self, other):
+        """
+        Returns an experimental design containing samples from both
+        experimental designs. Resets condition orders if they are not
+        identical.
+        :param other: Another experimental design.
+        :return:
+        """
+
+        if type(self) != type(other):
+            raise ValueError('Addition not defined between these classes.')
+
+        rtrn = copy(self)
+
+        rtrn._samples.extend(other._samples)
+
+        for cond in other._target_order:
+            if cond not in self._target_order:
+                self._target_order.append(cond)
+
+        for cond in other._treatment_order:
+            if cond not in self._treatment_order:
+                self._treatment_order.append(cond)
+
+        return rtrn
 
 
 def convert_to_targeted(design: ExperimentalDesign, mark_slice: slice,
