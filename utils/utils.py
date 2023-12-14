@@ -390,13 +390,13 @@ class ExperimentalDesign:
                 sample_attrs[attr] = pruned_val
             sample.update_attrs(sample_attrs)
 
-    def query(self, filters: Dict[str, Any],
-              rtrn_attr: str) -> List[Any]:
+    def query(self, get: str,
+              filters: Dict[str, Any] = None) -> List[Any]:
         """
         Returns <rtrn_attr> from each sample matching <filters>.
         :param filters: A dictionary mapping attribute names to one or more
             allowable values as a list.
-        :param rtrn_attr: The attribute to return from all samples matching
+        :param get: The attribute to return from all samples matching
             <filters>.
         :return: A list of attributes of type <rtrn_attrs>.
         """
@@ -432,13 +432,13 @@ class ExperimentalDesign:
         for sample in valid_samples:
             attrs = sample.get_attrs()
 
-            if rtrn_attr not in attrs:
+            if get not in attrs:
                 allowable = ', '.join(list(attrs.keys()))
                 raise ValueError(
-                    f'Received unexpected return attribute {rtrn_attr}. '
+                    f'Received unexpected return attribute {get}. '
                     f'Allowble attributes include {allowable}.')
 
-            return_attrs.append(attrs[rtrn_attr])
+            return_attrs.append(attrs[get])
         return return_attrs
 
     def find_in_files(self, files: List[Path],
