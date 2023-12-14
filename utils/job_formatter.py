@@ -4,6 +4,7 @@ import os
 import sys
 from copy import copy
 from dataclasses import dataclass
+from threading import Thread
 from typing import Union, Any, List, Dict
 
 from patterns.observer import Observable, Observer
@@ -50,6 +51,7 @@ class PythonJob(Job):
     kwargs: To be passed to <to_execute<.
 
     """
+    _run_async: bool
 
     def __init__(self, cmd: str, observers: List[Observer], to_execute, *args,
                  **kwargs) -> None:
@@ -58,16 +60,29 @@ class PythonJob(Job):
         :param cmd: A string representation of the command to be executed.
         :param observers: The observers to notify when this job is executed.
         :param to_execute: The function or method descriptor to pass <args> and <kwargs> upon execution.
+        :param run_async: Whether to spawn a thread to execute the job.
         :param args: To be passed to <to_execute>.
         :param kwargs: To be passed to <to_execute>.
         """
         super().__init__(cmd, observers)
+
+        if 'run_async' in kwargs and kwargs['run_async']:
+            self._run_async = True
+            self._thread = Thread(to_execute, args=args, kwargs=kwargs)
+        else:
+            self._run_async = False
+
         self._to_execute = to_execute
         self.args = args
         self.kwargs = kwargs
 
+    def get_thread(self) -> Thread:
+        return self._thread
+
     def execute(self) -> None:
         logger.info(f'Executing {repr(self._to_execute)} with args: {str(self.args)} and kwargs: {str(self.kwargs)}.')
+        if self._run_async:
+            self._thread.start()
         self._to_execute(*self.args, **self.kwargs)
         self.notify_observers()
 
