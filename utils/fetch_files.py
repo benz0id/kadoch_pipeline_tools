@@ -98,6 +98,7 @@ def get_matching_strs(strs: List[str],
                 add(matches_map, i, s)
 
     oto_s = ''
+    oto_fail = False
     if one_to_one:
         # Assert all matching were matched.
         missing_matches = []
