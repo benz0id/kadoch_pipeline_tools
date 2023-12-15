@@ -354,7 +354,7 @@ class Slurmifier(JobBuilder, Observer):
 
         slurm_script = \
             [f'#!/bin/bash',
-             f'#SBATCH --job-name=PythonPipelineRunning{prog}',
+             f'#SBATCH --job-name={prog}',
              f'#SBATCH --mail-type={",".join(self.mailtype)}',
              f'#SBATCH --ntasks={params.num_cores}',
              f'#SBATCH --mem-per-cpu={params.ram_per_core}M',
