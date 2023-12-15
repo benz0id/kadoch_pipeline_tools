@@ -6,7 +6,7 @@ import uuid
 from copy import copy
 from datetime import datetime
 from pathlib import Path
-from typing import List, Union
+from typing import List, Union, Any, Dict
 
 from utils.path_manager import cmdify, PathManager
 
@@ -14,6 +14,16 @@ logger = logging.getLogger(__name__)
 
 Regex = str
 Regexes = Union[List[Regex], Regex]
+
+MAX_NUM_LINES = 50
+
+def add(dic, key, val) -> None:
+    if key in dic:
+        dic[key].append(val)
+    else:
+        dic[key] = [val]
+
+
 def get_matching_strs(strs: List[str],
                       matching: Regexes,
                       not_matching: Regexes = None,
@@ -68,8 +78,7 @@ def get_matching_strs(strs: List[str],
 
     # Keep track of regexes that already have a match. Only needed if
     # one-to-one mapping is required.
-    inds_matches = [False for _ in matching]
-    ordered_return = ['' for _ in matching]
+    matches_map = {}
 
     # Find all matching strings.
     for s in strs:
@@ -84,39 +93,41 @@ def get_matching_strs(strs: List[str],
 
         valid.append(s)
 
-        # Ensure that the added string did not match multiple regexes.
-        if one_to_one and sum(valid_matches) != 1:
-            RuntimeError(
-                f"One-to-one mapping not found. Multiple matches found "
-                f"for {s}.")
-
-        # Ensure that the added string does not match any of the previously
-        # matched regexes.
-        for i, match in enumerate(valid_matches):
-            mi = matching[i]
-            if one_to_one and match and inds_matches[i]:
-                raise RuntimeError(f"One-to-one mapping not found. Multiple "
-                                   f"matches found for {mi}.")
+        for i, match in valid_matches:
             if one_to_one and match:
-                ordered_return[i] = s
-
-        inds_matches = [(inds_matches[i] or valid_matches[i])
-                        for i in range(len(inds_matches))]
+                add(matches_map, i, s)
 
     if one_to_one:
-        for i, s in enumerate(ordered_return):
-            if not s:
-                RuntimeError(f"One-to-one mapping not found. No "
-                             f"matches found for {matching[i]}.")
+        # Assert all matching were matched.
+        missing_matches = []
+        for i, match in enumerate(matching):
+            if i not in matches_map:
+                missing_matches.append(match)
 
-        assert sorted(valid) == sorted(ordered_return)
-        valid = ordered_return
+        # Assert all matching had exactly one match.
+        multi_match = {}
+        for match, vals in matches_map.items():
+            if len(vals) > 1:
+                multi_match[matching[match]] = vals
+
+        s = 'One to one mapping error\n\n'
+        s += 'Failed to find matches for\n\t' + '\n\t'.join(missing_matches)
+        s += '\n\nFound Mutiple Matches for:\n'
+        for match, vals in multi_match.items():
+            s += '\t' + match + '\n\t\t'.join(vals)
+
+        if multi_match or missing_matches:
+            raise ValueError(s)
+
+        # Reorder to the original one-to-one order.
+        valid = [matches_map[i][0] for i in range(len(matching))]
 
     s = ' '.join([
-        '\nSearching for matches in \n\t', '\n\t'.join(strs),
+        '\nSearching for matches in \n\t', '\n\t'.join(strs[:MAX_NUM_LINES]),
         '\nMust match one of: ', ', '.join(matching),
         '\nCannot match any of: ', ', '.join(not_matching),
-        '\nMatches found: \n\t', '\n\t'.join(valid)
+        '\nMatches found: \n\t', '\n\t'.join(valid[:MAX_NUM_LINES]),
+        f'\nNote: Truncated at {MAX_NUM_LINES} lines.'
     ])
     logger.debug(s)
 
