@@ -80,6 +80,11 @@ def heatmaps_by_mark(design: TargetedDesign,
         with open(merged_peaks) as peaksfile:
             n_peaks = len(peaksfile.readlines())
 
+        if verbose:
+            print('Merging peaks for common peaks')
+            for file in peaks:
+                print('\t' + file.name)
+
         # Configure row and column names.
         row_name = f'All Merged {mark} Peaks (n = {n_peaks})'
         treatments = [design.query(get='treatment',
