@@ -121,9 +121,6 @@ def get_matching_strs(strs: List[str],
             for match, vals in multi_match.items():
                 oto_s += '\n\n\t' + match + '\n\t\t' + '\n\t\t'.join(vals)
 
-        # Reorder to the original one-to-one order.
-        valid = [matches_map[i][0] for i in range(len(matching))]
-
         oto_fail = multi_match or missing_matches
 
     s = ' '.join([
@@ -137,6 +134,9 @@ def get_matching_strs(strs: List[str],
 
     if oto_fail:
         raise ValueError(s + '\n\n' + oto_s)
+    elif one_to_one:
+        # Reorder to the original one-to-one order.
+        valid = [matches_map[i][0] for i in range(len(matching))]
 
     if verbose:
         print(s)
