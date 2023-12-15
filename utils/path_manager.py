@@ -14,6 +14,8 @@ EXECUTABLES_TO_SAVE = [
             'py'
         ]
 
+global wd
+
 def quotes(s: Union[str, Path]) -> str:
     """
     Wraps the given string in quotes. Useful when placing filepaths into commands.
@@ -32,11 +34,14 @@ def cmdify(*args: Union[str, Path, int, float]) -> str:
     :param args: Some number of objects.
     :return:
     """
+    global wd
     formatted = []
     for arg in args:
         if isinstance(arg, str):
             formatted.append(arg)
         elif isinstance(arg, Path):
+            if wd in arg.parents:
+                arg = os.path.relpath(arg, wd)
             formatted.append(quotes(arg))
         elif isinstance(arg, int):
             formatted.append(str(arg))
@@ -180,6 +185,8 @@ class PathManager:
     def __init__(self, working_dir: Path, verbose: bool = False) -> None:
         self.verbose = verbose
         self.project_dir = working_dir
+        global wd
+        wd = working_dir
         self.configure_required_dirs()
         self.backup_scripts()
 
