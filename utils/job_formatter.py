@@ -84,6 +84,7 @@ class PythonJob(Job):
         logger.info(f'Executing {repr(self._to_execute)} with args: {str(self.args)} and kwargs: {str(self.kwargs)}.')
         if self._run_async:
             self._thread.start()
+            return
         self._to_execute(*self.args, **self.kwargs)
         self.notify_observers()
 

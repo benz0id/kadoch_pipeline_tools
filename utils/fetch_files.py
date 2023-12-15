@@ -119,7 +119,7 @@ def get_matching_strs(strs: List[str],
         if multi_match:
             oto_s += '\n\nFound Mutiple Matches for:\n'
             for match, vals in multi_match.items():
-                oto_s += '\n\n\t' + match + '\n\t\t'.join(vals)
+                oto_s += '\n\n\t' + match + '\n\t\t' + '\n\t\t'.join(vals)
 
         # Reorder to the original one-to-one order.
         valid = [matches_map[i][0] for i in range(len(matching))]
