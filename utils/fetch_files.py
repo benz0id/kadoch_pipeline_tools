@@ -93,7 +93,7 @@ def get_matching_strs(strs: List[str],
 
         valid.append(s)
 
-        for i, match in valid_matches:
+        for i, match in enumerate(valid_matches):
             if one_to_one and match:
                 add(matches_map, i, s)
 
