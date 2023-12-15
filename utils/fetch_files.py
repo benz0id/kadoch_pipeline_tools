@@ -97,6 +97,7 @@ def get_matching_strs(strs: List[str],
             if one_to_one and match:
                 add(matches_map, i, s)
 
+    oto_fail = ''
     if one_to_one:
         # Assert all matching were matched.
         missing_matches = []
@@ -110,17 +111,19 @@ def get_matching_strs(strs: List[str],
             if len(vals) > 1:
                 multi_match[matching[match]] = vals
 
-        s = 'One to one mapping error\n\n'
-        s += 'Failed to find matches for\n\t' + '\n\t'.join(missing_matches)
-        s += '\n\nFound Mutiple Matches for:\n'
-        for match, vals in multi_match.items():
-            s += '\n\n\t' + match + '\n\t\t'.join(vals)
+        oto_s = 'One to one mapping error\n\n'
+        if missing_matches:
+            oto_s += 'Failed to find matches for\n\t' + '\n\t'.join(missing_matches)
 
-        if multi_match or missing_matches:
-            raise ValueError(s)
+        if multi_match:
+            oto_s += '\n\nFound Mutiple Matches for:\n'
+            for match, vals in multi_match.items():
+                oto_s += '\n\n\t' + match + '\n\t\t'.join(vals)
 
         # Reorder to the original one-to-one order.
         valid = [matches_map[i][0] for i in range(len(matching))]
+
+        oto_fail = multi_match or missing_matches
 
     s = ' '.join([
         '\nSearching for matches in \n\t', '\n\t'.join(strs[:MAX_NUM_LINES]),
@@ -129,7 +132,10 @@ def get_matching_strs(strs: List[str],
         '\nMatches found: \n\t', '\n\t'.join(valid[:MAX_NUM_LINES]),
         f'\nNote: Truncated at {MAX_NUM_LINES} lines.'
     ])
-    logger.debug(s)
+    logger.debug(s + '\n\n' * bool(oto_fail) + oto_fail)
+
+    if oto_fail:
+        raise ValueError(s + '\n\n' + oto_fail)
 
     if verbose:
         print(s)
