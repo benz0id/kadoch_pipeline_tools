@@ -114,7 +114,7 @@ def get_matching_strs(strs: List[str],
         s += 'Failed to find matches for\n\t' + '\n\t'.join(missing_matches)
         s += '\n\nFound Mutiple Matches for:\n'
         for match, vals in multi_match.items():
-            s += '\t' + match + '\n\t\t'.join(vals)
+            s += '\n\n\t' + match + '\n\t\t'.join(vals)
 
         if multi_match or missing_matches:
             raise ValueError(s)
