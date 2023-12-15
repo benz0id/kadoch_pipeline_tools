@@ -619,9 +619,8 @@ class PeakPCAAnalyser:
             if not file.name.split('.')[-1] == ft:
                 raise ValueError('All read files must be of the same type.')
 
-        if ft == 'bam':
-            old_idx = self._idx_stats
-            self.update_genome_index(reads[0])
+        old_idx = self._idx_stats
+        self.update_genome_index(reads[0])
 
         if not analysis_dir.exists():
             self._jobs.execute(cmdify('mkdir', analysis_dir))
@@ -664,8 +663,7 @@ class PeakPCAAnalyser:
         pj = PythonJob('Generate PCA figures' + str(args[-2:]), [],
                        generate_pca_plot, *args, n_info_cols=1)
         self._jobs.execute_lazy(pj)
-        if ft == 'bam':
-            self._idx_stats = old_idx
+        self._idx_stats = old_idx
 
         return matrix_path
 
