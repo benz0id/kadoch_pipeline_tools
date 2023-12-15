@@ -132,10 +132,10 @@ def get_matching_strs(strs: List[str],
         '\nMatches found: \n\t', '\n\t'.join(valid[:MAX_NUM_LINES]),
         f'\nNote: Truncated at {MAX_NUM_LINES} lines.'
     ])
-    logger.debug(s + '\n\n' * bool(oto_fail) + oto_fail)
+    logger.debug(s + '\n\n' * bool(oto_s) + oto_s)
 
     if oto_fail:
-        raise ValueError(s + '\n\n' + oto_fail)
+        raise ValueError(s + '\n\n' + oto_s)
 
     if verbose:
         print(s)
