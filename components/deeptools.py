@@ -47,7 +47,7 @@ def generate_bed_matrix(beds: List[Path], bigwigs: List[Path],
 
     one_core = ExecParams(max_runtime=Runtime(0, 0, 30),
                           num_cores=1,
-                          ram_per_core=5000,
+                          ram_per_core=2048,
                           builder=builder)
 
     matrix_files = []
