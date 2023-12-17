@@ -151,7 +151,7 @@ def heatmaps_by_mark(design: TargetedDesign,
         logger.info(s + merge_str)
 
         # Perform check to ensure that correct labels and files have been used.
-        for i, bigwig in bigwigs:
+        for i, bigwig in enumerate(bigwigs):
             components = bigwig.name.split('_')
             treatment = treatments[i]
             if treatment not in components or mark not in components:
