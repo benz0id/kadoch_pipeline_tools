@@ -1,8 +1,8 @@
 import logging
-import os
 import sys
 from pathlib import Path
 from threading import Thread
+from time import sleep
 from typing import Dict, Callable
 
 from components.deeptools import generate_bed_matrix
@@ -11,7 +11,7 @@ from utils.job_formatter import JobBuilder, PythonJob, ExecParams
 from utils.job_manager import JobManager
 from utils.mark_colour_map import get_colour
 from utils.path_manager import cmdify, PathManager
-from utils.utils import ExperimentalDesign, TargetedDesign
+from utils.utils import TargetedDesign
 
 logger = logging.getLogger(__file__)
 
@@ -67,6 +67,8 @@ def heatmaps_by_mark(design: TargetedDesign,
 
     threads = []
 
+    cmds = []
+
     # Generate matrices.
     for mark in set(design.get_marks()):
         # Configure output directory
@@ -89,7 +91,7 @@ def heatmaps_by_mark(design: TargetedDesign,
 
         # Merge peaks.
         merged_peaks = mark_common_dir / 'common_peaks.bed'
-        job_manager.execute_lazy(
+        cmds.append(
             cmdify('cat', *peaks,
                    '| bedtools sort',
                    '| bedtools merge',
@@ -169,6 +171,11 @@ def heatmaps_by_mark(design: TargetedDesign,
         if verbose:
             print(violation_string, file=sys.stderr)
         logger.info(violation_string)
+
+    sleep(1)
+
+    for cmd in cmds:
+        job_manager.execute_lazy(cmd)
 
     for thread in threads:
         thread.start()
