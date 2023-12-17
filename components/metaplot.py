@@ -78,15 +78,20 @@ def heatmaps_by_mark(design: TargetedDesign,
         merged_peaks = mark_common_dir / 'common_peaks.bed'
         job_manager.execute_lazy(cmdify('cat', *peaks, '>', merged_peaks))
         with open(merged_peaks) as peaksfile:
-            n_peaks = len(peaksfile.readlines())
+            n_merged_peaks = len(peaksfile.readlines())
 
         if verbose:
             print('Merging peaks for common peaks')
             for file in peaks:
-                print('\t' + file.name)
+                with open(file, 'r') as peakfile:
+                    sub_n_peaks = len(peakfile.readlines())
+
+                print('\t' + str(sub_n_peaks) + '\t' + file.name)
+            print(f'Final Merged:\n\t{n_merged_peaks}\t{merged_peaks.name}')
+
 
         # Configure row and column names.
-        row_name = f'All Merged {mark} Peaks (n = {n_peaks})'
+        row_name = f'All Merged {mark} Peaks (n = {n_merged_peaks})'
         treatments = [design.query(get='treatment',
                                    filters={'sample_name': sn})[0]
                       for sn in sample_names]
@@ -124,7 +129,7 @@ def heatmaps_by_mark(design: TargetedDesign,
             f'Columns:' \
             f'{col_strs}\n' \
             f'Rows:\n\n' \
-            f'\t{row_name}\t-\t{merged_peaks}'
+            f'\t{row_name}\t-\t{merged_peaks.name}'
 
         if verbose:
             print(s)
