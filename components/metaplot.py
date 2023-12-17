@@ -89,11 +89,13 @@ def heatmaps_by_mark(design: TargetedDesign,
 
         # Merge peaks.
         merged_peaks = mark_common_dir / 'common_peaks.bed'
-        job_manager.execute_lazy(cmdify('cat', *peaks, '>', merged_peaks))
+        job_manager.execute_lazy(
+            cmdify('cat', *peaks,
+                   '| bedtools sort',
+                   '| bedtools merge',
+                   '>', merged_peaks))
         with open(merged_peaks) as peaksfile:
             n_merged_peaks = len(peaksfile.readlines())
-
-
 
         # Configure row and column names.
         row_name = f'All Merged {mark} Peaks (n = {n_merged_peaks})'
@@ -135,7 +137,7 @@ def heatmaps_by_mark(design: TargetedDesign,
             f'Columns:' \
             f'{col_strs}\n' \
             f'Rows:\n\n' \
-            f'\t{row_name}\t-\t{merged_peaks.name}'
+            f'\t{row_name}\t-\t{merged_peaks.name}\n\n'
 
         merge_str = ''
         merge_str += '\t --- Peak Merging ---\n'
