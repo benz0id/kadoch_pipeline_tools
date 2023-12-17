@@ -1,5 +1,6 @@
 import logging
 import os
+import sys
 from pathlib import Path
 from threading import Thread
 from typing import Dict, Callable
@@ -15,6 +16,13 @@ from utils.utils import ExperimentalDesign, TargetedDesign
 logger = logging.getLogger(__file__)
 
 
+def add(dic, key, val):
+    if key in dic:
+        dic[key].append(val)
+    else:
+        dic[key] = [val]
+
+
 def heatmaps_by_mark(design: TargetedDesign,
                      mark_to_bigwigs_dir: Dict[str, Path],
                      mark_to_peaks: Dict[str, Path],
@@ -24,7 +32,8 @@ def heatmaps_by_mark(design: TargetedDesign,
                      start_array: Callable,
                      stop_array: Callable,
                      cores_per_job: int = 1,
-                     verbose: bool = False) -> None:
+                     verbose: bool = False,
+                     namesafe_check: bool = True) -> None:
     """
     Generate heatmaps for each mark.
     :param cores_per_job:
@@ -45,8 +54,12 @@ def heatmaps_by_mark(design: TargetedDesign,
     :param stop_array: Command to call in oder to stop a job array.
     :param verbose: Print addiitonal information regarding the process to the
         console.
+    :param namesafe_check: Perform addition checks to ensure that the correct
+        files are being used independent of specifications provided by
+        <design>.
     :return: None.
     """
+    namesafe_violations = {}
 
     for mark in set(design.get_marks()):
         assert mark in mark_to_bigwigs_dir
@@ -80,14 +93,6 @@ def heatmaps_by_mark(design: TargetedDesign,
         with open(merged_peaks) as peaksfile:
             n_merged_peaks = len(peaksfile.readlines())
 
-        if verbose:
-            print('Merging peaks for common peaks')
-            for file in peaks:
-                with open(file, 'r') as peakfile:
-                    sub_n_peaks = len(peakfile.readlines())
-
-                print('\t' + str(sub_n_peaks) + '\t' + file.name)
-            print(f'Final Merged:\n\t{n_merged_peaks}\t{merged_peaks.name}')
 
 
         # Configure row and column names.
@@ -118,6 +123,7 @@ def heatmaps_by_mark(design: TargetedDesign,
         threads.append(Thread(target=job_manager.execute_lazy, args=[pj]))
 
         # Make string representation of the figure.
+
         col_strs = ''
         for i, bw in enumerate(bigwigs):
             filename = bw.name
@@ -131,9 +137,36 @@ def heatmaps_by_mark(design: TargetedDesign,
             f'Rows:\n\n' \
             f'\t{row_name}\t-\t{merged_peaks.name}'
 
+        merge_str = ''
+        merge_str += '\t --- Peak Merging ---\n'
+        for file in peaks:
+            with open(file, 'r') as peakfile:
+                sub_n_peaks = len(peakfile.readlines())
+            merge_str += '\t' + str(sub_n_peaks) + '\t' + file.name + '\n'
+        merge_str += f'Final Merged:\n\t{n_merged_peaks}\t' \
+                     f'{merged_peaks.name}\n'
+
         if verbose:
-            print(s)
-        logger.info(s)
+            print(s + merge_str)
+        logger.info(s + merge_str)
+
+        # Perform check to ensure that correct labels and files have been used.
+        for i, bigwig in bigwigs:
+            components = bigwig.name.split('_')
+            treatment = treatments[i]
+            if treatment not in components or mark not in components:
+                add(namesafe_violations, mark, (bigwig, treatment))
+
+    if namesafe_check and namesafe_violations:
+        violation_string = '\t===  Namesafe Check Failed ===\n'
+        for mark in namesafe_violations:
+            violation_string += f'Failures for {mark}\n'
+            for bw, treatment in namesafe_violations[mark]:
+                violation_string += f'\t{treatment} or {mark} ' \
+                                    f'not in {bw.name}\n'
+        if verbose:
+            print(violation_string, file=sys.stderr)
+        logger.info(violation_string)
 
     for thread in threads:
         thread.start()
