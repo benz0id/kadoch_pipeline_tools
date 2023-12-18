@@ -304,6 +304,8 @@ class HeatmapBuilder:
 
             jobs.append(PythonJob(
                 f'Make {mark_common_dir}', [],
+                run_async=True,
+
                 to_execute=self.gen_heatmap,
                 name=mark,
                 samples=samples,
