@@ -736,7 +736,7 @@ class ExperimentalDesign:
         for sample, file in zip(samples, files):
             violation = sample.namesafe_check(file)
             if violation:
-                add(namesafe_dict, (sample, file), violation)
+                add(namesafe_dict, (sample.sample_name, file), violation)
 
         return namesafe_dict
 

@@ -101,8 +101,9 @@ class HeatmapBuilder:
             row_names, row_desc, namesafe_vio2 = self.get_merged_peaks(
                 peaks, samples, merged_peaks, name, verbose)
 
-            violation_string += 'Peak Violations\n'
-            violation_string += vis_namesafe(namesafe_vio2)
+            if namesafe_vio2:
+                violation_string += 'Peak Violations\n'
+                violation_string += vis_namesafe(namesafe_vio2)
             row_names = [row_names]
             peaks = [peaks]
 
@@ -116,12 +117,15 @@ class HeatmapBuilder:
 
         # Perform check to ensure that correct labels and files have been used.
         if namesafe_check:
-            violation_string += 'Bigwig Violations\n'
             new_violations = self._design.namesafe_check(samples, bigwigs)
-            violation_string += vis_namesafe(new_violations)
+            if new_violations:
+                violation_string += 'Bigwig Violations\n'
+                violation_string += vis_namesafe(new_violations)
+                logger.info(violation_string)
+
+        if verbose and violation_string:
+            print(violation_string, file=sys.stderr)
         if violation_string:
-            if verbose:
-                print(violation_string, file=sys.stderr)
             logger.info(violation_string)
 
         # Make string representation of the figure.
