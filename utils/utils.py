@@ -753,6 +753,7 @@ class ExperimentalDesign:
 
     def subset_design(self, matching: List[Tuple[int, str]] = None,
                       not_matching: List[Tuple[int, str]] = None,
+                      sample_names: List[str] = None,
                       include_default: bool = False):
         """
         Returns a subset of this design with the containing or not containing,
@@ -762,6 +763,7 @@ class ExperimentalDesign:
             at least one of <str> at position <int> in order to be included.
         :param not_matching: After splitting each condition by '_', must not
             contain any of <str> at position <int> in order to be included.
+        :param sample_names: A list of sample names to be returned.
         :param include_default: Whether samples should be included by default.
         :return: A design with the selected samples.
         """
@@ -772,9 +774,17 @@ class ExperimentalDesign:
         if not not_matching:
             not_matching = []
 
+        if sample_names:
+            valid_samples = []
+            for sample in self._samples:
+                if sample.sample_name in sample_names:
+                    valid_samples.append(sample)
+        else:
+            valid_samples = self._samples
+
         to_inc = []
 
-        for sample in self._samples:
+        for sample in valid_samples:
             components = sample.condition.split('_')
             inc = include_default
 
