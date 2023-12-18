@@ -252,8 +252,7 @@ def heatmaps_by_mark(design: TargetedDesign,
 
     # Now, create figures.
     for mark in set(design.get_marks()):
-        mark_common_dir = file_manager.make(out_dir /
-                                            f'common_peaks_sub_{mark}')
+        mark_common_dir = file_manager.make(out_dir / mark)
         matrix = mark_common_dir / 'compute_matrix.gz'
         img = mark_common_dir / 'metaplot.png'
 
