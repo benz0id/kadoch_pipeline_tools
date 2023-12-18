@@ -31,7 +31,7 @@ def merge(dic, dic2):
 
 NameSafeDict = Dict[Tuple[str, Path], List[str]]
 
-class ps:
+class HeatmapBuilder:
     """
 
     Programmatically builds heatmaps. Contains numerous safeguards to ensure
