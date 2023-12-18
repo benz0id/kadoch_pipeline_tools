@@ -11,6 +11,24 @@ class DesignError(Exception):
     pass
 
 
+def add(dic, key, val):
+    if key in dic:
+        dic[key].append(val)
+    else:
+        dic[key] = [val]
+
+
+def vis_namesafe(namesafe_dict: Dict[Tuple[str, Path], List[str]]) -> str:
+    """
+    :return: a string visualising any namesafe violations found.
+    """
+    s = ''
+    for sample, file in namesafe_dict:
+        violation = namesafe_dict[(sample, file)]
+        s += f'\t{sample}\t{violation}\n'
+    return s
+
+
 def check_one_to_one(a: List[str], b: List[str], name: str) -> None:
     """
     Checks whether a and b have a one to one mapping.
@@ -32,6 +50,7 @@ def check_one_to_one(a: List[str], b: List[str], name: str) -> None:
         unrepr_str = ', '.join(unrepresented)
         print(f'The following conditions were not found in this '
               f'design: {unrepr_str}', file=sys.stderr)
+
 
 def combine_cmds(cmds: List[str], num_per: int) -> List[str]:
     """
@@ -109,6 +128,22 @@ class Sample:
         :return:
         """
         return self.__dict__
+
+    def namesafe_check(self, file: Path) -> str:
+        """
+        Check that the given file contains elements corresponding to this
+            sample.
+        :param file: A file generated from this sample.
+        :return: String representation of the violation, if it occurred.
+        """
+        condition_found = self.condition in file.name
+
+        if not condition_found:
+            violation = f"{self.condition} not found in {file.name}"
+        else:
+            violation = ''
+
+        return violation
 
     def update_attrs(self, attrs: Dict[str, Any]) -> None:
 
@@ -197,6 +232,30 @@ class TargetedSample(Sample):
         :return: 
         """
         self._target_order = target_order
+
+    def namesafe_check(self, file: Path) -> str:
+        """
+        Check that the given file contains elements corresponding to this
+            sample.
+        :param file: A file generated from this sample.
+        :return: String representation of the violation, if it occured.
+        """
+        fname_comps = file.name.split('_')
+
+        target_found = self.target in fname_comps
+        treatment_found = self.treatment in fname_comps
+
+        if not treatment_found and not target_found:
+            violation = f"{self.target} and {self.treatment} " \
+                        f"not found in {file.name}"
+        elif not treatment_found:
+            violation = f"{self.treatment} not found in {file.name}"
+        elif not target_found:
+            violation = f"{self.target} not found in {file.name}"
+        else:
+            violation = ''
+
+        return violation
 
     def set_treatment_order(self, treatment_order: List[str]) -> None:
         """
@@ -651,6 +710,32 @@ class ExperimentalDesign:
 
         return invalid_samples
 
+    def namesafe_check(self, sample_names: List[str], files: List[Path]) \
+            -> Dict[Tuple[str, Path], List[str]]:
+        """
+        Checks that the given <files> contain each of the attributes that would
+        be expected if they were derived from fastqs for each of <samples>.
+        :param sample_names: A list of valid sample names:
+        :param files: A list of paths to files.
+        :return: A dictionary mapping sample - file names pairs to all namesafe
+            violations found in that pair.
+        """
+        namesafe_dict = {}
+        samples = []
+        for sample_name in sample_names:
+            for sample in self._samples:
+                if sample.sample_name == sample_name:
+                    samples.append(sample)
+            raise ValueError(f'{sample_name} is not a valid sample name.')
+
+        assert len(samples) == len(files)
+        for sample, file in zip(samples, files):
+            violation = sample.namesafe_check(file)
+            if violation:
+                add(namesafe_dict, (sample, file), violation)
+
+        return namesafe_dict
+
     def get_fastq_groupings(self, fastqs: List[Path], verbose=False) -> List[
         List[Path]]:
         """
@@ -831,9 +916,7 @@ class ExperimentalDesign:
         return rtrn
 
 
-
 class TargetedDesign(ExperimentalDesign):
-
     _samples: List[TargetedSample]
     _target_order: List[str]
     _treatment_order: List[str]
