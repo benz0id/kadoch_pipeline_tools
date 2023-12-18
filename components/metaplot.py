@@ -141,7 +141,6 @@ def heatmaps_by_mark(design: TargetedDesign,
 
         return bedfiles, row_names, row_desc
 
-
     for mark in set(design.get_marks()):
         assert mark in mark_to_bigwigs_dir
         assert mark in mark_to_peaks
@@ -153,8 +152,7 @@ def heatmaps_by_mark(design: TargetedDesign,
     # Generate matrices.
     for mark in set(design.get_marks()):
         # Configure output directory
-        mark_common_dir = file_manager.make(out_dir /
-                                            f'common_peaks_sub_{mark}')
+        mark_common_dir = file_manager.make(out_dir / mark)
 
         # Fetch Peaks and bigwigs.
         bigwig_dir = mark_to_bigwigs_dir[mark]
