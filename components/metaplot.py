@@ -34,7 +34,8 @@ NameSafeDict = Dict[Tuple[str, Path], List[str]]
 class HeatmapBuilder:
     """
 
-
+    Programmatically builds heatmaps. Contains numerous safeguards to ensure
+    that the final heatmaps are not mislabelled.
 
     === Private Attributes ===
 
