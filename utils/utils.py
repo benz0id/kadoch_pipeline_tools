@@ -723,10 +723,14 @@ class ExperimentalDesign:
         namesafe_dict = {}
         samples = []
         for sample_name in sample_names:
+            found = False
             for sample in self._samples:
                 if sample.sample_name == sample_name:
                     samples.append(sample)
-            raise ValueError(f'{sample_name} is not a valid sample name.')
+                    found = True
+                    break
+            if not found:
+                raise ValueError(f'{sample_name} is not a valid sample name.')
 
         assert len(samples) == len(files)
         for sample, file in zip(samples, files):
