@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 from threading import Thread
 from time import sleep
-from typing import Dict, Callable
+from typing import Dict, Callable, Union, Tuple, List
 
 from components.deeptools import generate_bed_matrix
 from utils.fetch_files import get_matching_files
@@ -25,7 +25,8 @@ def add(dic, key, val):
 
 def heatmaps_by_mark(design: TargetedDesign,
                      mark_to_bigwigs_dir: Dict[str, Path],
-                     mark_to_peaks: Dict[str, Path],
+                     mark_to_peaks: Dict[str, Union[Path,
+                                              List[Tuple[str, Path]]]],
                      mark_to_scale_factor: Dict[str, int],
                      out_dir: Path, job_manager: JobManager,
                      job_builder: JobBuilder, file_manager: PathManager,
@@ -36,13 +37,21 @@ def heatmaps_by_mark(design: TargetedDesign,
                      namesafe_check: bool = True) -> None:
     """
     Generate heatmaps for each mark.
+
     :param cores_per_job:
     :param design: The experimental design to be used.
     :param mark_to_bigwigs_dir: Maps a mark to the directory containing the
         bigwigs to use for that mark.
-    :param mark_to_peaks: Maps a mark to the directory containing the
-        peaks to use for that mark (assumed to be either bed, narrowPeak or
-        broadPeak files)
+    :param mark_to_peaks:
+        Maps a mark to a directory containing bed files or a list of
+        bedfiles alongside their row names.
+
+        Iff the dict maps to a path, extract bedfiles for each treatment for
+        the given mark and merge them into a single common peaks bedfile.
+
+        Iff the dict maps to a list of Tuple[str, Path], use each of the Paths
+        as the row bedfile and the name as the name of that column.
+
     :param mark_to_scale_factor: Provides a scaling factor for each of the
         given marks.
     :param out_dir: The directory into which all the output figures and
@@ -60,6 +69,76 @@ def heatmaps_by_mark(design: TargetedDesign,
     :return: None.
     """
     namesafe_violations = {}
+
+    def get_merged_peaks(directory, mark) -> Tuple[Path, str, str]:
+        # Merge all the peaks files associated with <mark> into a single
+        # peakfile.
+        sample_names = design.query(get='sample_name',
+                                    filters={'target': mark})
+
+        treatments = [design.query(get='treatment',
+                                   filters={'sample_name': sn})[0]
+                      for sn in sample_names]
+
+        peaks = get_matching_files(peaks_dir, sample_names,
+                                   filetype='(((narrow|broad)Peak)|peaks.bed)',
+                                   under_delim=True, paths=True,
+                                   one_to_one=True)
+
+        merged_peaks = directory / 'common_peaks.bed'
+        cmds.append(
+            cmdify('cat', *peaks,
+                   '| bedtools sort',
+                   '| bedtools merge',
+                   '>', merged_peaks))
+        with open(merged_peaks) as peaksfile:
+            n_merged_peaks = len(peaksfile.readlines())
+        row_name = f'All Merged {mark} Peaks (n = {n_merged_peaks})'
+
+        for i, bedfile in enumerate(peaks):
+            components = bedfile.name.split('_')
+            treatment = treatments[i]
+            if treatment not in components or mark not in components:
+                add(namesafe_violations, mark, (bedfile, treatment))
+
+        # Display merging process.
+        merge_str = ''
+        merge_str += '\t --- Peak Merging ---\n'
+        for file in peaks:
+            with open(file, 'r') as peakfile:
+                sub_n_peaks = len(peakfile.readlines())
+            merge_str += '\t' + str(sub_n_peaks) + '\t' + file.name + '\n'
+        merge_str += f'Final Merged:\n\t{n_merged_peaks}\t' \
+                     f'{merged_peaks.name}\n'
+        if verbose:
+            print(merge_str)
+        logger.info(merge_str)
+
+        row_desc = f'Rows:\n\n' \
+            f'\t{row_name}\t-\t{merged_peaks.name}\n\n'
+
+        # Return path to merged peaks, name of merged peaks, and a description
+        # to be used as a row name.
+        return merged_peaks, row_name, row_desc
+
+    def get_annotated_peaks(peaks: List[Tuple[str, Path]]) -> \
+        Tuple[List[Path], List[str], str]:
+
+        bedfiles = []
+        row_names = []
+        row_desc = f'Rows:\n\n'
+
+        for rowname, bedfile in peaks:
+            bedfiles.append(bedfile)
+
+            with open(bedfile) as peaksfile:
+                n_merged_peaks = len(peaksfile.readlines())
+            row_name = f'{rowname} (n = {n_merged_peaks})'
+            row_names.append(row_name)
+            row_desc += f'\t{row_name}\t-\t{bedfile.name}\n\n'
+
+        return bedfiles, row_names, row_desc
+
 
     for mark in set(design.get_marks()):
         assert mark in mark_to_bigwigs_dir
@@ -84,26 +163,22 @@ def heatmaps_by_mark(design: TargetedDesign,
         bigwigs = get_matching_files(bigwig_dir, sample_names, filetype='bw',
                                      under_delim=True, paths=True,
                                      one_to_one=True)
-        peaks = get_matching_files(peaks_dir, sample_names,
-                                   filetype='(((narrow|broad)Peak)|peaks.bed)',
-                                   under_delim=True, paths=True,
-                                   one_to_one=True)
 
-        # Merge peaks.
-        merged_peaks = mark_common_dir / 'common_peaks.bed'
-        cmds.append(
-            cmdify('cat', *peaks,
-                   '| bedtools sort',
-                   '| bedtools merge',
-                   '>', merged_peaks))
-        with open(merged_peaks) as peaksfile:
-            n_merged_peaks = len(peaksfile.readlines())
-
-        # Configure row and column names.
-        row_name = f'All Merged {mark} Peaks (n = {n_merged_peaks})'
         treatments = [design.query(get='treatment',
                                    filters={'sample_name': sn})[0]
                       for sn in sample_names]
+
+        # Handle creation of Rows
+        peaks = mark_to_peaks[mark]
+        if isinstance(peaks, Path):
+            peaks, row_names, row_desc = get_merged_peaks(peaks, mark)
+            row_names = [row_names]
+            peaks = [peaks]
+        elif isinstance(peaks, list):
+            peaks, row_names, row_desc = get_annotated_peaks(peaks)
+        else:
+            raise ValueError('mark_to_peaks contains invalid dictionary '
+                             'values.')
 
         # Make matrix.
         matrix = mark_common_dir / 'compute_matrix.gz'
@@ -111,10 +186,10 @@ def heatmaps_by_mark(design: TargetedDesign,
                        [],
                        generate_bed_matrix,
 
-                       beds=[merged_peaks],
+                       beds=peaks,
                        bigwigs=bigwigs,
                        column_names=treatments,
-                       row_names=[row_name],
+                       row_names=row_names,
                        out_path=matrix,
                        jobs=job_manager,
                        builder=job_builder,
@@ -127,7 +202,6 @@ def heatmaps_by_mark(design: TargetedDesign,
         threads.append(Thread(target=job_manager.execute_lazy, args=[pj]))
 
         # Make string representation of the figure.
-
         col_strs = ''
         for i, bw in enumerate(bigwigs):
             filename = bw.name
@@ -138,21 +212,11 @@ def heatmaps_by_mark(design: TargetedDesign,
             f'\n' \
             f'Columns:' \
             f'{col_strs}\n' \
-            f'Rows:\n\n' \
-            f'\t{row_name}\t-\t{merged_peaks.name}\n\n'
-
-        merge_str = ''
-        merge_str += '\t --- Peak Merging ---\n'
-        for file in peaks:
-            with open(file, 'r') as peakfile:
-                sub_n_peaks = len(peakfile.readlines())
-            merge_str += '\t' + str(sub_n_peaks) + '\t' + file.name + '\n'
-        merge_str += f'Final Merged:\n\t{n_merged_peaks}\t' \
-                     f'{merged_peaks.name}\n'
+            + row_desc
 
         if verbose:
-            print(s + merge_str)
-        logger.info(s + merge_str)
+            print(s)
+        logger.info(s)
 
         # Perform check to ensure that correct labels and files have been used.
         for i, bigwig in enumerate(bigwigs):
