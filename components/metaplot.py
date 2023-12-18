@@ -105,7 +105,7 @@ class HeatmapBuilder:
                 violation_string += 'Peak Violations\n'
                 violation_string += vis_namesafe(namesafe_vio2)
             row_names = [row_names]
-            peaks = [peaks]
+            peaks = [merged_peaks]
 
         # Annotate a list of peak files to use as the rows.
         elif isinstance(peaks, list):
