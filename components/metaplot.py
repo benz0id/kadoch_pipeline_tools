@@ -80,12 +80,12 @@ def heatmaps_by_mark(design: TargetedDesign,
                                    filters={'sample_name': sn})[0]
                       for sn in sample_names]
 
-        peaks = get_matching_files(peaks_dir, sample_names,
+        peaks = get_matching_files(directory, sample_names,
                                    filetype='(((narrow|broad)Peak)|peaks.bed)',
                                    under_delim=True, paths=True,
                                    one_to_one=True)
 
-        merged_peaks = directory / 'common_peaks.bed'
+        merged_peaks = out_dir / mark / 'common_peaks.bed'
 
         job_manager.execute_lazy(
             cmdify('cat', *peaks,
