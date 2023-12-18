@@ -81,7 +81,8 @@ class PythonJob(Job):
         return self._thread
 
     def execute(self) -> None:
-        logger.info(f'Executing {repr(self._to_execute)} with args: {str(self.args)} and kwargs: {str(self.kwargs)}.')
+        logger.info(
+            f'Executing {repr(self._to_execute)} with args: {str(self.args)} and kwargs: {str(self.kwargs)}.')
         if self._run_async:
             self._thread.start()
             return
@@ -147,12 +148,25 @@ class ExecParams:
             self._requires = requires
 
     def __repr__(self):
-        return f'ExecParams(max_runtime={self.max_runtime}, ' \
-               f'num_cores={self.num_cores}, ' \
-               f'ram_per_core={self.ram_per_core}, ' \
-               f'builder={self.builder}, ' \
-               f'requires={self._requires}, ' \
-               f'wait={self.wait}'
+        s = f'ExecParams(runtime={self.max_runtime}, ' \
+            f'cores={self.num_cores}, ' \
+            f'ram={self.ram_per_core}, ' \
+            f'builder={self.builder}' \
+            f'wait={self.wait}'
+        if self._requires:
+            s += f', requires={self._requires} '
+        return s
+
+    def __str__(self):
+        s = f'Executed with ' \
+            f'\n\truntime={self.max_runtime} ' \
+            f'\n\tcores={self.num_cores} ' \
+            f'\n\tram={self.ram_per_core} ' \
+            f'\n\tbuilder={self.builder} '\
+            f'\n\t wait={self.wait}'
+        if self._requires:
+            s += f' \n\trequires={self._requires}'
+        return s
 
     def add_requirements(self, new_requirements: Dict[str, str]) -> None:
         """
@@ -178,6 +192,3 @@ class ExecParams:
         parameters.
         """
         return copy(self._requires)
-
-
-

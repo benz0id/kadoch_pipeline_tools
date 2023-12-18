@@ -4,6 +4,7 @@ from typing import List, Union
 from utils.cache_manager import CacheManager
 from utils.path_manager import PathManager
 from utils.job_formatter import ExecParams, Job, JobBuilder
+from stringcolor import *
 
 logger = logging.getLogger(__name__)
 
@@ -55,12 +56,12 @@ class JobManager:
             job = cmd
 
         if self._verbose and not self._prevent_execution:
-            print('\n\n', repr(exec_params), '\n\t/bin/bash', job.get_cmd(),
-                  '\n\n')
+            print('\n\n', cs(str(exec_params), 'blue'),
+                  '\n\t', job.get_cmd(), '\n\n')
         elif self._verbose and self._prevent_execution:
-            print('\n\n', '!!!Not Executing!!!:\n', repr(exec_params),
-                  '\n\t/bin/bash',
-                  job.get_cmd(), '\n\n')
+            print('\n\n', cs('!!!Not Executing!!!:\n', 'red'),
+                  cs(str(exec_params), 'blue'),
+                  '\n\t', job.get_cmd(), '\n\n')
         if not self._prevent_execution:
             job.execute()
 
@@ -81,11 +82,11 @@ class JobManager:
         execute_job = self._cache_manager.do_execution(job)
         if execute_job:
             if self._verbose and not self._prevent_execution:
-                print(repr(exec_params), '\n\t/bin/bash', job.get_cmd())
+                print(cs(str(exec_params), 'blue'),
+                      '\n\t', job.get_cmd(), '\n\n')
             elif self._verbose and self._prevent_execution:
-                print('!!!Not Executing!!!:\n', repr(exec_params),
-                      '\n\t/bin/bash',
-                      job.get_cmd())
+                print(cs('!!!Not Executing!!!:\n', 'red'), cs(str(exec_params), 'blue'),
+                      '\n\t', job.get_cmd(), '\n\n')
             if not self._prevent_execution:
                 logger.info(f'Lazily executing `{cmd}`.')
                 job.execute()

@@ -149,7 +149,7 @@ def generate_pca_plot(counts_matrix_path: Path,
         filename = ''.join(['pc', str(i + 1), '_vs_', 'pc',
                             str(j + 1) + '.svg'])
         plt.show()
-        plt.savefig(out_filepath / filename)
+        plt.savefig(out_filepath / filename, bbox_inches='tight')
         plt.close()
 
 
