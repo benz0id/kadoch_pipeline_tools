@@ -140,15 +140,14 @@ def generate_pca_plot(counts_matrix_path: Path,
         if shape_groups is not None:
             kwargs["style"] = 'reps'
 
-        ax = sns.scatterplot(**kwargs)
+        sns.scatterplot(**kwargs)
+        plt.xlabel(f'PC{i + 1}:{props[i]: .2f}')
+        plt.ylabel(f'PC{j + 1}:{props[j]: .2f}')
+        plt.title(title)
 
-        ax.set(title=title,
-               xlabel=f'PC{i + 1}:{props[i]: .2f}',
-               ylabel=f'PC{j + 1}:{props[j]: .2f}'
-               )
         filename = ''.join(['pc', str(i + 1), '_vs_', 'pc',
                             str(j + 1) + '.svg'])
-        plt.show()
+
         plt.savefig(out_filepath / filename, bbox_inches='tight')
         plt.close()
 

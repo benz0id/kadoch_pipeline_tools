@@ -158,14 +158,14 @@ class ExecParams:
         return s
 
     def __str__(self):
-        s = f'Executed with ' \
+        s = f'Execution Parameters:' \
             f'\n\truntime={self.max_runtime} ' \
             f'\n\tcores={self.num_cores} ' \
             f'\n\tram={self.ram_per_core} ' \
             f'\n\tbuilder={self.builder} '\
-            f'\n\t wait={self.wait}'
+            f'\n\twait={self.wait}'
         if self._requires:
-            s += f' \n\trequires={self._requires}'
+            s += f'\n\trequires={self._requires}'
         return s
 
     def add_requirements(self, new_requirements: Dict[str, str]) -> None:
