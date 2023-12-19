@@ -366,7 +366,7 @@ class PeakPCAAnalyser:
                 '| bedtools bamtobed', pe_str, '-i stdin',
                 '>', tmp_pe_bed, '\n'
                 'cat', tmp_pe_bed,
-                "| awk -v OFS='    ' {'print $1,$2,$6,$7,$8,$9'}",
+                "| awk -v OFS='\\t' {'print $1,$2,$6,$7,$8,$9'}",
                 '>', tmp_unsorted_bed, '\n'
                 'bedtools sort -i ', tmp_unsorted_bed, '-faidx', self._idx_stats,
                 '>', out_bed_path
