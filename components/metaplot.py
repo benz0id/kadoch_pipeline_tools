@@ -266,7 +266,8 @@ class HeatmapBuilder:
                          out_dir: Path,
                          cores_per_job: int = 1,
                          verbose: bool = False,
-                         namesafe_check: bool = True) -> None:
+                         namesafe_check: bool = True,
+                         run_async: bool = False) -> None:
         """
         Generate heatmaps for each mark.
 
@@ -304,7 +305,7 @@ class HeatmapBuilder:
 
             jobs.append(PythonJob(
                 f'Make {mark_common_dir}', [],
-                run_async=True,
+                run_async=run_async,
 
                 to_execute=self.gen_heatmap,
                 name=mark,
