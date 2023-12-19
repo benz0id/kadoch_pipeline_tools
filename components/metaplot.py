@@ -305,7 +305,6 @@ class HeatmapBuilder:
 
             jobs.append(PythonJob(
                 f'Make {mark_common_dir}', [],
-                run_async=run_async,
 
                 to_execute=self.gen_heatmap,
                 name=mark,
@@ -321,8 +320,17 @@ class HeatmapBuilder:
 
             ))
 
+        threads = []
         for job in jobs:
-            self._job_manager.execute(job)
+            threads.append(Thread(target=self._job_manager.execute,
+                                  args=[job]))
+        for thread in threads:
+            thread.start()
+
+        if not run_async:
+            for thread in threads:
+                thread.join()
+
 
 
 
