@@ -350,7 +350,7 @@ class Slurmifier(JobBuilder, Observer):
 
         queue, runtime_str = self.get_rt_params(params.max_runtime)
 
-        prog = 'command'.split(' ')[0].split('/')[-1]
+        prog = command.split(' ')[0].split('/')[-1]
 
         slurm_script = \
             [f'#!/bin/bash',
