@@ -44,7 +44,9 @@ def generate_pca_plot(counts_matrix_path: Path,
                       shape_groups: List[str] = 'by_rep',
                       title: str = 'PCA',
                       verbose: bool = False,
-                      n_most_variable: int = None) -> sns.scatterplot:
+                      n_most_variable: int = None,
+                      colour_label: str = 'labels',
+                      shape_label: str = 'reps') -> sns.scatterplot:
     """
     Generates a PCA plot displaying a dimensionality reduced -
     representation of the given counts matrix.
@@ -120,6 +122,9 @@ def generate_pca_plot(counts_matrix_path: Path,
         pcdf['labels'] = colour_groups
     if isinstance(shape_groups, list):
         pcdf['reps'] = shape_groups
+
+    pcdf.rename({'labels': colour_label,
+                 'reps': shape_label}, inplace=True)
 
     if verbose:
         print(pcdf.iloc[:, -3:])
