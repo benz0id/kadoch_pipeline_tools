@@ -165,7 +165,7 @@ class HeatmapBuilder:
                        )
         self._job_manager.execute_lazy(pj)
 
-        img = out_dir / f'{name}.png'
+        img = out_dir / f'{name}.svg'
 
         arrayable = \
             ExecParams(max_runtime=(0, 1, 0), num_cores=cores_per_job,
