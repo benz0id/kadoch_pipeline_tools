@@ -890,7 +890,7 @@ class ExperimentalDesign:
 
         to_rem = set([sample.sample_name
                       for sample in self._samples]) - set(to_inc)
-        subset = copy(self)
+        subset = deepcopy(self)
         for sample_name in to_rem:
             subset.remove_sample(sample_name)
         return subset
