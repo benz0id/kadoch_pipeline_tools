@@ -99,9 +99,6 @@ get_matching_file <- function(dir, patt){
 #' @export
 #'
 #' @examples
-
-
-
 get_gsea_results <- function(ref_condition, compare_cond, genesets, gsea_out_dir = 'gsea_out'){
   analysis_path <- get_analysis_path(ref_condition, compare_cond, genesets, parent_dir=gsea_out_dir)
   

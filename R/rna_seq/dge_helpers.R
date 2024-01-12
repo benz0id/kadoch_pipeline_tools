@@ -901,7 +901,7 @@ volcano <- function(de_gene_list, logfc_threshold, sig_threshold, reference_cond
   
   #  Include <num_names> most "outlying" genes names in the plot.
   de_gene_data$delabel <- NA
-  de_gene_data$fac <- abs(as.numeric(de_gene_data$logFC)) * - log2(as.numeric(de_gene_data$adj.P.Val))
+  de_gene_data$fac <- abs(as.numeric(de_gene_data$logFC)) * (- log10(as.numeric(de_gene_data$adj.P.Val)))
   outlier_rank <- order(de_gene_data$fac, decreasing = TRUE)
   most_interesting <- outlier_rank[seq(1, num_names)]
   if (num_names > 0){
@@ -921,21 +921,22 @@ volcano <- function(de_gene_list, logfc_threshold, sig_threshold, reference_cond
   
   # Generate a caption. Ignore NA genes.
   caption <- paste0(c('Fold change relative to ', reference_cond, 
-                      ' | logFC Threshold = +/-', as.character(logfc_threshold), 
+                      ' | log2FC Threshold = +/-', as.character(logfc_threshold), 
                       ' | Significance Threshold = ', as.character(sig_threshold),
                       ' | N Up = ', as.character(sum(up & ! is.na(up))),
                       ' | N Down = ', as.character(sum(down& ! is.na(down)))), 
                     collapse='')
   
   # Plot the data.
-  plt <- ggplot(data=de_gene_data, aes(x=logFC, y=-log2(adj.P.Val), col=diffexpressed, label = delabel)) + 
+  plt <- ggplot(data=de_gene_data, aes(x=logFC, y=-log10(adj.P.Val), col=diffexpressed, label = delabel)) + 
     geom_point() + 
     geom_vline(xintercept=c(-logfc_threshold, logfc_threshold), col="red") +
-    geom_hline(yintercept=-log2(sig_threshold), col="red") +
+    geom_hline(yintercept=-log10(sig_threshold), col="red") +
     scale_color_manual(values=c('blue','grey', 'red')) +
     geom_label(na.rm=TRUE) +
     labs(title=title,
-         caption=caption,) + 
+         caption=caption,
+         xlab='Log2FC') + 
     theme_bw() +
     theme(legend.position = 'none')
   
@@ -951,8 +952,8 @@ volcano <- function(de_gene_list, logfc_threshold, sig_threshold, reference_cond
 
 #' Generate a Simple Title for Two conditions
 #'
-#' @param reference_cond String representation of the first conditon.
-#' @param compare_cond String representation of the second conditon.
+#' @param reference_cond String representation of the first condition.
+#' @param compare_cond String representation of the second condition.
 #'
 #' @return
 #'
