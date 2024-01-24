@@ -348,7 +348,7 @@ tmm_normalize <- function(raw_counts, groups, num_desc_columns, show_factors=TRU
 
 logfc_MA_plot <- function(expression_data, groups, reference_cond, compare_cond,
                           logfc_threshold, genes_to_show = NULL, num_names=5,
-                          n_info_cols=1){
+                          n_info_cols=1, units='CPMs'){
   
   # Extract average expression.
   ref_cols <- which(groups == reference_cond) + n_info_cols
@@ -411,9 +411,9 @@ logfc_MA_plot <- function(expression_data, groups, reference_cond, compare_cond,
     scale_color_manual(values=c('blue','grey', 'red')) +
     geom_label(na.rm=TRUE) +
     labs(caption=caption,
-         title=paste0(c(reference_cond, ' vs ', compare_cond), collapse=''),
-         x=paste0(c(reference_cond, ' log2CPMs'), collapse=''),
-         y=paste0(c(compare_cond, ' log2CPMs'), collapse='')) + 
+         title=paste0(reference_cond, ' vs ', compare_cond),
+         x=paste0(reference_cond, paste0(' log2', units)),
+         y=paste0(compare_cond, paste0(' log2', units))) + 
     theme_bw() +
     theme(legend.position = 'none')
   
@@ -436,8 +436,8 @@ logfc_MA_plot <- function(expression_data, groups, reference_cond, compare_cond,
 #' 
 #' 
 #' 
-get_logfc_df <- function(expression_data, groups, reference_cond, compare_cond,
-                   logfc_threshold, n_info_cols=1, filter=TRUE){
+get_logfc_df <- function(expression_data, groups, reference_cond, compare_cond, 
+                         n_info_cols=1, filter=TRUE, add_raw_data=F){
   
   # Extract average expression.
   ref_cols <- which(groups == reference_cond) + n_info_cols
@@ -458,6 +458,15 @@ get_logfc_df <- function(expression_data, groups, reference_cond, compare_cond,
   if (filter){
     infs <- ave_expression$logfc == -Inf | ave_expression$logfc == Inf
     ave_expression <- ave_expression[!infs,]
+  }
+  
+  if (add_raw_data){
+    formatted_data <- expression_data[,c(1, ref_cols, compare_cols)]
+    
+    m <- match(ave_expression$gene_name, formatted_data$gene_name)
+    data_cols <- ((n_info_cols + 1):ncol(formatted_data))
+    
+    ave_expression <- cbind(ave_expression, formatted_data[m, data_cols])
   }
   
   return(ave_expression)
@@ -542,6 +551,67 @@ get_de_lm <- function(norm_counts, compare_groups, num_desc_columns,
 }
 
 
+#' Identify Differentially Enriched Genes Using DESeq
+#' 
+#' !!!NOTE!!!
+#' Input data should be raw counts.
+#'
+#' @param counts The raw count information to be input into DESeq.
+#' 
+#' @param compare_groups The groups to be compared via differential expression.
+#' Output expression data is relative to first group in the compare groups.
+#' 
+#' @param num_desc_columns The number of leading descriptive columns in counts
+#' to be removed when converting to a matrix.
+#'
+#' @return A DEList.
+#'
+#' @examples
+get_de_des <- function(counts, compare_groups, num_desc_columns, sort_by_pval=T){
+  # Define groups to compare.
+  groups_to_compare <- unique(compare_groups)
+  
+  if (length(groups_to_compare) != 2){
+    stop("Two unique groups are required.")
+  }
+  
+  # Make model.
+  fg <- compare_groups == groups_to_compare[1]
+  model_design <- as.matrix(data.frame(intercept=1, sg=!fg))
+  
+  # Format expression data before fitting.
+  expressionMatrix <- as.matrix(counts[, (num_desc_columns + 1):ncol(counts)])
+  rownames(expressionMatrix) <- counts$gene_name
+  colnames(expressionMatrix) <- colnames(counts)[(num_desc_columns + 1):length(counts)]
+  
+  # Make columns object.
+  columns <- data.frame(colnames(expressionMatrix))
+  
+  dds <- DESeqDataSetFromMatrix(countData = expressionMatrix,
+                                colData = columns,
+                                design = model_design)
+  
+  de <- DESeq(dds)
+  res <- results(de)
+  res <- as.data.frame(res)
+  res <- cbind(rownames(res), res)
+  rownames(res) <- c()
+  
+  # Rename Columns to be compatible with limma code.
+  colnames(res)[1] <- 'gene_name'
+  colnames(res)[3] <- 'logFC'
+  colnames(res)[6] <- 'P.Value'
+  colnames(res)[7] <- 'adj.P.Val'
+  
+  if (sort_by_pval){
+    res <- res[order(res$adj.P.Val, decreasing = FALSE),]
+  }
+  
+  return(res)
+  
+}
+
+
 #' Quantify Differential Expression Between Two Conditions
 #' 
 #' Returns the significance of differential expression for each gene between
@@ -572,8 +642,9 @@ get_de_lm <- function(norm_counts, compare_groups, num_desc_columns,
 #'
 #' @examples
 get_de_between_conditions <- function(expression_data, reference_cond, 
-                                      compare_cond, groups,
-                                      col_offset=1, save_output=TRUE){
+                                      compare_cond, groups, col_offset=1, 
+                                      save_output=TRUE, method='limma',
+                                      add_raw_data=FALSE){
   # Where expression_data is a dataframe of genes CPMs and c1_name and c2_name
   # are names in group. col_offset is the number of leading description columns 
   # in <expression_data>.
@@ -584,14 +655,28 @@ get_de_between_conditions <- function(expression_data, reference_cond,
                           get_cols(expression_data, groups,reference_cond, col_offset),
                           get_cols(expression_data, groups,compare_cond, col_offset))
   
-  colnames(formatted_data) <- c('gene_names', letters[1:(ncol(formatted_data) - 1)])
+  for (col in colnames(formatted_data)){
+    if (! all(formatted_data[col] == expression_data[col])){
+      stop(paste('Column misalignment detected at', col))
+    }
+  }
   
   formatted_groups <- rep(reference_cond, sum(groups == reference_cond))
   formatted_groups <- append(formatted_groups, rep(compare_cond, 
                                                    sum(groups == compare_cond)))
+  if (method == 'limma'){
+    output_hits <- get_de_lm(formatted_data, formatted_groups, col_offset)
+  } else if (method == 'deseq'){
+    output_hits <- get_de_des(formatted_data, formatted_groups, col_offset)
+  }
   
-  
-  output_hits <- get_de_lm(formatted_data, formatted_groups, col_offset)
+  if (add_raw_data){
+    
+    m <- match(output_hits$gene_name, formatted_data$gene_name)
+    data_cols <- ((col_offset + 1):ncol(formatted_data))
+    
+    output_hits <- cbind(output_hits, formatted_data[m, data_cols])
+  }
   
   if (save_output){
     out_name <- paste0(c('DE_list_', reference_cond, '_', compare_cond, '.csv'), 
@@ -797,6 +882,27 @@ get_venn_df <- function(expression_data, controls, treatments, groups,
 }
 
 
+#' Get Differentially Expressed Gene Names Using Log Fold Change Thresholding
+#'
+#' @param de_list A valid DE List, with *gene_name* and *logFC* columns.
+#' @param logfc_threshold The threshold for the DE.
+#' @param dir Either gain or loss.
+#'
+#' @return a vector of gene names.
+#' @export
+#'
+#' @examples
+get_de_genes_logfc <- function(de_list, logfc_threshold, dir){
+  logfc_threshold <- abs(logfc_threshold)
+  if (dir == 'gain'){
+    valid <- de_list$logFC >= logfc_threshold
+  } else if (dir == 'loss'){
+    valid <- de_list$logFC <= - logfc_threshold
+  }
+  return(de_list$gene_name[valid])
+}
+
+
 #' Get the Gene Symbols of All DE Genes.
 #'
 #' @param de_gene_list A data frame containing all differentially expressed 
@@ -819,7 +925,7 @@ get_venn_df <- function(expression_data, controls, treatments, groups,
 #'
 #' @examples
 get_de_gene_names <- function(de_gene_list, adjpval_threshold, logfc_threshold, 
-                              thr_set='abs', bool=FALSE){
+                              thr_set='abs', bool=FALSE, use_raw_p=F){
   # Return a vector containing all gene names with expression profiles matching
   # the given descriptions.
   # thr_set is one of "increase", "decrease", or "abs".
@@ -829,7 +935,11 @@ get_de_gene_names <- function(de_gene_list, adjpval_threshold, logfc_threshold,
          using the <thr_set> argument.")
   }
   
-  sig <- de_gene_list$adj.P.Val <= adjpval_threshold
+  if (use_raw_p){
+    sig <- de_gene_list$P.Value <= adjpval_threshold
+  } else {
+    sig <- de_gene_list$adj.P.Val <= adjpval_threshold
+  }
   
   gt <- de_gene_list$logFC >= logfc_threshold
   lt <- de_gene_list$logFC <= -logfc_threshold
@@ -884,7 +994,7 @@ DEFAULT_VOLCANO_TITLE <- "Identifying Key DE Genes Through Significance and Magn
 #' @examples
 volcano <- function(de_gene_list, logfc_threshold, sig_threshold, reference_cond,
                     num_names=5, title=DEFAULT_VOLCANO_TITLE, 
-                    genes_to_show=NULL, save_plot=TRUE){
+                    genes_to_show=NULL, save_plot=TRUE, raw_pval=F){
   
   # Copy to avoid aliasing.
   de_gene_data <- data.frame(de_gene_list)
@@ -894,8 +1004,8 @@ volcano <- function(de_gene_list, logfc_threshold, sig_threshold, reference_cond
   
   # Which genes are significantly differentially expressed and have high abs fold change?
   de_gene_data$diffexpressed <- "NO"
-  up <- get_de_gene_names(de_gene_data, sig_threshold, logfc_threshold, thr_set='increase', bool=TRUE)
-  down <- get_de_gene_names(de_gene_data, sig_threshold, logfc_threshold, thr_set = 'decrease', bool=TRUE)
+  up <- get_de_gene_names(de_gene_data, sig_threshold, logfc_threshold, thr_set='increase', bool=TRUE, use_raw_p=raw_pval)
+  down <- get_de_gene_names(de_gene_data, sig_threshold, logfc_threshold, thr_set = 'decrease', bool=TRUE, use_raw_p=raw_pval)
   de_gene_data$diffexpressed[up] <- "UP"
   de_gene_data$diffexpressed[down] <- "DOWN"
   
@@ -928,7 +1038,12 @@ volcano <- function(de_gene_list, logfc_threshold, sig_threshold, reference_cond
                     collapse='')
   
   # Plot the data.
-  plt <- ggplot(data=de_gene_data, aes(x=logFC, y=-log10(adj.P.Val), col=diffexpressed, label = delabel)) + 
+  if (! raw_pval){
+    aesthetic <- aes(x=logFC, y=-log10(adj.P.Val), col=diffexpressed, label = delabel)
+  } else {
+    aesthetic <- aes(x=logFC, y=-log10(P.Value), col=diffexpressed, label = delabel)
+  }
+  plt <- ggplot(data=de_gene_data, aesthetic) + 
     geom_point() + 
     geom_vline(xintercept=c(-logfc_threshold, logfc_threshold), col="red") +
     geom_hline(yintercept=-log10(sig_threshold), col="red") +
@@ -1193,6 +1308,58 @@ get_de_venn <- function(norm_cpms, control_group, treatment_groups, pval_thresho
   ))
   return(NULL)
 }
+
+
+#' Create Venn Diagrams Comparing Multiple Gene Lists
+#' 
+#' @param de_group_names Vector containing the names of each DE group of genes.
+#' 
+#' @param de_gene_vecs List containing vectors of gene names.
+#'
+#' @return the venn diagram object.
+#' @export
+#'
+#' @examples
+get_genelist_venn <- function(de_group_names, de_gene_vecs,
+                        height=1000, width=1000, margin=0.05, res=300, 
+                        do_main=TRUE, out_dir='output'){
+  # Generate a Venn diagram that compares the genes in common between each of
+  # the treatment groups.
+  
+  filename <- paste0(out_dir, '/venn_', paste0(c(de_group_names), collapse = '_vs_'), '.png')
+  
+  control_vs_treatment <- list()
+  
+  
+  fill <- c('lightpink', 'lightblue', 'lightgreen')[seq(1, length(de_group_names))]
+  
+  if(do_main){
+    main <- paste(get_title_vec(de_group_names))
+  } else {
+    main <- NULL
+  }
+  
+  
+  invisible(VennDiagram::venn.diagram(
+    imagetype="png" ,
+    height = height , 
+    width = width, 
+    resolution = res,
+    compression = "lzw",
+    x = de_gene_vecs,
+    category.names = de_group_names,
+    filename = filename,
+    output = TRUE,
+    fill = fill,
+    disable.logging = TRUE,
+    ext.text = FALSE,
+    margin=margin,
+    main = main,
+    disable_loggin=TRUE
+  ))
+  return(NULL)
+}
+
 
 
 #' Display all Images in a Directory with names Matching a Pattern

@@ -21,6 +21,7 @@ SESH = "/Users/btudorpr/Desktop/grace struct stuff/lab_sesh.cxs"
 OUT_DIR = "/Users/btudorpr/Desktop/grace struct stuff/lab_model_muts"
 d81_pos = '82'
 
+
 muts = [
     "K1027E",
     "K1033E",

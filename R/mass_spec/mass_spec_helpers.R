@@ -20,7 +20,7 @@ get_ms_marks <- function(data_frame, start, stop, sep='_'){
   stop <- neg_ind(stop)
   
   if (is.character(data_frame)){
-    data_start <- 5
+    data_start <- 3
     raw_data <- readr::read_csv(csv_path)
     columns <- colnames(raw_data)
     
@@ -52,28 +52,74 @@ get_ms_marks <- function(data_frame, start, stop, sep='_'){
 #' @param sel_unique Whether to return unique peptides.
 #' @return The formatted data frame, with gene names in the first column.
 #' 
-parse_mass_spec_matrix <- function(csv_path, sel_unique=FALSE, sp_filter=TRUE){
+parse_mass_spec_matrix <- function(csv_path, sel='total', sp_filter=TRUE,
+                                   add_refs_for_missing=T, gene_name_col=2){
   data_start <- 5
   raw_data <- readr::read_csv(csv_path)
   columns <- colnames(raw_data)
   
-  out_df <- data.frame(gene_name=raw_data$`Gene Symbol...2`)
+  out_df <- data.frame(gene_name=raw_data[gene_name_col])
   
-  data_end <- data_start
-  while (grepl('Unique', columns[data_end]) | 
-         grepl('Total', columns[data_end])){
-    data_end <- data_end +  1
+  # If no gene name is available, use reference.
+  if (add_refs_for_missing){
+    nas <- is.na(out_df$gene_name)
+    out_df$gene_name[nas] <- raw_data$reference[nas]
   }
-  data_end <- data_end - 1
+  
+  # Find requested columns.
+  data_end <- data_start
+  if (sel != 'intensity'){
+    data_start <- 5
+    data_end <- data_start
+    while (grepl('Unique', columns[data_end]) | 
+           grepl('Total', columns[data_end])){
+      data_end <- data_end +  1
+    }
+    data_end <- data_end - 1
+  } else if (sel == 'intensity') {
+    data_start <- 5
+    while(! grepl('Sum Intensity', columns[data_start])){
+      data_start <- data_start + 1
+    }
+    data_end <- data_start
+    while(grepl('Sum Intensity', columns[data_end])){
+      data_end <- data_end + 1
+    }
+  } else {
+    stop('Unrecognised data type')
+  }
   
   for(i in seq(data_start, data_end)){
     is_unique <- grepl('Unique', columns[i])
     
-    incl <- (sel_unique & is_unique) | (! sel_unique & ! is_unique)
+    if (sel == 'total' & grepl('Total', columns[i])){
+        incl <- T
+    } else if (sel == 'intensity' & grepl('Sum Intensity', columns[i])){
+        incl <- T
+    } else if (sel == 'unique' & grepl('Unique', columns[i])){
+        incl <- T
+    } else {
+        incl <- F
+    }
+    
+    print(paste(columns[i], is_unique))
     
     if (incl){
       out_df <- cbind(out_df, raw_data[,i])
       name <- unlist(strsplit(colnames(raw_data)[i], ' '))[2]
+    }
+  }
+  
+  if (sel == 'intensity'){
+    for (i in seq(2, ncol(out_df))){
+      for (j in seq(nrow(out_df))){
+        if (out_df[j, i] == 'NF'){
+          out_df[j, i] <- 0
+        }
+      }
+    }
+    for(col in seq(2, ncol(out_df))){
+      out_df[col] <- as.numeric(out_df[[col]])
     }
   }
   
@@ -83,6 +129,7 @@ parse_mass_spec_matrix <- function(csv_path, sel_unique=FALSE, sp_filter=TRUE){
     out_df <- out_df[keep,]
   }
   
+  colnames(out_df)[1] <- 'gene_name'
   return(out_df)
 }
 
@@ -98,7 +145,8 @@ parse_mass_spec_matrix <- function(csv_path, sel_unique=FALSE, sp_filter=TRUE){
 #' @return A data frame of the same format as the input dataframe, without the
 #'  input columns.
 #'  
-igg_normalize <- function(peptide_counts, marks, conditions, method='sub'){
+igg_normalize <- function(peptide_counts, marks, conditions, method='sub',
+                          norm_mark='igg'){
   if (is.data.frame(peptide_counts)){
     counts_matrix <- as.matrix(peptide_counts[DATA_START:ncol(peptide_counts)])
     rownames(counts_matrix) <- peptide_counts$gene_name
@@ -107,7 +155,8 @@ igg_normalize <- function(peptide_counts, marks, conditions, method='sub'){
     counts_matrix <- peptide_counts
   }
   
-  is_igg <- grepl('igg', marks, ignore.case = T)
+  is_igg <- grepl(norm_mark, marks, ignore.case = T)
+  print(is_igg)
   
   new_marks <- marks[! is_igg]
   new_conditions <- conditions[! is_igg]
@@ -118,8 +167,10 @@ igg_normalize <- function(peptide_counts, marks, conditions, method='sub'){
       cond_match <- new_conditions[i] == conditions[j]
       if (cond_match & is_igg[j]){
         if (method == 'div'){
+          print(paste(new_marks[i], new_conditions[i], ' / ', marks[j], conditions[j]))
           normalized_matrix[,i] <- normalized_matrix[,i] / counts_matrix[,j]
         } else if (method == 'sub') {
+          print(paste(new_marks[i], new_conditions[i], ' - ', marks[j], conditions[j]))
           normalized_matrix[,i] <- normalized_matrix[,i] - counts_matrix[,j]
         } else {
           stop('Unrecognised normalization method.')
