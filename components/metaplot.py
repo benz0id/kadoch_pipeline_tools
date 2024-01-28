@@ -82,6 +82,44 @@ class HeatmapBuilder:
                     namesafe_check: bool,
                     colour: str,
                     verbose: bool = False) -> None:
+        """
+        Generates a heatmap from provided peak and bigwig files.
+
+        This function creates a heatmap visualization using specified bigwig files
+        and peak information. It supports either a single merged peak file or a list
+        of annotated peak files. The function also performs validation checks on
+        file names and logs any violations. The generated heatmap is saved as an SVG file.
+
+        Parameters:
+        name (str): The name of the heatmap.
+        samples (List[str]): A list of sample names to be matched with bigwig files.
+        bigwigs (Path): Path to the directory containing bigwig files.
+        peaks (Union[Path, List[Tuple[str, Path]]]): Either a single Path to a merged
+            peak file or a list of tuples containing annotated peak information.
+        scale_factor (int): Scale factor for the heatmap intensity.
+        out_dir (Path): Output directory path where results will be saved.
+        cores_per_job (int): Number of cores to allocate per job.
+        namesafe_check (bool): Flag to enable or disable filename validation checks.
+        colour (str): Colour for the heatmap.
+        verbose (bool, optional): Flag to enable verbose logging. Defaults to False.
+
+        Returns:
+        None: This function does not return a value but saves the heatmap image in the output directory.
+
+        Raises:
+        ValueError: If the provided `peaks` parameter does not conform to the expected types.
+
+        Example:
+        >>> heatmap_generator.gen_heatmap("sample_heatmap", ["sample1", "sample2"],
+                                          Path("/path/to/bigwigs"),
+                                          Path("/path/to/peaks.bed"), 5,
+                                          Path("/output/directory"), 2, True,
+                                          "red", True)
+
+        This example will generate a heatmap named 'sample_heatmap' using bigwig files
+        corresponding to 'sample1' and 'sample2' in the specified directory, along with
+        the peaks information from 'peaks.bed', and save it in '/output/directory'.
+        """
         violation_string = ''
 
         # Fetch Peaks and bigwigs.
@@ -89,7 +127,12 @@ class HeatmapBuilder:
                                      under_delim=True, paths=True,
                                      one_to_one=True)
 
-        treatments = [self._design.query(get='treatment',
+        if isinstance(self._design, TargetedDesign):
+            cond = 'treatment'
+        else:
+            cond = 'condition'
+
+        treatments = [self._design.query(get=cond,
                                          filters={'sample_name': sn})[0]
                       for sn in samples]
 
