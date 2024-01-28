@@ -123,8 +123,9 @@ class DistanceToTSS:
             cmdify('mkdir', beds_dir, positional_info_dir))
 
         for bed in bed_to_bar_name:
+            bar_name = bed_to_bar_name[bed]
             self._jobs.execute_lazy(cmdify('cp', bed,
-                                           beds_dir / bed.name))
+                                           (bar_name + '.bed')))
 
         aug_beds = self.add_positional_info(beds_dir, positional_info_dir)
 
