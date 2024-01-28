@@ -7,7 +7,7 @@ from utils.fetch_files import get_matching_files, get_unique_filename, \
     outpath_to_dirname
 from utils.job_formatter import ExecParams
 from utils.job_manager import JobManager
-from utils.path_manager import PathManager, cmdify
+from utils.path_manager import PathManager, cmdify, quotes
 
 
 class DistanceToTSS:
@@ -76,7 +76,8 @@ class DistanceToTSS:
         beds = get_matching_files(beds_dir, [".*\.bed$"], paths=True)
         out_files = [beds_dir / (str(bed)[:-4] + ".nearestGene.txt")
                      for bed in beds]
-        cmd = cmdify("perl $soft/addNearestGeneToBED.pl",
+
+        cmd = cmdify("perl $soft_ben/scripts/addNearestGeneToBED.pl",
                      "$soft/hg19.ensembl.genebody.protein_coding.txt",
                      str(beds_dir) + '/')
         self._jobs.execute_lazy(cmd, self._med_job)
@@ -122,9 +123,8 @@ class DistanceToTSS:
             cmdify('mkdir', beds_dir, positional_info_dir))
 
         for bed in bed_to_bar_name:
-            bar_name = bed_to_bar_name[bed]
             self._jobs.execute_lazy(cmdify('cp', bed,
-                                           beds_dir / (bar_name + '.bed')))
+                                           beds_dir / bed.name))
 
         aug_beds = self.add_positional_info(beds_dir, positional_info_dir)
 
@@ -137,9 +137,11 @@ class DistanceToTSS:
         if not figure_out_path:
             figure_out_path = storage_dir / 'out.svg'
         print(*bed_to_bar_name.values())
+
+        bar_names = [quotes(bar_name) for bar_name in bed_to_bar_name.values()]
+
         cmd = cmdify('Rscript $Rcode/atac_seq/make_distance_to_tss_barplot.R',
-                     distance_to_tss_tsv, figure_out_path,
-                     *bed_to_bar_name.values())
+                     distance_to_tss_tsv, figure_out_path, *bar_names)
         self._jobs.execute_lazy(cmd)
 
         return figure_out_path
