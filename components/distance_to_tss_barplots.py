@@ -57,6 +57,7 @@ class DistanceToTSS:
         self._start_array = start_array
         self._wait_array = wait_array
         self._light_job = copy(light_job)
+        self._light_job.add_requirements({"R": "4.3.1"})
         self._med_job = copy(med_job)
         self._med_job.wait = True
         self._light_job.wait = True
@@ -143,7 +144,7 @@ class DistanceToTSS:
 
         cmd = cmdify('Rscript $Rcode/atac_seq/make_distance_to_tss_barplot.R',
                      distance_to_tss_tsv, figure_out_path, *bar_names)
-        self._jobs.execute_lazy(cmd)
+        self._jobs.execute_lazy(cmd, self._light_job)
 
         return figure_out_path
 
