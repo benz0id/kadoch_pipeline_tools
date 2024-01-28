@@ -101,7 +101,7 @@ class DistanceToTSS:
         self._jobs.execute_lazy(cmdify('mkdir', temp_dir))
         self._jobs.execute_lazy(cmdify('cp', *nearest_gene_beds, temp_dir))
 
-        cmd = cmdify("perl $soft/getDistanceToTSSmatrix.pl",
+        cmd = cmdify("perl $soft_ben/scripts/getDistanceToTSSmatrix.pl",
                      str(temp_dir) + '/', distance_to_tss_tsv)
         self._jobs.execute_lazy(cmd)
 
