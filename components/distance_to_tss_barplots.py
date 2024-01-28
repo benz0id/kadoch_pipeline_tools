@@ -99,6 +99,8 @@ class DistanceToTSS:
             <nearest_gene_beds_dir>.
         """
         temp_dir = self._paths.purgeable_files_dir / outpath_to_dirname(distance_to_tss_tsv)
+        if temp_dir.exists():
+            self._jobs.execute_lazy(cmdify('rm -r ', temp_dir))
         self._jobs.execute_lazy(cmdify('mkdir', temp_dir))
         self._jobs.execute_lazy(cmdify('cp', *nearest_gene_beds, temp_dir))
 
