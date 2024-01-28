@@ -151,8 +151,8 @@ def generate_pca_plot(counts_matrix_path: Path,
             kwargs["style"] = 'reps'
 
         sns.scatterplot(**kwargs)
-        plt.xlabel(f'PC{i + 1}:{props[i]: .2f}')
-        plt.ylabel(f'PC{j + 1}:{props[j]: .2f}')
+        plt.xlabel(f'PC{i + 1}:{props[i]: .2f}%')
+        plt.ylabel(f'PC{j + 1}:{props[j]: .2f}%')
         plt.title(title)
 
         filename = ''.join(['pc', str(i + 1), '_vs_', 'pc',
