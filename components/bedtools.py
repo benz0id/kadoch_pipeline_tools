@@ -87,19 +87,19 @@ def get_venn_peaks(peakfile_a: Path, peakfile_b: Path, title: str,
     b_only = out_dir / ('only_' + peakfile_b.name)
     common = out_dir / f"common_{rem_ext(peakfile_a)}_{rem_ext(peakfile_b)}.bed"
 
-    cmds += cmdify('bedtools intersect',
+    cmds.append(cmdify('bedtools intersect',
             '-a', peakfile_a,
             '-b', peakfile_b,
             '-wa', '-v',
-            '>', a_only)
+            '>', a_only))
 
-    cmds += cmdify('bedtools intersect',
+    cmds.append(cmdify('bedtools intersect',
             '-a', peakfile_b,
             '-b', peakfile_a,
             '-wa', '-v',
-            '>', b_only)
+            '>', b_only))
 
-    cmds += cmdify(
+    cmds.append(cmdify(
         'cat', peakfile_a, peakfile_b,
         '| bedtools sort',
         '| bedtools intersect',
@@ -112,7 +112,7 @@ def get_venn_peaks(peakfile_a: Path, peakfile_b: Path, title: str,
         '-wa',
         '| bedtools sort',
         '| bedtools merge',
-        '>', common)
+        '>', common))
 
     for cmd in cmds:
         jobs_manager.execute_lazy(cmd)
