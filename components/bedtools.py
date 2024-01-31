@@ -4,6 +4,7 @@ from typing import Tuple, List
 import matplotlib.pyplot as plt
 from matplotlib_venn import venn2
 
+from utils.job_manager import JobManager
 from utils.path_manager import cmdify
 
 
@@ -35,7 +36,7 @@ def rem_ext(filepath: Path) -> str:
     return filepath.name.split('.')[0]
 
 def get_venn_peaks(peakfile_a: Path, peakfile_b: Path, title: str,
-                   out_dir: Path,
+                   out_dir: Path, jobs_manager: JobManager,
                    set_a_name: str = None, set_b_name: str = None) \
         -> Tuple[Path, Path, Path, List[str]]:
     """
@@ -112,6 +113,9 @@ def get_venn_peaks(peakfile_a: Path, peakfile_b: Path, title: str,
         '| bedtools sort',
         '| bedtools merge',
         '>', common)
+
+    for cmd in cmds:
+        jobs_manager.execute_lazy(cmd)
 
     def get_num_lines(filepath: Path):
         with open(filepath, 'r') as file:
