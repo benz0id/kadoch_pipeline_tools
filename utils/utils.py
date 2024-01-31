@@ -233,6 +233,18 @@ class TargetedSample(Sample):
         """
         self._target_order = target_order
 
+    def set_precedence(self, precedence: str) -> None:
+        """
+        Sets the sorting precedence of the samples. Currently, 'target' and
+        'treatment' are supported.
+        :param precedence: Rither 'target' or 'treatment'.
+        :return: None
+        """
+        valid_ps = ['target', 'treatment']
+        if precedence not in ['target', 'treatment']:
+            raise ValueError(f'Precedence must be one of {str(valid_ps)}')
+        self._precedence = precedence
+
     def namesafe_check(self, file: Path) -> str:
         """
         Check that the given file contains elements corresponding to this
@@ -982,6 +994,15 @@ class TargetedDesign(ExperimentalDesign):
                              f" {len(res)} != {num_expected} {f_str}")
 
         return res
+
+    def set_precedence(self, precedence: str) -> None:
+        """
+        Set the precedence of the samples.
+        :param precedence: The primary attribute by which to sort the samples.
+        :return:
+        """
+        for sample in self._samples:
+            sample.set_precedence(precedence)
 
     def set_target_order(self, target_order: List[str]) -> None:
         """
