@@ -265,6 +265,26 @@ class TargetedSample(Sample):
         """
         self._treatment_order = treatment_order
 
+    def get_rank(self) -> int:
+        """
+        Get the sorted rank of this sample in a list of sorted samples.
+        :return:
+        """
+        self_targ = self._target_order.index(self.target)
+        self_treat = self._treatment_order.index(self.treatment)
+
+        if self._precedence == 'target':
+            self_targ = self_targ * len(self._treatment_order)
+        elif self._precedence == 'treatment':
+            self_treat = self_treat * len(self._target_order)
+        else:
+            raise ValueError(f"{self._precedence} is not a valid precedence.")
+
+        self_sum = self_treat + self_targ
+
+        return self_sum
+
+
     def __lt__(self, other) -> bool:
         if '_target_order' not in self.__dict__ or \
                 '_treatment_order' not in self.__dict__:
@@ -273,23 +293,8 @@ class TargetedSample(Sample):
         assert self._target_order == other._target_order
         assert self._treatment_order == other._treatment_order
 
-        self_targ = self._target_order.index(self.target)
-        self_treat = self._treatment_order.index(self.treatment)
-
-        other_targ = self._target_order.index(other.target)
-        other_treat = self._treatment_order.index(other.treatment)
-
-        if self._precedence == 'target':
-            self_targ = self_targ * len(self._treatment_order)
-            other_targ = other_targ * len(self._treatment_order)
-        elif self._precedence == 'treatment':
-            self_treat = self_treat * len(self._target_order)
-            other_treat = other_treat * len(self._target_order)
-        else:
-            raise ValueError(f"{self._precedence} is not a valid precedence.")
-
-        self_sum = self_treat + self_targ
-        other_sum = other_treat + other_targ
+        self_sum = self.get_rank()
+        other_sum = other.get_rank()
 
         if self_sum == other_sum:
             return self.replicate < other.replicate
