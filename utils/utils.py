@@ -288,7 +288,13 @@ class TargetedSample(Sample):
         else:
             raise ValueError(f"{self._precedence} is not a valid precedence.")
 
-        return self_treat + self_targ < other_treat + other_targ
+        self_sum = self_treat + self_targ
+        other_sum = other_treat + other_targ
+
+        if self_sum == other_sum:
+            return self.replicate < other.replicate
+
+        return self_sum < other_sum
 
 
 def args_to_filters(**kwargs) -> Dict[str, Any]:
