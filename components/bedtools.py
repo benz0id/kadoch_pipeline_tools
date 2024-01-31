@@ -7,24 +7,23 @@ from matplotlib_venn import venn2
 from utils.path_manager import cmdify
 
 
-def get_common_peaks(peaksfiles: List[Path], out_peaksfile: Path, looser: bool = False):
+def get_common_peaks(peaksfiles: List[Path], out_peaksfile: Path) \
+        -> Tuple[Path, str]:
 
-    cmd = c(
+    cmd = cmdify(
         'cat', *peaksfiles, '|',
         'bedtools sort '
     )
 
-
     for peaksfile in peaksfiles:
-        cmd += c(
+        cmd += cmdify(
             ' | bedtools intersect',
             '-a stdin',
             '-b', peaksfile, ' -wa',
             '| bedtools sort '
         )
-    cmd += c(' | bedtools sort | bedtools merge >', out_peaksfile)
-    lazy(cmd)
-    return out_peaksfile
+    cmd += cmdify(' | bedtools sort | bedtools merge >', out_peaksfile)
+    return out_peaksfile, cmd
 
 def get_merged_peaks(peaksfiles: List[Path], out_peaksfile: Path):
     cmd = cmdify(
@@ -49,14 +48,15 @@ def get_venn_peaks(peakfile_a: Path, peakfile_b: Path, title: str,
     as a PNG file. Additionally, it outputs the unique and common peak files.
 
     Parameters:
-    :param peakfile_a (Path): Path to the first peak file.
-    :param peakfile_b (Path): Path to the second peak file.
-    :param title (str): Title for the Venn diagram and part of the filename for
+    :param set_a_name:
+    :param peakfile_a: (Path) Path to the first peak file.
+    :param peakfile_b: (Path) Path to the second peak file.
+    :param title: (str) Title for the Venn diagram and part of the filename for
      output files.
-    :param out_dir (Path): Directory path where the output files will be saved.
-    :param set_a_name (str, optional): Name for the first set in the Venn diagram.
+    :param out_dir: (Path) Directory path where the output files will be saved.
+    :param set_a_name: (str, optional) Name for the first set in the Venn diagram.
                                 Defaults to the name of peakfile_a without its extension.
-    :param set_b_name (str, optional): Name for the second set in the Venn diagram.
+    :param set_b_name: (str, optional) Name for the second set in the Venn diagram.
                                 Defaults to the name of peakfile_b without its extension.
 
     :returns Tuple[Path, Path, Path]: Paths to the output files for peaks
@@ -68,10 +68,10 @@ def get_venn_peaks(peakfile_a: Path, peakfile_b: Path, title: str,
     It also relies on matplotlib for generating the Venn diagram.
 
     Example usage:
-    >>> a_only, b_only, common = get_venn_peaks(Path("fileA.bed"), Path("fileB.bed"),
-                                                "Comparison of A and B", Path("/output/directory"))
+    >>> a_only, b_only, common, cmds = get_venn_peaks(Path("fileA.bed"), Path("fileB.bed"), "Comparison of A and B", Path("/output/directory"))
     """
 
+    cmds = []
 
     if set_a_name is None:
         set_a_name = rem_ext(peakfile_a)
@@ -79,12 +79,12 @@ def get_venn_peaks(peakfile_a: Path, peakfile_b: Path, title: str,
     if set_b_name is None:
         set_b_name = rem_ext(peakfile_b)
 
-    out_dir = pm.make(out_dir / title.replace(' ', '_'))
+    out_dir = out_dir / title.replace(' ', '_')
+    cmds.append(cmdify('mkdir', out_dir))
+
     a_only = out_dir / ('only_' + peakfile_a.name)
     b_only = out_dir / ('only_' + peakfile_b.name)
     common = out_dir / f"common_{rem_ext(peakfile_a)}_{rem_ext(peakfile_b)}.bed"
-
-    cmds = []
 
     cmds += cmdify('bedtools intersect',
             '-a', peakfile_a,
