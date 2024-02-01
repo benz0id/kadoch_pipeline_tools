@@ -294,11 +294,12 @@ class PathManager:
         self.fastqc_dir = self.sequencing_dir / 'fastqc'
         self.safe_make(self.fastqc_dir)
 
-        self.sample_sheets_dir = self.project_dir / 'sample_sheets'
-        self.safe_make(self.sample_sheets_dir)
-
         self.demult_stats = self.sequencing_dir / 'demult_stats'
         self.safe_make(self.demult_stats)
+
+
+        self.sample_sheets_dir = self.project_dir / 'sample_sheets'
+        self.safe_make(self.sample_sheets_dir)
 
         self.move_logs_to_archive()
         self.local_pipeline_backup()

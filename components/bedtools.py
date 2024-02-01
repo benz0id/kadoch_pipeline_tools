@@ -26,14 +26,17 @@ def get_common_peaks(peaksfiles: List[Path], out_peaksfile: Path) \
     cmd += cmdify(' | bedtools sort | bedtools merge >', out_peaksfile)
     return out_peaksfile, cmd
 
+
 def get_merged_peaks(peaksfiles: List[Path], out_peaksfile: Path):
     cmd = cmdify(
         'cat', *peaksfiles, '| bedtools sort | bedtools merge >', out_peaksfile
     )
     return out_peaksfile, cmd
 
+
 def rem_ext(filepath: Path) -> str:
     return filepath.name.split('.')[0]
+
 
 def get_venn_peaks(peakfile_a: Path, peakfile_b: Path, title: str,
                    out_dir: Path, jobs_manager: JobManager,

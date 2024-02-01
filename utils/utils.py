@@ -302,8 +302,8 @@ class TargetedSample(Sample):
                 '_treatment_order' not in self.__dict__:
             return self.sample_name < other.sample_name
 
-        assert self._target_order == other._target_order
-        assert self._treatment_order == other._treatment_order
+        c1 = self._target_order == other._target_order
+        c2 = self._treatment_order == other._treatment_order
 
         self_sum = self.get_rank()
         other_sum = other.get_rank()
@@ -947,6 +947,7 @@ class TargetedDesign(ExperimentalDesign):
     _samples: List[TargetedSample]
     _target_order: List[str]
     _treatment_order: List[str]
+    _precedence: str
 
     def __init__(self, sample_to_condition: Dict[str, str],
                  sample_to_mark: Dict[str, str],
@@ -997,10 +998,11 @@ class TargetedDesign(ExperimentalDesign):
 
     def set_precedence(self, precedence: str) -> None:
         """
-        Set the precedence of the samples.
+        Set the  of the samples.
         :param precedence: The primary attribute by which to sort the samples.
         :return:
         """
+        self._precedence = precedence
         for sample in self._samples:
             sample.set_precedence(precedence)
 
@@ -1128,6 +1130,7 @@ class TargetedDesign(ExperimentalDesign):
 
         rtrn.set_treatment_order(rtrn._treatment_order)
         rtrn.set_target_order(rtrn._target_order)
+        rtrn.set_precedence(self._precedence)
 
         return rtrn
 
