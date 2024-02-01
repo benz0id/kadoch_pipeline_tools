@@ -29,6 +29,12 @@ DEFAULT_COLOUR_MAP = {'9ala': 'green',
                       'brg1': 'blue',
                       'c1': '"#0091FF"',
                       'ctcf': '"#BF49A6"',
+
+                      'crel': 'pink',
+                      'ebf1': 'magenta',
+                      'nfat1': 'teal',
+                      'nfkbp65': 'maroon',
+
                       'empty': 'grey',
                       'gltscr': 'green',
                       'gltscr1': '"#00BF86"',
