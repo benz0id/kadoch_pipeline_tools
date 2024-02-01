@@ -64,6 +64,13 @@ class CacheManager:
         self._purgeable_data = []
         self._name = name
 
+    def reset(self) -> None:
+        """
+        Reset the cache manager, re-initialising all paths and commands.
+        :return: None
+        """
+        self.__init__(self._path_manager, self._name, self._strict)
+
     def _read_cache(self) -> None:
         """Read previously executed commands from the cache."""
         with open(self._cache_path, 'r') as file:
