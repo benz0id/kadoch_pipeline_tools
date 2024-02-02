@@ -83,11 +83,11 @@ class PeakSorter:
         matrix = pd.read_csv(matrix_out, sep='\t')
 
         if metric == 'fold_change':
-            v1 = matrix[samples1].values.sum(axis=0)
-            v2 = matrix[samples2].values.sum(axis=0)
+            v1 = matrix[samples1].values.sum(axis=1)
+            v2 = matrix[samples2].values.sum(axis=1)
             matrix['fold_change'] = v2 / v1
 
-        matrix.sort_values(by=metric, ascending=False)
+        matrix.sort_values(by=metric, ascending=False, inplace=True)
         with open(out_path, 'w') as out_file:
             for peak in matrix['Sites']:
                 peak = peak.replace(':', '-')
