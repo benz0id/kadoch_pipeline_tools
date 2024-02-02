@@ -502,7 +502,8 @@ class PeakCounter:
 
             self._jobs.execute_lazy(
                 cmdify(
-                    'bedtools sort', bedfile,
+                    'bedtools sort',
+                    '-i', bedfile,
                     '-g', self._idx_stats,
                     ' | bedtools intersect',
                     '-a stdin',
