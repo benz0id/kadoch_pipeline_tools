@@ -48,7 +48,7 @@ class PeakSorter:
 
         matrix = pd.read_csv(matrix_out, sep='\t')
         vals = matrix[samples].values
-        matrix['row_sums'] = np.sum(vals, axis=0)[0]
+        matrix['row_sums'] = np.sum(vals, axis=0)
         matrix.sort_values(by='row_sums', ascending=False, inplace=True)
         matrix.reset_index(inplace=True)
 
