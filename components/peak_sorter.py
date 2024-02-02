@@ -62,9 +62,9 @@ class PeakSorter:
 
         return out_path
 
-    def comparison_sort(self, bed: Path, samples1: List[str],
-                        samples2: List[str], out_path: Path,
-                        metric: str = 'fold_change') -> Path:
+    def sort_by_fc(self, bed: Path,
+                   samples1: List[str], samples2: List[str],
+                   out_path: Path, pseudocount: float = 0.01) -> Path:
         """
         Sorts <bed> according to some feature of
         :param bed:
@@ -80,17 +80,14 @@ class PeakSorter:
 
         self._peak_counter.get_matrix(bed, self._counts_dir, self._design,
                                       matrix_out, samples1 + samples2)
+
         matrix = pd.read_csv(matrix_out, sep='\t')
+        v1 = matrix[samples1].values.sum(axis=1) + pseudocount
+        v2 = matrix[samples2].values.sum(axis=1) + pseudocount
+        fc = v2 / v1
+        matrix['fold_change'] = fc
 
-        if metric == 'fold_change':
-            v1 = matrix[samples1].values.sum(axis=1)
-            v2 = matrix[samples2].values.sum(axis=1)
-            print(matrix, )
-            fc = v2 / v1
-            print(fc)
-            matrix['fold_change'] = fc
-
-        matrix.sort_values(by=metric, ascending=False, inplace=True)
+        matrix.sort_values(by='fold_change', ascending=False, inplace=True)
         with open(out_path, 'w') as out_file:
             for peak in matrix['Sites']:
                 peak = peak.replace(':', '-')
