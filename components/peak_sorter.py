@@ -85,7 +85,10 @@ class PeakSorter:
         if metric == 'fold_change':
             v1 = matrix[samples1].values.sum(axis=1)
             v2 = matrix[samples2].values.sum(axis=1)
-            matrix['fold_change'] = v2 / v1
+            print(matrix, )
+            fc = v2 / v1
+            print(fc)
+            matrix['fold_change'] = fc
 
         matrix.sort_values(by=metric, ascending=False, inplace=True)
         with open(out_path, 'w') as out_file:
