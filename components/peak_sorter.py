@@ -53,6 +53,8 @@ class PeakSorter:
 
         with open(out_path, 'w') as out_file:
             for peak in matrix[['Sites']]:
+                if peak.strip == '':
+                    continue
                 peak = peak.replace(':', '-')
                 contig, start, stop = peak.split('-')
                 out_file.write(f'{contig}\t{start}\t{stop}\n')
