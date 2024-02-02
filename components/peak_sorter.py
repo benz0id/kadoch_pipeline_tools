@@ -48,7 +48,7 @@ class PeakSorter:
 
         matrix = pd.read_csv(matrix_out, sep='\t')
         vals = matrix[samples].values
-        matrix[['row_sums']] = np.sum(vals, axis=1)
+        matrix[['row_sums']] = np.sum(vals, axis=0)
         matrix.sort_values(by='row_sums', ascending=False)
 
         with open(out_path, 'w') as out_file:
@@ -82,8 +82,8 @@ class PeakSorter:
         matrix = pd.read_csv(matrix_out, sep='\t')
 
         if metric == 'fold_change':
-            v1 = matrix[samples1].values.sum(axis=1)
-            v2 = matrix[samples2].values.sum(axis=1)
+            v1 = matrix[samples1].values.sum(axis=0)
+            v2 = matrix[samples2].values.sum(axis=0)
             matrix[['fold_change']] = v2 / v1
 
         matrix.sort_values(by=metric, ascending=False)
