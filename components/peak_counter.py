@@ -149,7 +149,7 @@ class PeakCounter:
         """
         if not self._cache_record_path.exists():
             return None
-
+        match = None
         with file_lock, open(self._cache_record_path, 'r') as cache_file:
             lines = cache_file.readlines()
             cache = self.parse_cache(lines)
@@ -157,8 +157,22 @@ class PeakCounter:
                 bed_match = entry.bed_file == bed_file
                 read_match = entry.reads_file == reads_file
                 if bed_match and read_match:
-                    return entry.counts_file
-        return None
+
+                    match = entry.counts_file
+
+        if match is None:
+            return None
+
+        # Do a little checking on the match.
+        with open(bed_file, 'r') as bed_in, open(match, 'r') as counts:
+            num_bed_lines = len(bed_in.readlines())
+            num_counts_lines = len(counts.readlines())
+
+            if num_bed_lines != num_counts_lines:
+                raise ValueError('Cached Counts file does not match read '
+                                 'file.')
+            return match
+
 
     def get_matrix(self, bed: Path, read_file_dir: Path,
                    design: ExperimentalDesign,
