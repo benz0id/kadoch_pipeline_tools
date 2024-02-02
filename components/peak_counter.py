@@ -249,9 +249,6 @@ class PeakCounter:
         if ft == 'bam':
             self.update_genome_index(read_files[0])
 
-        # Sort count files by the experimental design if one was provided.
-        column_names = samples
-
         # Generate counts files.
         counts_files = self.generate_counts(bed, read_files)
 
@@ -269,7 +266,7 @@ class PeakCounter:
                        counts_files=counts_files,
                        matrix_out_path=out_matrix_path,
                        reads_to_normalise_to=read_files,
-                       column_names=column_names,
+                       column_names=samples,
                        add_sites_col=add_sites_col,
                        normalise_by_site_len=normalise_by_site_len
                        )
