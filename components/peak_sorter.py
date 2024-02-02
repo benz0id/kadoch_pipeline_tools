@@ -68,10 +68,10 @@ class PeakSorter:
         """
         Sorts <bed> according to some feature of
         :param bed:
-        :param count1:
-        :param counts2:
+        :param samples1:
+        :param samples2:
         :param out_path:
-        :param metric:
+        :param pseudocount:
         :return:
         """
 

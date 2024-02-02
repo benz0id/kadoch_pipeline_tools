@@ -81,7 +81,9 @@ class HeatmapBuilder:
                     cores_per_job: int,
                     namesafe_check: bool,
                     colour: str,
-                    verbose: bool = False) -> None:
+                    verbose: bool = False,
+                    plotheatmap_args: str =
+                    '--sortRegions descend --sortUsing mean') -> None:
         """
         Generates a heatmap from provided peak and bigwig files.
 
@@ -218,12 +220,10 @@ class HeatmapBuilder:
             "plotHeatmap",
             "-m", matrix,
             "-o", img,
-            "--sortRegions descend",
-            "--sortUsing mean",
             "--yMin 0 --zMin 0",
             "--yMax", scale_factor,
             "--zMax", scale_factor,
-            "--colorList", f'"{colour}"'
+            "--colorList", f'"{colour}"', plotheatmap_args
         )
         self._job_manager.execute_lazy(cmd, arrayable)
 
@@ -310,7 +310,10 @@ class HeatmapBuilder:
                          cores_per_job: int = 1,
                          verbose: bool = False,
                          namesafe_check: bool = True,
-                         run_async: bool = False) -> None:
+                         run_async: bool = False,
+                         plotheatmap_args: str =
+                         '--sortRegions descend --sortUsing mean'
+                         ) -> None:
         """
         Generate heatmaps for each mark.
 
@@ -360,6 +363,7 @@ class HeatmapBuilder:
                 namesafe_check=namesafe_check,
                 colour='white,' + get_colour(mark),
                 verbose=verbose,
+                plotheatmap_args=plotheatmap_args
 
             ))
 
