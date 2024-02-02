@@ -57,9 +57,7 @@ class PeakSorter:
                 contig, start, stop = peak.split('-')
                 out_file.write(f'{contig}\t{start}\t{stop}\n')
 
-
-
-
+        return out_file
 
     def comparison_sort(self, bed: Path, samples1: List[str],
                         samples2: List[str], out_path: Path,
@@ -91,4 +89,6 @@ class PeakSorter:
                 peak = peak.replace(':', '-')
                 contig, start, stop = peak.split('-')
                 out_file.write(f'{contig}\t{start}\t{stop}\n')
+
+        return out_file
 
