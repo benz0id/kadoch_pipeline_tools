@@ -47,14 +47,10 @@ class PeakSorter:
                                       matrix_out, samples)
 
         matrix = pd.read_csv(matrix_out, sep='\t')
-        print(matrix)
         vals = matrix[samples].values
-        print(vals)
         matrix['row_sums'] = np.sum(vals, axis=1)
         matrix.sort_values(by='row_sums', ascending=False, inplace=True)
         matrix.reset_index(inplace=True)
-
-        print(matrix)
 
         with open(out_path, 'w') as out_file:
             for peak in matrix['Sites']:
