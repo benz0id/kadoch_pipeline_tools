@@ -146,6 +146,9 @@ class PeakCounter:
         :param reads_file: Read file used to generate counts.
         :return:
         """
+        if not self._cache_record_path.exists():
+            return None
+
         with file_lock, open(self._cache_record_path, 'r') as cache_file:
             lines = cache_file.readlines()
             cache = self.parse_cache(lines)
@@ -153,7 +156,7 @@ class PeakCounter:
                 bed_match = entry.bed_file == bed_file
                 read_match = entry.reads_file == reads_file
                 if bed_match and read_match:
-                    raise entry.counts_file
+                    return entry.counts_file
         return None
 
     def get_matrix(self, bed: Path, read_files: List[Path],
