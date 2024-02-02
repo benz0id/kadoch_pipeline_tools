@@ -50,6 +50,7 @@ class PeakSorter:
         vals = matrix[samples].values
         matrix['row_sums'] = np.sum(vals, axis=0)[0]
         matrix = matrix.sort_values(by='row_sums', ascending=False)
+        matrix.reset_index(inplace=True)
 
         with open(out_path, 'w') as out_file:
             for peak in matrix['Sites']:
