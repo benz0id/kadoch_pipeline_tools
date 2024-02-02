@@ -47,6 +47,8 @@ class PeakSorter:
 
 
 
+
+
     def comparison_sort(self, bed: Path, count1: Path, counts2: Path,
                         out_path: Path, metric: str = 'fold_change') -> Path:
         """

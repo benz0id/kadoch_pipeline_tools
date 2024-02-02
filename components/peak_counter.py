@@ -139,6 +139,38 @@ class PeakCounter:
                         f'{entry.reads_file}\t'
                         f'{entry.counts_file}\n')
 
+    def remove_counts_file_from_cache(self, bed: Path, reads_file: Path,
+                                      counts: Path) -> None:
+        """
+        Checks the cache of file for which counts
+        :param bed:
+        :param reads_file:
+        :param counts:
+        :return:
+        """
+        if not bed.exists():
+            raise ValueError(str(bed) + ' does not exist.')
+
+        if not reads_file.exists():
+            raise ValueError(str(reads_file) + ' does not exist.')
+
+        with file_lock:
+            if self._cache_record_path.exists():
+                with open(self._cache_record_path, 'r') as cache_file:
+                    lines = cache_file.readlines()
+                    cache = self.parse_cache(lines)
+            else:
+                cache = []
+
+            cache.remove(CacheEntry(bed, reads_file, counts))
+
+            with open(self._cache_record_path, 'w') as cache_file:
+                for entry in cache:
+                    cache_file.write(
+                        f'{entry.bed_file}\t'
+                        f'{entry.reads_file}\t'
+                        f'{entry.counts_file}\n')
+
     def check_cache_for_counts_file(self, bed_file: Path, reads_file: Path) \
             -> Union[None, Path]:
         """
@@ -169,6 +201,7 @@ class PeakCounter:
             num_counts_lines = len(counts.readlines())
 
             if num_bed_lines != num_counts_lines:
+                self.remove_counts_file_from_cache(bed_file, reads_file, match)
                 raise ValueError('Cached Counts file does not match read '
                                  'file.')
             return match
