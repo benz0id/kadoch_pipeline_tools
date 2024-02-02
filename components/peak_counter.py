@@ -8,7 +8,8 @@ from typing import List, Callable, Tuple, Union, Dict
 import numpy as np
 import threading
 
-from utils.fetch_files import get_unique_filename, outpath_to_dirname
+from utils.fetch_files import get_unique_filename, outpath_to_dirname, \
+    get_matching_files
 from utils.job_formatter import ExecParams, PythonJob
 from utils.job_manager import JobManager
 from utils.path_manager import PathManager, cmdify
@@ -159,9 +160,10 @@ class PeakCounter:
                     return entry.counts_file
         return None
 
-    def get_matrix(self, bed: Path, read_files: List[Path],
-                   out_matrix_path: Path, norm_method: str = 'RPKM',
-                   design: ExperimentalDesign = None) -> None:
+    def get_matrix(self, bed: Path, read_file_dir: Path,
+                   design: ExperimentalDesign,
+                   out_matrix_path: Path, samples: List[str] = None,
+                   norm_method: str = 'RPKM') -> None:
         """
         Count the number of reads/fragments at each peak in <bed> for each of
         <read_files>.
@@ -171,29 +173,37 @@ class PeakCounter:
 
         :param bed: A valid bed file. Each annotation in this file will form a
         row in the output matrix.
-        :param read_files: A number of BAM/BED files containing read/fragment
-        information respectively.
+        :param read_file_dir: A directory containing bed or bam files for
+        each of the requested samples.
         :param out_matrix_path: The path into which the parse matrix will be
         placed.
+        :param design: Design of the experiment.
+        :param samples: The samples to include in the matrix. All samples in
+            the provided design by default.
         :param norm_method: How to normalize the reads. Only RPKM is currently
         supported.
-        :param design: Sort files by their sample name if a design is provided.
 
         :return:
         """
+        if not samples:
+            samples = design.get_samples()
+
+        read_files = get_matching_files(
+            read_file_dir, samples, filetype='[bam|bed]',
+            one_to_one=True, under_delim=True, paths=True)
+
         # Check that all input files are of the same type.
         ft = read_files[0].name.split('.')[-1]
         for file in read_files:
             if not file.name.split('.')[-1] == ft:
                 raise ValueError('All read files must be of the same type.')
 
-        # Update genome index if the filtype is a bam.
+        # Update genome index if the file type is a bam.
         if ft == 'bam':
             self.update_genome_index(read_files[0])
 
-        # Sort count files by the experimental design if one was provided
-        if design is not None:
-            read_files = design.align_to_samples(read_files)
+        # Sort count files by the experimental design if one was provided.
+        column_names = [rf.name.split('_')[1] for rf in read_files]
 
         # Generate counts files.
         counts_files = self.generate_counts(bed, read_files)
@@ -212,6 +222,7 @@ class PeakCounter:
                        counts_files=counts_files,
                        matrix_out_path=out_matrix_path,
                        reads_to_normalise_to=read_files,
+                       column_names=column_names,
                        add_sites_col=add_sites_col,
                        normalise_by_site_len=normalise_by_site_len
                        )
@@ -327,10 +338,10 @@ class PeakCounter:
 
     def make_counts_matrix(self, counts_files: List[Path],
                            matrix_out_path: Path,
-                           counts_names: List[str] = None,
-                           reads_to_normalise_to: List[Path] = None,
-                           add_sites_col: bool = False,
-                           normalise_by_site_len: bool = False) -> np.array:
+                           column_names: List[str] = None,
+                           add_sites_col: bool = True,
+                           normalise_by_site_len: bool = True,
+                           reads_to_normalise_to: List[Path] = None) -> np.array:
         """
         Aggregates all the counts in the given counts files into a single
         matrix. Use of *get_matrix* is generally reccomended for most users.
@@ -397,11 +408,11 @@ class PeakCounter:
         for i, counts_file in enumerate(counts_files):
             logger.info("Starting to Parse Counts from " + str(counts_file))
 
-            if counts_names:
-                col_name = counts_names[i]
+            if column_names:
+                col_name = column_names[i]
                 parsed_col_names.append(col_name)
             else:
-                col_name = counts_file.name.split('_')[1]
+                col_name = counts_file.name
                 parsed_col_names.append(col_name)
 
             with open(counts_file, 'r') as counts_file_obj:
@@ -474,8 +485,6 @@ class PeakCounter:
         :param bedfile: A sorted bedfile.
         :param read_files: Some number of bam or bed files aligned to the same
             genome as the given bedfile.
-        :param out_dir: The directory into which the counts files will be
-        placed.
         :return: The paths to the output counts files.
         """
 
@@ -493,8 +502,10 @@ class PeakCounter:
 
             self._jobs.execute_lazy(
                 cmdify(
-                    'bedtools intersect',
-                    '-a', bedfile,
+                    'bedtools sort', bedfile,
+                    '-g', self._idx_stats,
+                    ' | bedtools intersect',
+                    '-a stdin',
                     '-b', read_file,
                     '-g', self._idx_stats,
                     '-c',

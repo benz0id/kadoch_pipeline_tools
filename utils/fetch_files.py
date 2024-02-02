@@ -167,7 +167,7 @@ def get_matching_files(directory: Path,
                        paths: bool = False,
                        n: int = None,
                        one_to_one: bool = False,
-                       verbose: bool = False) -> Union[List[str], List[Path]]:
+                       verbose: bool = False) -> Union[List[Path], List[str]]:
     """
     Gets all filenames in the given <directory> that match any of <matching>
     and none of <not_matching>.
