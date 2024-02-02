@@ -250,7 +250,7 @@ class PeakCounter:
             self.update_genome_index(read_files[0])
 
         # Sort count files by the experimental design if one was provided.
-        column_names = [rf.name.split('_')[1] for rf in read_files]
+        column_names = samples
 
         # Generate counts files.
         counts_files = self.generate_counts(bed, read_files)
