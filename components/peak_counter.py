@@ -118,8 +118,8 @@ class PeakCounter:
         if not bed.exists():
             raise ValueError(str(bed) + ' does not exist.')
 
-        if not counts.exists():
-            raise ValueError(str(counts) + ' does not exist.')
+        if not reads_file.exists():
+            raise ValueError(str(reads_file) + ' does not exist.')
 
         with file_lock:
             if self._cache_record_path.exists():
