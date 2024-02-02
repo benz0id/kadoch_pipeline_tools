@@ -57,7 +57,7 @@ class PeakSorter:
                 contig, start, stop = peak.split('-')
                 out_file.write(f'{contig}\t{start}\t{stop}\n')
 
-        return out_file
+        return out_path
 
     def comparison_sort(self, bed: Path, samples1: List[str],
                         samples2: List[str], out_path: Path,
@@ -84,11 +84,12 @@ class PeakSorter:
             v2 = matrix[samples2].values.sum(axis=0)
             matrix[['fold_change']] = v2 / v1
 
+        matrix.sort_values(by=metric, ascending=False)
         with open(out_path, 'w') as out_file:
             for peak in matrix[['Sites']]:
                 peak = peak.replace(':', '-')
                 contig, start, stop = peak.split('-')
                 out_file.write(f'{contig}\t{start}\t{stop}\n')
 
-        return out_file
+        return out_path
 
