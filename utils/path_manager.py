@@ -113,6 +113,7 @@ class PathManager:
     |     |---- fastqc      (self.fastqc_dir)
     |---- cache_dir (self.cache_dir)
     |     |---- <any caches you create with cache manager>
+    |     |---- counts_cache.txt
     |---- logs              (self.logging_directory)
     |     |---- info_archive
     |     |---- debug_archive

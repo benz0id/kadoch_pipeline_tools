@@ -1,11 +1,12 @@
-
+import collections
 import logging
 import subprocess
 from copy import copy
 from pathlib import Path
-from typing import List, Callable, Tuple
+from typing import List, Callable, Tuple, Union, Dict
 
 import numpy as np
+import threading
 
 from utils.fetch_files import get_unique_filename, outpath_to_dirname
 from utils.job_formatter import ExecParams, PythonJob
@@ -17,6 +18,11 @@ from utils.utils import ExperimentalDesign
 HG19_GENOME = HG19_IDXSTATS
 
 logger = logging.getLogger(__name__)
+
+file_lock = threading.Lock()
+
+CacheEntry = collections.namedtuple('CacheEntry',
+                                    ['bed_file', 'reads_file', 'counts_file'])
 
 
 class PeakCounter:
@@ -35,6 +41,10 @@ class PeakCounter:
     _wait_job_array: Callable
 
     _verbose: bool
+
+    _bed_counts_dict: Dict[Path, Path]
+    _cache_record_path: Path
+    _cache_dir_path: Path
 
     def __init__(self, job_manager: JobManager, file_manager: PathManager,
                  light_job_params: ExecParams, heavy_job_params: ExecParams,
@@ -71,8 +81,82 @@ class PeakCounter:
         self._start_job_array = start_job_array_fxn
         self._wait_job_array = wait_job_array_fxn
         self._verbose = verbose
+        self._cache_record_path = self._files.cache_dir / 'counts_cache.txt'
+        self._cache_dir_path = self._files.make(self._files.cache_dir /
+                                           'counts_cache')
 
-    def get_matrix(self, bed: Path,  read_files: List[Path],
+    def parse_cache(self, lines: List[str]) -> List[CacheEntry]:
+        """
+        Parse a cache of reads files, formatted <original_bedfile>\t<counts_bedfile>
+        :param lines: A list of lines of the original format.
+        :return:
+        """
+        entries = []
+        for line in lines:
+            line = line.strip()
+            if line == '':
+                continue
+
+            components = line.split('\t')
+            components = tuple(Path(comp) for comp in components)
+
+            if not len(components) == 3:
+                raise RuntimeError(str(self._cache_record_path) +
+                                   ' is not properly formatted.')
+            entries.append(CacheEntry(*components))
+        return entries
+
+    def add_counts_file_to_cache(self, bed: Path, reads_file: Path,
+                                 counts: Path) -> None:
+        """
+        Checks the cache of file for which counts
+        :param bed:
+        :param reads_file:
+        :param counts:
+        :return:
+        """
+        if not bed.exists():
+            raise ValueError(str(bed) + ' does not exist.')
+
+        if not counts.exists():
+            raise ValueError(str(counts) + ' does not exist.')
+
+        with file_lock:
+            if self._cache_record_path.exists():
+                with open(self._cache_record_path, 'r') as cache_file:
+                    lines = cache_file.readlines()
+                    cache = self.parse_cache(lines)
+            else:
+                cache = []
+
+            cache.append(CacheEntry(bed, reads_file, counts))
+
+            with open(self._cache_record_path, 'w') as cache_file:
+                for entry in cache:
+                    cache_file.write(
+                        f'{entry.bed_file}\t'
+                        f'{entry.reads_file}\t'
+                        f'{entry.counts_file}\n')
+
+    def check_cache_for_counts_file(self, bed_file: Path, reads_file: Path) \
+            -> Union[None, Path]:
+        """
+        Checks the cache paths to counts files that have been parsed before.
+        :param bed_file: Bed file used to generate counts.
+        :param reads_file: Read file used to generate counts.
+        :return:
+        """
+        with file_lock, open(self._cache_record_path, 'r') as cache_file:
+            lines = cache_file.readlines()
+            cache = self.parse_cache(lines)
+            for entry in cache:
+                bed_match = entry.bed_file == bed_file
+                read_match = entry.reads_file == reads_file
+                if bed_match and read_match:
+                    raise entry.counts_file
+        return None
+
+    def get_matrix(self, bed: Path, read_files: List[Path],
                    out_matrix_path: Path, norm_method: str = 'RPKM',
                    design: ExperimentalDesign = None) -> None:
         """
@@ -104,16 +188,12 @@ class PeakCounter:
         if ft == 'bam':
             self.update_genome_index(read_files[0])
 
-        # Create temporary directory.
-        tmp_dir = self._files.make(
-            self._files.purgeable_files_dir /
-            outpath_to_dirname(out_matrix_path))
-
-        counts_dir = tmp_dir / 'counts'
-        self._files.make(counts_dir)
+        # Sort count files by the experimental design if one was provided
+        if design is not None:
+            read_files = design.align_to_samples(read_files)
 
         # Generate counts files.
-        counts_files = self.generate_counts(bed, read_files, counts_dir)
+        counts_files = self.generate_counts(bed, read_files)
 
         # Define behaviour based on normalization method.
         if norm_method == 'RPKM':
@@ -122,12 +202,9 @@ class PeakCounter:
         else:
             raise ValueError('Unrecognised normalization method.')
 
-        # Sort count files by the experimental design if one was provided
-        if design is not None:
-            counts_files = design.align_to_samples(counts_files)
-
         # Make the matrix.
-        pj = PythonJob('make ' + str(out_matrix_path), [], self.make_counts_matrix,
+        pj = PythonJob('make ' + str(out_matrix_path), [],
+                       self.make_counts_matrix,
 
                        counts_files=counts_files,
                        matrix_out_path=out_matrix_path,
@@ -381,8 +458,7 @@ class PeakCounter:
             raise ValueError("Counts files of invalid lengths.")
         return counts_array
 
-    def generate_counts(self, bedfile: Path, read_files: List[Path],
-                        out_dir: Path, out_count_names: List[str] = None) \
+    def generate_counts(self, bedfile: Path, read_files: List[Path]) \
             -> List[Path]:
         """
         Gets the number of reads in each read_files in <read_files> that lie at each
@@ -401,18 +477,16 @@ class PeakCounter:
         """
 
         self._start_job_array()
-        new_count_names = []
+        count_files = []
+
         for i, read_file in enumerate(read_files):
 
-            if out_count_names:
-                count_file_name = out_count_names[i]
-            else:
-                count_file_name = read_file.name.split('.')[0] + '.cnt'
+            cached_counts_file = self.check_cache_for_counts_file(bedfile, read_file)
+            if cached_counts_file is not None:
+                count_files.append(cached_counts_file)
+                continue
 
-            if count_file_name in new_count_names:
-                raise ValueError('Count file collision detected, '
-                                 'please check the format of you input read files '
-                                 'or explicitly state count file names.')
+            out_count_file = self._cache_dir_path / (get_unique_filename() + '.bed')
 
             self._jobs.execute_lazy(
                 cmdify(
@@ -422,15 +496,15 @@ class PeakCounter:
                     '-g', self._idx_stats,
                     '-c',
                     '-sorted',
-                    '>', out_dir / count_file_name
+                    '>', out_count_file
                 ), self._heavy_job
             )
-            new_count_names.append(count_file_name)
+            count_files.append(out_count_file)
+            self.add_counts_file_to_cache(bedfile, read_file, out_count_file)
 
         self._wait_job_array()
 
-        return [out_dir / count_file_name
-                for count_file_name in new_count_names]
+        return count_files
 
     def bam_to_bed(self, bams: List[Path], out_dir: Path,
                    filter_pe: bool = True, sort: bool = True,
@@ -482,17 +556,19 @@ class PeakCounter:
             tmp_pe_bed = self._files.purgeable_files_dir / \
                          (outpath_to_dirname(out_bed_path)[:-4] + '.bedpe')
             tmp_unsorted_bed = self._files.purgeable_files_dir / \
-            (outpath_to_dirname(out_bed_path)[:-4] + '.unsorted.bed')
+                               (outpath_to_dirname(out_bed_path)[
+                                :-4] + '.unsorted.bed')
 
             cmd = cmdify(
                 'samtools view -bu', filter_arg, bam,
                 sort_str,
                 '| bedtools bamtobed', pe_str, '-i stdin',
                 '>', tmp_pe_bed, '\n'
-                'cat', tmp_pe_bed,
+                                 'cat', tmp_pe_bed,
                 "| awk -v OFS='\\t' {'print $1,$2,$6,$7,$8,$9'}",
                 '>', tmp_unsorted_bed, '\n'
-                'bedtools sort -i ', tmp_unsorted_bed, '-faidx', self._idx_stats,
+                                       'bedtools sort -i ', tmp_unsorted_bed,
+                '-faidx', self._idx_stats,
                 '>', out_bed_path
             )
 
@@ -506,16 +582,3 @@ class PeakCounter:
         self._idx_stats = old_idx_stats
 
         return cmds, out_beds
-
-
-
-
-
-
-
-
-
-
-
-
-
