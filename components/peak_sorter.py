@@ -5,7 +5,7 @@ from components.peak_counter import PeakCounter
 from utils.utils import ExperimentalDesign
 
 
-class BedSorter:
+class PeakSorter:
     """
     Responsible for the sorting of bedfiles.
     """
