@@ -23,13 +23,13 @@ def get_common_peaks(peaksfiles: List[Path], out_peaksfile: Path) \
             '-b', peaksfile, ' -wa',
             '| bedtools sort '
         )
-    cmd += cmdify(' | bedtools sort | bedtools merge >', out_peaksfile)
+    cmd += cmdify('| cut -f1-3 | bedtools sort | bedtools merge >', out_peaksfile)
     return out_peaksfile, cmd
 
 
 def get_merged_peaks(peaksfiles: List[Path], out_peaksfile: Path):
     cmd = cmdify(
-        'cat', *peaksfiles, '| bedtools sort | bedtools merge >', out_peaksfile
+        'cat', *peaksfiles, '| cut -f1-3 | bedtools sort | bedtools merge >', out_peaksfile
     )
     return out_peaksfile, cmd
 
@@ -72,7 +72,7 @@ def get_venn_peaks(peakfile_a: Path, peakfile_b: Path, title: str,
     It also relies on matplotlib for generating the Venn diagram.
 
     Example usage:
-    >>> a_only, b_only, common, cmds = get_venn_peaks(Path("fileA.bed"), Path("fileB.bed"), "Comparison of A and B", Path("/output/directory"))
+    >>> a_only, b_only, common = get_venn_peaks(Path("fileA.bed"), Path("fileB.bed"), "Comparison of A and B", Path("/output/directory"))
     """
 
     cmds = []
@@ -94,13 +94,13 @@ def get_venn_peaks(peakfile_a: Path, peakfile_b: Path, title: str,
             '-a', peakfile_a,
             '-b', peakfile_b,
             '-wa', '-v',
-            '>', a_only))
+            '| cut -f1-3 >', a_only))
 
     cmds.append(cmdify('bedtools intersect',
             '-a', peakfile_b,
             '-b', peakfile_a,
             '-wa', '-v',
-            '>', b_only))
+            '| cut -f1-3 >', b_only))
 
     cmds.append(cmdify(
         'cat', peakfile_a, peakfile_b,
@@ -115,7 +115,7 @@ def get_venn_peaks(peakfile_a: Path, peakfile_b: Path, title: str,
         '-wa',
         '| bedtools sort',
         '| bedtools merge',
-        '>', common))
+        '| cut -f1-3 >', common))
 
     for cmd in cmds:
         jobs_manager.execute_lazy(cmd)
@@ -155,6 +155,6 @@ def get_venn_peaks(peakfile_a: Path, peakfile_b: Path, title: str,
     plt.show()
     plt.clf()
 
-    return a_only, common, b_only, cmds
+    return a_only, common, b_only
 
 
