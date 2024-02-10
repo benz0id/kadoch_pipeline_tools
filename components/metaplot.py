@@ -223,7 +223,7 @@ class HeatmapBuilder:
             "--yMin 0 --zMin 0",
             "--yMax", scale_factor,
             "--zMax", scale_factor,
-            "--colorList", f'"{colour}"', plotheatmap_args
+            "--colorList", colour, plotheatmap_args
         )
         self._job_manager.execute_lazy(cmd, arrayable)
 
