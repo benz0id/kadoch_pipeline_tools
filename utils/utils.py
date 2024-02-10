@@ -3,6 +3,7 @@ import sys
 from copy import copy, deepcopy
 from pathlib import Path
 from typing import List, Dict, Union, Any, Tuple
+import re
 
 from sample_sheet import SampleSheet
 
@@ -879,6 +880,8 @@ class ExperimentalDesign:
         :param include_default: Whether samples should be included by default.
         :return: A design with the selected samples.
         """
+        if not sample_names:
+            sample_names = []
 
         if not matching:
             matching = []
@@ -886,13 +889,7 @@ class ExperimentalDesign:
         if not not_matching:
             not_matching = []
 
-        if sample_names:
-            valid_samples = []
-            for sample in self._samples:
-                if sample.sample_name in sample_names:
-                    valid_samples.append(sample)
-        else:
-            valid_samples = self._samples
+        valid_samples = self._samples
 
         to_inc = []
 
@@ -900,12 +897,15 @@ class ExperimentalDesign:
             components = sample.condition.split('_')
             inc = include_default
 
+            if sample in sample_names:
+                inc = True
+
             for i, s in matching:
-                if s in components[i]:
+                if re.match(s, components[i]):
                     inc = True
 
             for i, s in not_matching:
-                if s in components[i]:
+                if re.match(s, components[i]):
                     inc = False
 
             if inc:
