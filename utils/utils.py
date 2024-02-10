@@ -473,6 +473,12 @@ class ExperimentalDesign:
                 sample_attrs[attr] = pruned_val
             sample.update_attrs(sample_attrs)
 
+    def get_rank(self, sample_name: str) -> int:
+        for i, sample in enumerate(self._samples):
+            if sample.sample_name == sample_name:
+                return i
+        raise ValueError(sample_name + ' not in design.')
+
     def query(self, get: str,
               filters: Dict[str, Any] = None,
               sort: bool = True) -> List[Any]:
