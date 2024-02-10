@@ -897,7 +897,7 @@ class ExperimentalDesign:
             components = sample.condition.split('_')
             inc = include_default
 
-            if sample in sample_names:
+            if sample.sample_name in sample_names:
                 inc = True
 
             for i, s in matching:
