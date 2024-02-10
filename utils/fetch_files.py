@@ -163,10 +163,10 @@ def get_matching_files(directory: Path,
                        not_matching: Regexes = None,
                        filetype: str = None,
                        containing: bool = False,
-                       under_delim: bool = False,
-                       paths: bool = False,
+                       under_delim: bool = True,
+                       paths: bool = True,
                        n: int = None,
-                       one_to_one: bool = False,
+                       one_to_one: bool = True,
                        verbose: bool = False) -> Union[List[Path], List[str]]:
     """
     Gets all filenames in the given <directory> that match any of <matching>
