@@ -217,7 +217,7 @@ class HeatmapBuilder:
                        ram_per_core=1024 * 4, builder=self._job_builder,
                        wait=False)
         if isinstance(scale_factor, list):
-            scale_factor = ','.join(scale_factor)
+            scale_factor = ' '.join([str(sf) for sf in scale_factor])
         cmd = cmdify(
             "plotHeatmap",
             "-m", matrix,
