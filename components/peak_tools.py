@@ -133,13 +133,24 @@ def get_venn_peaks(peakfile_a: Path, peakfile_b: Path, title: str,
     plt.title(title)
 
     # Customizing the Venn diagram's appearance
-    venn.get_patch_by_id('10').set_color('skyblue')  # Set color for set A
-    venn.get_patch_by_id('10').set_edgecolor('black')
-    venn.get_patch_by_id('01').set_color('pink')  # Set color for set B
-    venn.get_patch_by_id('01').set_edgecolor('black')
-    venn.get_patch_by_id('11').set_color('plum')  # Set color for intersection
-    venn.get_patch_by_id('11').set_alpha(
-        0.7)  # Set transparency for intersection
+
+    patch_a = venn.get_patch_by_id('10')
+    if patch_a is not None:
+        patch_a.set_color('skyblue')
+        patch_a.set_edgecolor('black')
+
+    # Attempt to retrieve and color the patch for set B
+    patch_b = venn.get_patch_by_id('01')
+    if patch_b is not None:
+        patch_b.set_color('pink')
+        patch_b.set_edgecolor('black')
+
+    # Attempt to retrieve and color the patch for the intersection
+    intersection_patch = venn.get_patch_by_id('11')
+    if intersection_patch is not None:
+        intersection_patch.set_color('plum')
+        intersection_patch.set_alpha(0.7)
+        # Set transparency for intersection
 
     # Adjust the font size for labels and title
     for text in venn.set_labels:
