@@ -76,7 +76,7 @@ class HeatmapBuilder:
                     samples: List[str],
                     bigwigs: Path,
                     peaks: Union[Path, List[Tuple[str, Path]]],
-                    scale_factor: int,
+                    scale_factor: Union[int, List[int], str],
                     out_dir: Path,
                     cores_per_job: int,
                     namesafe_check: bool,
@@ -216,6 +216,8 @@ class HeatmapBuilder:
             ExecParams(max_runtime=(0, 1, 0), num_cores=cores_per_job,
                        ram_per_core=1024 * 4, builder=self._job_builder,
                        wait=False)
+        if isinstance(scale_factor, list):
+            scale_factor = ','.join(scale_factor)
         cmd = cmdify(
             "plotHeatmap",
             "-m", matrix,
