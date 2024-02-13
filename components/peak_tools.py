@@ -153,10 +153,16 @@ def get_venn_peaks(peakfile_a: Path, peakfile_b: Path, title: str,
         # Set transparency for intersection
 
     # Adjust the font size for labels and title
-    for text in venn.set_labels:
-        text.set_fontsize(14)
-    for text in venn.subset_labels:
-        text.set_fontsize(12)
+    if venn.set_labels:
+        for text in filter(None,
+                           venn.set_labels):  # This filters out None values
+            text.set_fontsize(14)
+
+    # Adjust the font size for subset labels
+    if venn.subset_labels:
+        for text in filter(None,
+                           venn.subset_labels):  # This filters out None values
+            text.set_fontsize(12)
 
     plt.title(title, fontsize=16)
 
