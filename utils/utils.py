@@ -507,7 +507,7 @@ class ExperimentalDesign:
                 if attr in colname:
                     val = self.query(
                         attr, {'sample_name': sample_name}, n=1)[0]
-                    colname = colname.replace(attr, val)
+                    colname = colname.replace(attr, str(val))
             colnames.append(colname)
         return colnames
 
