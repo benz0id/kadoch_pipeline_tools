@@ -424,7 +424,7 @@ class ExperimentalDesign:
         """
         Returns the available attributes of all samples in this design.
         """
-        attrs = tuple(sample.get_attrs() for sample in self._samples)
+        attrs = tuple(sample.get_attrs().keys() for sample in self._samples)
         merged_attrs = list(set(list(chain(*attrs))))
         if not all([Counter(merged_attrs) == Counter(attr_set)
                     for attr_set in attrs]):
