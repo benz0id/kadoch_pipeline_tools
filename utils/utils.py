@@ -1,9 +1,11 @@
 import dataclasses
 import sys
+from collections import Counter
 from copy import copy, deepcopy
 from pathlib import Path
 from typing import List, Dict, Union, Any, Tuple
 import re
+from itertools import chain
 
 from sample_sheet import SampleSheet
 
@@ -101,12 +103,6 @@ class Sample:
     target: str
     treatment: str
 
-    bam: Path
-    bai: Path
-    bed: Path
-    narrow_peak: Path
-    broad_peak: Path
-
     def __init__(self, sample_name: str, condition: str,
                  replicate: int, **kwargs) -> None:
         """
@@ -137,7 +133,7 @@ class Sample:
         :param file: A file generated from this sample.
         :return: String representation of the violation, if it occurred.
         """
-        condition_found = self.condition in file.name
+        condition_found = self.condition.lower() in file.name.lower()
 
         if not condition_found:
             violation = f"{self.condition} not found in {file.name}"
@@ -253,10 +249,9 @@ class TargetedSample(Sample):
         :param file: A file generated from this sample.
         :return: String representation of the violation, if it occured.
         """
-        fname_comps = file.name.split('_')
 
-        target_found = self.target in fname_comps
-        treatment_found = self.treatment in fname_comps
+        target_found = self.target.lower() in file.name.lower()
+        treatment_found = self.treatment.lower() in file.name.lower()
 
         if not treatment_found and not target_found:
             violation = f"{self.target} and {self.treatment} " \
@@ -425,6 +420,19 @@ class ExperimentalDesign:
     def sort_samples(self) -> None:
         self._samples.sort()
 
+    def get_sample_attributes(self) -> List[str]:
+        """
+        Returns the available attributes of all samples in this design.
+        """
+        attrs = tuple(sample.get_attrs() for sample in self._samples)
+        merged_attrs = list(set(list(chain(*attrs))))
+        if not all([Counter(merged_attrs) == Counter(attr_set)
+                    for attr_set in attrs]):
+            raise RuntimeError("Samples have different attributes.")
+        return merged_attrs
+
+
+
     def remove_str(self, s: str, samples: List[str] = None, pos: int = None,
                    attrs: List[str] = None) -> None:
         """
@@ -479,9 +487,34 @@ class ExperimentalDesign:
                 return i
         raise ValueError(sample_name + ' not in design.')
 
+    def get_colnames(self, sample_names: List[str], colname_format: str) \
+            -> List[str]:
+        """
+        Extract the requested attributes from each of the specified samples in
+        design.
+
+        :param sample_names:
+        :param colname_format:
+        :return:
+        """
+        attrs = self.get_sample_attributes()
+        colnames = []
+        for sample_name in sample_names:
+            colname = colname_format
+
+            # Replace each attribute with its value in the given sample.
+            for attr in attrs:
+                if attr in colname:
+                    val = self.query(
+                        attr, {'sample_name': sample_name}, n=1)[0]
+                    colname = colname.replace(attr, val)
+            colnames.append(colname)
+        return colnames
+
     def query(self, get: str,
               filters: Dict[str, Any] = None,
-              sort: bool = True) -> List[Any]:
+              sort: bool = True,
+              n: int = None) -> List[Any]:
         """
         Returns <rtrn_attr> from each sample matching <filters>.
         :param filters: A dictionary mapping attribute names to one or more
@@ -538,6 +571,12 @@ class ExperimentalDesign:
                     f'Allowble attributes include {allowable}.')
 
             return_attrs.append(attrs[get])
+
+        if n is not None:
+            if len(return_attrs) != n:
+                raise RuntimeError('Number of return attributes does not match'
+                                   ' the number of expected return attributes.'
+                                   '')
         return return_attrs
 
     def find_in_files(self, files: List[Path],

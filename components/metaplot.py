@@ -31,6 +31,7 @@ def merge(dic, dic2):
 
 NameSafeDict = Dict[Tuple[str, Path], List[str]]
 
+
 class HeatmapBuilder:
     """
 
@@ -75,34 +76,58 @@ class HeatmapBuilder:
                     name: str,
                     samples: List[str],
                     bigwigs: Path,
-                    peaks: Union[Path, List[Tuple[str, Path]]],
+                    peaks: Union[
+                            Path,
+                            List[Tuple[str, Path]]],
                     scale_factor: Union[int, List[int], str],
                     out_dir: Path,
                     cores_per_job: int,
                     namesafe_check: bool,
                     colour: str,
+                    colname_format: str = 'condition',
                     verbose: bool = False,
                     plotheatmap_args: str =
                     '--sortRegions descend --sortUsing mean') -> None:
         """
         Generates a heatmap from provided peak and bigwig files.
 
-        This function creates a heatmap visualization using specified bigwig files
-        and peak information. It supports either a single merged peak file or a list
-        of annotated peak files. The function also performs validation checks on
-        file names and logs any violations. The generated heatmap is saved as an SVG file.
+        This function creates a heatmap visualization using specified bigwig
+        files and peak information. It supports either a single merged peak
+        file or a list of annotated peak files. The function also performs
+        validation checks on file names and logs any violations. The
+        generated heatmap is saved as an SVG file.
 
         Parameters:
         name (str): The name of the heatmap.
+
         samples (List[str]): A list of sample names to be matched with bigwig files.
+
         bigwigs (Path): Path to the directory containing bigwig files.
-        peaks (Union[Path, List[Tuple[str, Path]]]): Either a single Path to a merged
-            peak file or a list of tuples containing annotated peak information.
+
+        peaks (Union[Path, List[Tuple[str, Path]]]): Either a single Path to a
+        merged
+
+            peak file or a list of tuples containing annotated peak
+            information.
+
         scale_factor (int): Scale factor for the heatmap intensity.
+
         out_dir (Path): Output directory path where results will be saved.
+
         cores_per_job (int): Number of cores to allocate per job.
-        namesafe_check (bool): Flag to enable or disable filename validation checks.
+
+        namesafe_check (bool): Flag to enable or disable filename validation
+        checks.
+
         colour (str): Colour for the heatmap.
+
+        colname_format (str): A string containing attributes names of the given
+            samples. These must be valid attributes all samples included in
+            the heatmap.
+
+            e.g. "condition" could become "WT".
+                "condition - mark - replicate" could become "WT - SMARCA4 - Rep1"
+
         verbose (bool, optional): Flag to enable verbose logging. Defaults to False.
 
         Returns:
@@ -129,14 +154,7 @@ class HeatmapBuilder:
                                      under_delim=True, paths=True,
                                      one_to_one=True)
 
-        if isinstance(self._design, TargetedDesign):
-            cond = 'treatment'
-        else:
-            cond = 'condition'
-
-        treatments = [self._design.query(get=cond,
-                                         filters={'sample_name': sn})[0]
-                      for sn in samples]
+        column_names = self._design.get_colnames(samples, colname_format)
 
         # Handle creation of Rows
         # Compile all peaks into a single merged peaksfiles
@@ -177,7 +195,7 @@ class HeatmapBuilder:
         col_strs = ''
         for i, bw in enumerate(bigwigs):
             filename = bw.name
-            col_name = treatments[i]
+            col_name = column_names[i]
             col_strs += '\n\n\t' + col_name + '\t' + '-' + '\t' + filename
 
         s = f'\t===   Figure Configuration for {name}   ===\n' \
@@ -198,7 +216,7 @@ class HeatmapBuilder:
 
                        beds=peaks,
                        bigwigs=bigwigs,
-                       column_names=treatments,
+                       column_names=column_names,
                        row_names=row_names,
                        out_path=matrix,
                        jobs=self._job_manager,
@@ -310,6 +328,7 @@ class HeatmapBuilder:
                          mark_to_scale_factor: Dict[str, int],
                          out_dir: Path,
                          cores_per_job: int = 1,
+                         colname_format: str = 'treatment',
                          verbose: bool = False,
                          namesafe_check: bool = True,
                          run_async: bool = False,
@@ -319,6 +338,7 @@ class HeatmapBuilder:
         """
         Generate heatmaps for each mark.
 
+        :param plotheatmap_args:
         :param cores_per_job:
         :param mark_to_bigwigs_dir: Maps a mark to the directory containing the
             bigwigs to use for that mark.
@@ -364,6 +384,7 @@ class HeatmapBuilder:
                 cores_per_job=cores_per_job,
                 namesafe_check=namesafe_check,
                 colour='white,' + get_colour(mark),
+                colname_format=colname_format,
                 verbose=verbose,
                 plotheatmap_args=plotheatmap_args
 
