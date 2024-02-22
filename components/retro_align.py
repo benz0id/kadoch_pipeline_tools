@@ -2,7 +2,7 @@ import collections
 import os
 from pathlib import Path
 import random
-from typing import List, Callable, Tuple
+from typing import List, Callable, Tuple, Union
 
 from components.get_alignment_stats import get_alignment_stats
 from utils.fetch_files import copy_to_cmds, get_matching_files
@@ -83,10 +83,11 @@ def retro_fetch_manual(design: ExperimentalDesign, out_dir: Path,
     return alignment_results, cmds
 
 
-def retro_fetch_align_results(fastqs: List[Path], alignment_dir: Path,
-                              aligments_results_dir: Path, jobs: JobManager,
-                              start_array: Callable, wait_array: Callable,
-                              job_builder: JobBuilder) -> AlignmentResults:
+def retro_fetch_align_results(
+        fastqs: Union[List[Path], List[str]], alignment_dir: Path,
+        aligments_results_dir: Path, jobs: JobManager,
+        start_array: Callable, wait_array: Callable, job_builder: JobBuilder) \
+        -> AlignmentResults:
 
     res = make_alignment_results_directory(results_dir=aligments_results_dir)
 
@@ -95,12 +96,20 @@ def retro_fetch_align_results(fastqs: List[Path], alignment_dir: Path,
     # Extract sample names from fastqs.
     sample_ids = []
     samples = []
-    for fastq in fastqs:
-        name = fastq.name
-        sample_name = '_'.join(name.split('_')[0:3])
-        sample_ids.append(sample_name)
-        samples.append(name.split('_')[1])
-    sample_ids = sorted(sample_ids)
+
+    if all([isinstance(fastq, Path) for fastq in fastqs]):
+        sample_ids = []
+        samples = []
+        for fastq in fastqs:
+            name = fastq.name
+            sample_name = '_'.join(name.split('_')[0:3])
+            sample_ids.append(sample_name)
+            samples.append(name.split('_')[1])
+        sample_ids = sorted(sample_ids)
+    elif all([isinstance(fastq, str) for fastq in fastqs]):
+        sample_ids = fastqs
+    else:
+        raise ValueError('fatsqs contains mixed or unexpected datatypes.')
 
     # Copy all matching sequencing result folders over.
     cmds = []
@@ -124,7 +133,7 @@ def retro_fetch_align_results(fastqs: List[Path], alignment_dir: Path,
         cmds.extend(copy_to_cmds(res.stats,
                                  get_matching_files(
                                      alignment_dir / 'stats_storage_atac',
-                                     samples,
+                                     sample_ids,
                                      containing=True, paths=True, verbose=True),
                                  avoid_recopy=True))
 
