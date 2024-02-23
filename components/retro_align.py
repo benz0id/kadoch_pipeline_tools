@@ -136,8 +136,7 @@ def retro_fetch_align_results(
         cmds.extend(copy_to_cmds(res.stats,
                                  get_matching_files(
                                      alignment_dir / 'stats_storage_atac',
-                                     sample_ids,
-                                     containing=True, paths=True, verbose=True),
+                                     sample_ids, filetype='txt'),
                                  avoid_recopy=True))
 
     random.shuffle(cmds)
