@@ -77,8 +77,9 @@ class HeatmapBuilder:
                     samples: List[str],
                     bigwigs: Path,
                     peaks: Union[
-                            Path,
-                            List[Tuple[str, Path]]],
+                                Path,
+                                List[Tuple[str, Path]]
+                                ],
                     scale_factor: Union[int, List[int], str],
                     out_dir: Path,
                     cores_per_job: int,

@@ -115,18 +115,21 @@ def retro_fetch_align_results(
     cmds = []
     cmds.extend(copy_to_cmds(res.bam,
                              get_matching_files(alignment_dir / 'bam',
-                                                sample_ids,
-                                                containing=True, paths=True),
+                                                sample_ids, filetype='bai'),
                              avoid_recopy=True))
+
+    cmds.extend(copy_to_cmds(res.bam,
+                             get_matching_files(alignment_dir / 'bam',
+                                                sample_ids, filetype='bam'),
+                             avoid_recopy=True))
+
     cmds.extend(copy_to_cmds(res.bed,
                              get_matching_files(alignment_dir / 'beds',
-                                                sample_ids,
-                                                containing=True, paths=True),
+                                                sample_ids, filetype='bed'),
                              avoid_recopy=True))
     cmds.extend(copy_to_cmds(res.bw,
                              get_matching_files(alignment_dir / 'bw',
-                                                sample_ids,
-                                                containing=True, paths=True),
+                                                sample_ids, filetype='bw'),
                              avoid_recopy=True))
 
     if 'atac' in alignment_dir.name:

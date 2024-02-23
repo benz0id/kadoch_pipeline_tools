@@ -41,7 +41,7 @@ def rem_ext(filepath: Path) -> str:
 def get_venn_peaks(peakfile_a: Path, peakfile_b: Path, title: str,
                    out_dir: Path, jobs_manager: JobManager,
                    set_a_name: str = None, set_b_name: str = None) \
-        -> Tuple[Path, Path, Path, List[str]]:
+        -> Tuple[Path, Path, Path]:
     """
     Generates a Venn diagram comparing the peaks in two files and outputs files
     representing unique and common peaks.
